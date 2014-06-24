@@ -1,15 +1,16 @@
 cmake_minimum_required(VERSION 2.6)
 
 PROJECT(rift)
+set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 #
 # Packages requis
 FIND_PACKAGE(OpenGL REQUIRED)
-include("cmake/FindGLEW.cmake")
-include("cmake/FindGLFW.cmake")
-set(GLM_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/local/include/")
+include(FindGLEW)
+include(FindGLFW)
+include(cotire)
 
-set(RIFT_HOME ${CMAKE_CURRENT_SOURCE_DIR})
+set(RIFT_HOME ${CMAKE_SOURCE_DIR})
 set(RIFT_EXECUTABLE rift)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${RIFT_HOME}/bin")
 
@@ -75,6 +76,11 @@ ADD_EXECUTABLE(
     ${RIFT_SOURCES}
     ${RIFT_HEADERS}
 )
+
+set_target_properties(${RIFT_EXECUTABLE} PROPERTIES
+    COTIRE_PREFIX_HEADER_INCLUDE_PATH  "${GLEW_INCLUDE_PATH};${GLFW_LIBRARY_DIR};${GLM_INCLUDE_PATH}")
+
+cotire(${RIFT_EXECUTABLE})
 
 # 'make run'
 ADD_CUSTOM_TARGET(run
