@@ -11,6 +11,7 @@ set(GLM_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/local/include/")
 
 set(RIFT_HOME ${CMAKE_CURRENT_SOURCE_DIR})
 set(RIFT_EXECUTABLE rift)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${RIFT_HOME}/bin")
 
 #
 # Définitions du préprocesseur
@@ -26,6 +27,9 @@ ENDIF()
 #
 INCLUDE_DIRECTORIES(
 	include/
+	include/renderer
+	include/renderer/gl3
+	include/renderer/dummy
 	src/
 )
 
@@ -38,6 +42,7 @@ file(
     src/*.cpp
     src/renderer/*.cpp
     src/renderer/gl3/*.cpp
+    src/renderer/dummy/*.cpp
 )
 
 file(
@@ -46,6 +51,7 @@ file(
     include/*.hpp
     include/renderer/*.hpp
     include/renderer/gl3/*.hpp
+    include/renderer/dummy/*.hpp
 )
 
 #

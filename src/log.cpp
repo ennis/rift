@@ -2,6 +2,10 @@
 
 #include <chrono>
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 Logger::~Logger()
 {
 	outFileStream.close();
@@ -34,6 +38,11 @@ void Logger::sendMessage(LogMessage const &message)
 
 	// also send it to the standard output
 	std::clog << str;
+
+	// on windows, send it to the debug output
+#ifdef _WIN32
+	OutputDebugStringA(str.c_str());
+#endif
 }
 
 const char *Logger::getSeverityString(LogSeverity severity)

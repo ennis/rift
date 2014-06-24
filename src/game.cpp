@@ -4,12 +4,12 @@
 #include <stdexcept>
 #include <string>
 
-#include <renderer/gl3/gl3renderer.hpp>
+#include <gl3rendererimpl.hpp>
 
 GLFWwindow *Game::sWindow = nullptr;
 glm::ivec2 Game::sWindowSize;
 std::unique_ptr<Game> Game::sGameInstance = nullptr;
-std::unique_ptr<Renderer> Game::sRenderer = nullptr;
+std::unique_ptr<CRenderer> Game::sRenderer = nullptr;
 
 Game::Game(glm::ivec2 const &windowSize)
 {
@@ -27,7 +27,7 @@ static void errorCallback(int error, const char* description)
 
 int Game::initContext()
 {
-	LOG << "--- setting up render window ----------------";
+	LOG << "setting up render window";
 	//====== GLFW ======
 	glfwSetErrorCallback(errorCallback);
 	if (!glfwInit()) {
@@ -38,7 +38,6 @@ int Game::initContext()
 
 	// OpenGL 3.3
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	//glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -60,8 +59,8 @@ int Game::initContext()
 	LOG << "Using GLEW " << glewGetString(GLEW_VERSION);
 
 	// initialize the renderer
-	sRenderer = std::unique_ptr<GL3Renderer>(new GL3Renderer);
-	sRenderer->initialize();
+	sRenderer = std::unique_ptr<CRenderer>(new CRenderer);
+	sRenderer->initialize(std::unique_ptr<CGL3RendererImpl>(new CGL3RendererImpl()));
 
 	return 0;
 }
@@ -111,32 +110,4 @@ void Game::run(std::unique_ptr<Game> instance)
 {
 	Game::sGameInstance = std::move(instance);
 	sGameInstance->run();
-}
-
-//============================================================================
-//
-//
-//
-
-void Game::init()
-{
-	// rien à faire
-}
-
-
-void Game::render(float dt)
-{
-	renderer().render();
-}
-
-void Game::update(float dt)
-{
-	mLastTime += dt;
-	mTotalTime += dt;
-
-	// mise à jour du compteur FPS toutes les secondes
-	if (mLastTime > 1.f) {
-		mLastTime = 0.f;
-		glfwSetWindowTitle(Game::window(), ("Rift (" + std::to_string(1.f / dt) + " FPS)").c_str());
-	}
 }
