@@ -2,13 +2,13 @@
 #define GAME_HPP
 
 #include <common.hpp>
-#include <renderer/renderer.hpp>
+#include <renderer.hpp>
+#include <opengl.hpp>
 
 
 //==========================================
 // classe Game
 //
-// Les sous-classes doivent implémenter les méthodes init, render et update
 class Game
 {
 public:
@@ -17,16 +17,16 @@ public:
 
 	//
 	// Méthode appelée lors de l'initialisation 
-	void init();
+	virtual void init() = 0;
 
 	//
 	// Méthode appelée au moment du rendu
-	void render(float dt);
+	virtual void render(float dt) = 0;
 
 	//
 	// Méthode appelée après le rendu
 	// fusionner avec render?
-	void update(float dt);
+	virtual void update(float dt) = 0;
 
 private:
 	int run();
@@ -41,7 +41,7 @@ public:
 
 	//
 	// Retourne l'instance du renderer
-	static Renderer &renderer() {
+	static CRenderer &renderer() {
 		return *sRenderer;
 	}
 
@@ -67,10 +67,7 @@ private:
 	static GLFWwindow *sWindow;
 	static glm::ivec2 sWindowSize;
 	static std::unique_ptr<Game> sGameInstance;
-	static std::unique_ptr<Renderer> sRenderer;
-
-	float mLastTime = 0.f;
-	float mTotalTime = 0.f;
+	static std::unique_ptr<CRenderer> sRenderer;
 };
 
 #endif
