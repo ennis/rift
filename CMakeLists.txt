@@ -31,6 +31,7 @@ INCLUDE_DIRECTORIES(
 	include/renderer
 	include/renderer/gl3
 	include/renderer/dummy
+	include/utils
 	src/
 )
 
@@ -44,6 +45,7 @@ file(
     src/renderer/*.cpp
     src/renderer/gl3/*.cpp
     src/renderer/dummy/*.cpp
+    src/utils/*.cpp
 )
 
 file(
@@ -53,6 +55,7 @@ file(
     include/renderer/*.hpp
     include/renderer/gl3/*.hpp
     include/renderer/dummy/*.hpp
+    include/utils/*.hpp
 )
 
 #

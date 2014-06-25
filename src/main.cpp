@@ -80,8 +80,11 @@ void RiftGame::init()
 	td.format = PixelFormat::R8G8B8A8;
 	td.size = glm::ivec3(800, 600, 1);
 	td.textureType = TextureType::Texture2D;
-	td.numMipMapLevels = 1;
+	td.numMipMapLevels = 0;
 	texture = renderer().createTexture(td);
+
+	auto tex2 = textureManager().load("mech_large_head_01");
+	textureManager().printResources();
 }
 
 

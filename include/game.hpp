@@ -4,6 +4,7 @@
 #include <common.hpp>
 #include <renderer.hpp>
 #include <opengl.hpp>
+#include <resourcemanager.hpp>
 
 
 //==========================================
@@ -61,6 +62,10 @@ public:
 	static Game &instance() {
 		return *sGameInstance;
 	}
+	
+	static ResourceManager<CTexture> &textureManager() {
+		return sTextureManager;
+	}
 
 private:
 	// make these pointers static to avoid another level of indirection
@@ -68,6 +73,8 @@ private:
 	static glm::ivec2 sWindowSize;
 	static std::unique_ptr<Game> sGameInstance;
 	static std::unique_ptr<CRenderer> sRenderer;
+
+	static ResourceManager<CTexture> sTextureManager;
 };
 
 #endif

@@ -29,7 +29,7 @@ void Logger::sendMessage(LogMessage const &message)
 {
 	// output severity string
 	std::stringstream fmt_msg;
-	fmt_msg << '(' << getSeverityString(message.severity) << ") (" << message.function << ") ";
+	fmt_msg << '(' << getSeverityString(message.severity) << ") ";
 	fmt_msg << message.message.str().c_str() << '\n';
 
 	auto str = fmt_msg.str();
