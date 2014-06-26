@@ -9,6 +9,8 @@
 #include <mesh.hpp>
 #include <texture.hpp>
 #include <camera.hpp>
+#include <material.hpp>
+#include <model.hpp>
 
 
 // fwd decls
@@ -33,7 +35,8 @@ public:
 	virtual void initialize() = 0;
 	virtual CTexture *createTexture(TextureDesc &desc) = 0;
 	virtual CMeshBuffer *createMeshBuffer(MeshBufferInit &init) = 0;
-	virtual void submit(CMeshBuffer *meshBuffer, Transform &transform) = 0;
+	// TODO parameters into a struct
+	virtual void submit(CMeshBuffer *meshBuffer, Transform &transform, CMaterial *material) = 0;
 	virtual void render(RenderData &renderData) = 0;
 
 	virtual void setClearColor(glm::vec4 const &color) = 0;
@@ -47,6 +50,7 @@ public:
 	void initialize(std::unique_ptr<CRendererImplBase> impl);
 	CTexture *createTexture(TextureDesc &desc);
 	CMesh *createMesh(MeshBufferInit &init);
+	CModel *createModel();
 	void render();
 
 	//

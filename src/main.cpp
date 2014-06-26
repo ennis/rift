@@ -3,6 +3,7 @@
 #include <transform.hpp>
 #include <log.hpp>
 #include <freecameracontrol.hpp>
+#include <modelloader.hpp>
 
 //============================================================================
 // Test test test
@@ -30,8 +31,9 @@ public:
 private:
 	float mLastTime = 0.f;
 	float mTotalTime = 0.f;
-	CMesh *cubeMesh;
-	CTexture *texture;
+	CMesh *cubeMesh = nullptr;
+	CTexture *texture = nullptr;
+	CModel *buddha = nullptr;
 	Transform meshPosition;
 
 	Transform camPosition;
@@ -46,15 +48,15 @@ private:
 void RiftGame::init()
 {
 	// test cube
-	static glm::vec3 cubeVertices[] = {
-		glm::vec3(-1.0f, -1.0f, 1.0f),
-		glm::vec3(1.0f, -1.0f, 1.0f),
-		glm::vec3(1.0f, 1.0f, 1.0f),
-		glm::vec3(-1.0f, 1.0f, 1.0f),
-		glm::vec3(-1.0f, -1.0f, -1.0f),
-		glm::vec3(1.0f, -1.0f, -1.0f),
-		glm::vec3(1.0f, 1.0f, -1.0f),
-		glm::vec3(-1.0f, 1.0f, -1.0f)
+	static float cubeVertices[] = {
+		-1.0f, -1.0f, 1.0f,
+		1.0f, -1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f,
+		-1.0f, 1.0f, 1.0f,
+		-1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
+		1.0f, 1.0f, -1.0f,
+		-1.0f, 1.0f, -1.0f
 	};
 
 	static uint16_t cubeIndices[] = {
@@ -83,7 +85,10 @@ void RiftGame::init()
 	td.numMipMapLevels = 0;
 	texture = renderer().createTexture(td);
 
-	auto tex2 = textureManager().load("mech_large_head_01");
+	// load model
+	buddha = loadModelFromOBJ(renderer(), "resources/models/buddha.obj");
+
+	auto tex2 = textureManager().load("resources/img/mb_rocklface07_d.jpg");
 	textureManager().printResources();
 }
 
@@ -98,6 +103,7 @@ void RiftGame::render(float dt)
 
 	// ici: rendu des objets
 	cubeMesh->render(meshPosition);
+	buddha->render(meshPosition);
 	rd.render();
 }
 

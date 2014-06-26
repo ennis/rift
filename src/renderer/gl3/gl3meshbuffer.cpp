@@ -37,28 +37,35 @@ static void loadInterleavedMeshData(MeshBufferInit &init, std::vector<VertexLayo
 	outData.resize(init.desc.numVertices);
 	assert(init.positions);
 	for (int i = 0; i < init.desc.numVertices; ++i) {
-		outData[i].position = init.positions[i];
+		outData[i].position.x = init.positions[3*i];
+		outData[i].position.y = init.positions[3*i+1];
+		outData[i].position.z = init.positions[3*i+2];
 	}
 	if (init.normals) {
 		for (int i = 0; i < init.desc.numVertices; ++i) {
-			outData[i].normal = init.positions[i];
+			outData[i].normal.x = init.normals[3 * i];
+			outData[i].normal.y = init.normals[3 * i + 1];
+			outData[i].normal.z = init.normals[3 * i + 2];
 		}
 	}
 	if (init.texcoords) {
 		for (int i = 0; i < init.desc.numVertices; ++i) {
-			outData[i].texcoord = init.texcoords[i];
+			outData[i].texcoord.x = init.texcoords[2*i];
+			outData[i].texcoord.y = init.texcoords[2*i+1];
 		}
 	}
 	if (init.colors) {
 		for (int i = 0; i < init.desc.numVertices; ++i) {
-			outData[i].color = init.colors[i];
+			outData[i].color.r = init.colors[4*i];
+			outData[i].color.g = init.colors[4*i+1];
+			outData[i].color.b = init.colors[4*i+2];
+			outData[i].color.a = init.colors[4*i+3];
 		}
 	}
 }
 
 CGL3MeshBuffer::~CGL3MeshBuffer()
 {
-	deleteResource();
 }
 
 void CGL3MeshBuffer::deleteResource()
@@ -66,6 +73,7 @@ void CGL3MeshBuffer::deleteResource()
 	GLCHECK(glDeleteVertexArrays(1, &mVAO));
 	GLCHECK(glDeleteBuffers(1, &mVBO));
 	GLCHECK(glDeleteBuffers(1, &mIBO));
+	delete this;
 }
 
 void CGL3MeshBuffer::allocate(MeshBufferInit &init)
@@ -92,14 +100,31 @@ void CGL3MeshBuffer::allocate(MeshBufferInit &init)
 
 void CGL3MeshBuffer::setupVAO()
 {
+	// offsets
+	static const unsigned int GL3_LayoutFull_PositionOffset = 0;
+	static const unsigned int GL3_LayoutFull_NormalOffset = 3*4;
+	static const unsigned int GL3_LayoutFull_TexcoordOffset = 6*4;
+	static const unsigned int GL3_LayoutFull_ColorOffset = 8*4;
+	static const unsigned int GL3_LayoutFull_Stride = 12*4;
+
 	// create VAO
 	GLCHECK(glGenVertexArrays(1, &mVAO));
 	GLCHECK(glBindVertexArray(mVAO));
-	// #0: position
-	// TODO other attributes
-	GLCHECK(glEnableVertexAttribArray(0));
 	GLCHECK(glBindBuffer(GL_ARRAY_BUFFER, mVBO));
-	GLCHECK(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexLayoutFull), nullptr));
+
+	// full layout
+	GLCHECK(glEnableVertexAttribArray(GL3_Attrib_Position));
+	GLCHECK(glVertexAttribPointer(GL3_Attrib_Position, 3, GL_FLOAT, GL_FALSE, GL3_LayoutFull_Stride, reinterpret_cast<void*>(GL3_LayoutFull_PositionOffset)));
+	
+	GLCHECK(glEnableVertexAttribArray(GL3_Attrib_Normal));
+	GLCHECK(glVertexAttribPointer(GL3_Attrib_Normal, 3, GL_FLOAT, GL_FALSE, GL3_LayoutFull_Stride, reinterpret_cast<void*>(GL3_LayoutFull_NormalOffset)));
+
+	GLCHECK(glEnableVertexAttribArray(GL3_Attrib_Texcoord));
+	GLCHECK(glVertexAttribPointer(GL3_Attrib_Texcoord, 2, GL_FLOAT, GL_FALSE, GL3_LayoutFull_Stride, reinterpret_cast<void*>(GL3_LayoutFull_TexcoordOffset)));
+
+	GLCHECK(glEnableVertexAttribArray(GL3_Attrib_Color));
+	GLCHECK(glVertexAttribPointer(GL3_Attrib_Color, 4, GL_FLOAT, GL_FALSE, GL3_LayoutFull_Stride, reinterpret_cast<void*>(GL3_LayoutFull_ColorOffset)));
+
 	GLCHECK(glBindVertexArray(0));
 }
 

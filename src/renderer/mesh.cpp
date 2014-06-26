@@ -10,5 +10,5 @@ void CMesh::deleteResource()
 void CMesh::render(Transform &transform)
 {
 	auto &impl = CRenderer::getInstance().getImpl();
-	impl.submit(mMeshBuffer, transform);
+	impl.submit(mMeshBuffer, transform, nullptr);
 }

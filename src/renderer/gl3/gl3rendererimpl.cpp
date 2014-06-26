@@ -5,17 +5,47 @@
 #include <log.hpp>
 #include <gl3shader.hpp>
 
-void CGL3RendererImpl::initialize()
+
+// hopefully std140
+struct RenderDataStd140
+{
+	glm::mat4 viewMatrix;
+	glm::mat4 projMatrix;
+	glm::mat4 viewProjMatrix;
+	glm::vec3 lightDir;
+	glm::ivec2 viewportSize;
+};
+
+static const std::size_t GL3_RenderData_Size = sizeof(RenderDataStd140);
+static const int GL3_RenderData_Binding = 0;	// bind to location 0
+
+struct MaterialParametersStd140
 {
 
+};
+
+static GLuint createUniformBuffer(std::size_t size)
+{
+	GLuint obj;
+	GLCHECK(glGenBuffers(1, &obj));
+	GLCHECK(glBindBuffer(GL_UNIFORM_BUFFER, obj));
+	GLCHECK(glBufferData(GL_UNIFORM_BUFFER, size, nullptr, GL_STREAM_DRAW));
+	GLCHECK(glBindBuffer(GL_UNIFORM_BUFFER, 0));
+	return obj;
+}
+
+void CGL3RendererImpl::initialize()
+{
 	// chargement des shaders
 	mVertexColorUnlitProgram.loadFromFile(
 		"resources/shaders/vertex_color_unlit.vert.glsl", 
 		"resources/shaders/vertex_color_unlit.frag.glsl");
 
+	// create uniform buffer
+	mRenderDataUBO = createUniformBuffer(GL3_RenderData_Size);
+
 	LOG << "Initialized GL3 renderer";
 }
-
 
 void CGL3RendererImpl::render(RenderData &renderData)
 {
@@ -29,9 +59,28 @@ void CGL3RendererImpl::render(RenderData &renderData)
 	GLCHECK(glDisable(GL_CULL_FACE));
 	GLCHECK(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
 	GLCHECK(glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT));
+
+	//
+	RenderDataStd140 uboData;
+	uboData.projMatrix = renderData.mProjMatrix;
+	uboData.viewMatrix = renderData.mViewMatrix;
+	uboData.viewProjMatrix = renderData.mProjMatrix * renderData.mViewMatrix;
+	uboData.viewportSize = renderData.mViewportSize;
+
+	// update uniform buffer
+	GLCHECK(glBindBuffer(GL_UNIFORM_BUFFER, mRenderDataUBO));
+	GLCHECK(glBufferSubData(GL_UNIFORM_BUFFER, 0, GL3_RenderData_Size, &uboData));
+	GLCHECK(glBindBuffer(GL_UNIFORM_BUFFER, 0));
+
 	mVertexColorUnlitProgram.use();
 	mVertexColorUnlitProgram.uniformMatrix4fv("viewProjMatrix", renderData.mProjMatrix * renderData.mViewMatrix);
+	// bind render data
+	// TODO do this once for each shader...
+	GLuint blockIndex = mVertexColorUnlitProgram.getUniformBlockIndex("RenderData");
+	GLCHECK(glUniformBlockBinding(mVertexColorUnlitProgram.program, blockIndex, GL3_RenderData_Binding));
+	GLCHECK(glBindBufferRange(GL_UNIFORM_BUFFER, GL3_RenderData_Binding, mRenderDataUBO, 0, GL3_RenderData_Size));
 
+	// ignore materials for now
 	for (auto &sub : mSubmissions) {
 		mVertexColorUnlitProgram.uniformMatrix4fv("modelMatrix", sub.mModelTransform.toMatrix());
 		sub.mMeshBuffer->draw();
@@ -62,7 +111,7 @@ CMeshBuffer *CGL3RendererImpl::createMeshBuffer(MeshBufferInit &init)
 	return meshBuffer;
 }
 
-void CGL3RendererImpl::submit(CMeshBuffer *meshBuffer, Transform &transform)
+void CGL3RendererImpl::submit(CMeshBuffer *meshBuffer, Transform &transform, CMaterial *material)
 {
-	mSubmissions.emplace_back(static_cast<CGL3MeshBuffer*>(meshBuffer), transform);
+	mSubmissions.emplace_back(static_cast<CGL3MeshBuffer*>(meshBuffer), material, transform);
 }

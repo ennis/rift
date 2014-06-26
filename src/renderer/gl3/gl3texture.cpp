@@ -101,7 +101,6 @@ CGL3Texture::CGL3Texture(TextureDesc &desc) : mObj(-1)
 
 CGL3Texture::~CGL3Texture()
 {
-	deleteResource();
 }
 
 void CGL3Texture::initialize()
@@ -124,6 +123,9 @@ void CGL3Texture::initialize()
 void CGL3Texture::deleteResource()
 {
 	GLCHECK(glDeleteTextures(1, &mObj));
+	LOG << "CGL3Texture::deleteResource";
+	// later, remove ourselves from the pool
+	delete this;
 }
 
 void CGL3Texture::update(glm::ivec3 const &coords, glm::ivec3 const &size, void *pixels)

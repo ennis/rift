@@ -3,6 +3,12 @@
 
 #include <type_traits>
 
+enum class DeletionPolicy
+{
+	Delete,		// delete when last reference released (automatic memory management)
+	KeepAlive	// do not delete
+};
+
 class CResourceBase
 {
 public:
@@ -10,13 +16,21 @@ public:
 	virtual ~CResourceBase()
 	{}
 
-	virtual void addRef();
-	virtual void release();
+	void addRef();
+	void release();
+	
 	int getRefCount() const {
 		return mRefCount;
 	}
 
+	void setDeletionPolicy(DeletionPolicy policy) {
+		mDeletionPolicy = policy;
+	}
+
 protected:
+	virtual void deleteResource();
+
+	DeletionPolicy mDeletionPolicy = DeletionPolicy::Delete;
 	int mRefCount = 0;
 };
 

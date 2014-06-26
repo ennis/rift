@@ -5,6 +5,16 @@
 #include <meshbuffer.hpp>
 #include <opengl.hpp>
 
+// attribute locations
+enum GL3Attribute
+{
+	GL3_Attrib_Position = 0,
+	GL3_Attrib_Normal = 1,
+	GL3_Attrib_Texcoord = 2,
+	GL3_Attrib_Color = 3,
+};
+
+
 struct CGL3MeshBuffer : public CMeshBuffer
 {
 	CGL3MeshBuffer() = default;

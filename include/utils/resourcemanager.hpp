@@ -16,7 +16,6 @@ public:
 	virtual void destroy(std::string const &key, CResourceBase *resource) = 0;
 };
 
-
 struct resource_block
 {
 	resource_block(ResourceManagerBase &manager) : mManager(manager)

@@ -35,10 +35,10 @@ struct MeshBufferInit
 	MeshBufferInit() = default;
 
 	MeshBufferDesc desc;
-	glm::vec3 const *positions = nullptr;
-	glm::vec3 const *normals = nullptr;
-	glm::vec2 const *texcoords = nullptr;
-	glm::vec4 const *colors = nullptr;
+	float const *positions = nullptr;
+	float const *normals = nullptr;
+	float const *texcoords = nullptr;
+	float const *colors = nullptr;
 	uint16_t const *indices = nullptr;
 };
 
@@ -52,6 +52,7 @@ struct VertexLayoutFull
 	glm::vec2 texcoord;
 	glm::vec4 color;
 };
+
 
 //
 // Packed layout

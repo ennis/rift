@@ -23,6 +23,11 @@ CMesh *CRenderer::createMesh(MeshBufferInit &init)
 	return new CMesh(meshBuffer);
 }
 
+CModel *CRenderer::createModel()
+{
+	return new CModel();
+}
+
 CTexture *CRenderer::createTexture(TextureDesc &desc)
 {
 	assert(mImpl);

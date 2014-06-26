@@ -182,3 +182,10 @@ void GLProgram::uniformMatrix4fv(const char *name, glm::mat4 const &value)
 	GLuint location = glGetUniformLocation(program, name);
 	glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
 }
+
+GLuint GLProgram::getUniformBlockIndex(const char *name)
+{
+	assert(program != -1);
+	GLuint location = glGetUniformBlockIndex(program, name);
+	return location;
+}

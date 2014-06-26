@@ -5,11 +5,18 @@ layout(location = 2) in vec4 color;
 
 out vec4 fcolor;
 
+layout(std140) uniform RenderData {
+	mat4 viewMatrix;
+	mat4 projMatrix;
+	mat4 viewProjMatrix;
+	vec3 lightDir;
+	ivec2 viewportSize;
+} rd;
+
 uniform mat4 modelMatrix;
-uniform mat4 viewProjMatrix;
 
 void main() 
 {
-	gl_Position = viewProjMatrix * modelMatrix * vec4(position, 1.f);
+	gl_Position = rd.viewProjMatrix * modelMatrix * vec4(position, 1.f);
 	fcolor = color;
 }
