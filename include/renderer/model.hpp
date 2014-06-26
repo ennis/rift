@@ -1,23 +1,27 @@
 #ifndef MODEL_HPP
 #define MODEL_HPP
 
+#include <renderable.hpp>
 #include <meshbuffer.hpp>
 #include <material.hpp>
-#include <renderer.hpp>
 
-struct CModel : public CRenderResource
+class CModel : public CRenderable
 {
+public:
+
 	struct MeshPart {
-		CMeshBufferRef mMeshBuffer;
-		CMaterialRef mMaterial;
+		CMeshBuffer *mMeshBuffer;
+		CMaterial *mMaterial;
 	};
 
-	void addMeshPart(CMeshBufferRef meshBuffer, CMaterialRef material);
-	void destroy();
+	void addMeshPart(CMeshBuffer *meshBuffer, CMaterial *material);
+	void render(Transform &transform); 
+	void deleteResource();
 
+
+private:
 	std::vector<MeshPart> mMeshParts;
 };
-
 
 
 #endif

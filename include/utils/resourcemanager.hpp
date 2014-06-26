@@ -3,19 +3,22 @@
 
 #include <common.hpp>
 #include <unordered_map>
+#include <resource.hpp>
 #include <log.hpp>
 #include <string>
+
+class ResourceManagerBase;
 
 class ResourceLoader
 {
 public:
-	virtual void *load(std::string key) = 0;
-	virtual void destroy(std::string const &key, void *resource) = 0;
+	virtual CResourceBase *load(std::string key) = 0;
+	virtual void destroy(std::string const &key, CResourceBase *resource) = 0;
 };
 
 struct resource_block
 {
-	resource_block()
+	resource_block(ResourceManagerBase &manager) : mManager(manager)
 	{}
 
 	~resource_block()
@@ -37,18 +40,18 @@ struct resource_block
 	// check reference counts
 	void check_ref_counts()
 	{
-		if (mStrongRefs) {
-			WARNING << "non-zero reference counts for resource " << mKey << " (strong refs=" << mStrongRefs << ')';
+		if (mData && mData->getRefCount()) {
+			WARNING << "resource_block deleted with non-zero reference counts (strong refs=" << mData->getRefCount() << ')';
 		}
 	}
 
 	//
-	// Loader
-	std::unique_ptr<ResourceLoader> mLoader = nullptr;
+	// Manager
+	ResourceManagerBase &mManager;
 
 	//
 	// pointer to resource
-	void *mData = nullptr;
+	CResourceBase *mData = nullptr;
 
 	//
 	// resource key (path)
@@ -67,24 +70,20 @@ struct resource_block
 	int mGeneration = 0;
 
 	//
-	// Number of strong refs
-	int mStrongRefs = 0;
-
-	//
 	// Number of weak references to this resource 
 	// Prevents the resource from being unloaded
 	int mHandleCount = 0;
 };
 
+template <typename T>
+class ResourceManager;
+
 template <typename T> 
 struct Handle
 {
-	friend class ResourceManager;
+	friend class ResourceManager<T>;
 
 	Handle() : mControlBlock(nullptr), mGeneration(0)
-	{}
-
-	Handle(std::nullptr_t null) : mControlBlock(nullptr), mGeneration(0)
 	{}
 
 	Handle(resource_block *controlBlock) :
@@ -107,82 +106,56 @@ struct Handle
 		return b;
 	}
 
-	T* lock()
+	T* get()
 	{
-		mControlBlock->mStrongRefs++;
+		mControlBlock->mData->addRef();
 		return static_cast<T*>(mControlBlock->mData);
 	}
 
-	void unlock()
-	{
-		mControlBlock->mStrongRefs--;
-	}
-
-	template <typename U>
-	operator Handle<U>() {
-		static_assert(std::is_base_of<U, T>::value, "invalid upcast");
-		return Handle<U>(mControlBlock);
-	}
-
-
+private:
 	resource_block *mControlBlock;
 	int mGeneration;
 };
 
-template <typename U, typename T>
-Handle<U> static_handle_cast(Handle<T> handle)
-{
-	// TODO static assert here
-	return Handle<U>(handle.mControlBlock);
-}
-
-class ResourceManager
+class ResourceManagerBase
 {
 public:
-	~ResourceManager()
+	~ResourceManagerBase()
 	{
 		unloadAll();
 	}
 
-	template <typename T>
-	Handle<T> load(std::string key, std::unique_ptr<ResourceLoader> loader)
-	{
-		return Handle<T>(loadImpl(key, std::move(loader)));
-	}
-
-	template <typename T>
-	void unload(Handle<T> handle)
-	{
-		unloadImpl(handle.mControlBlock);
-	}
-
-	template <typename T>
-	Handle<T> add(std::string key, void *data, std::unique_ptr<ResourceLoader> loader = nullptr)
-	{
-		return Handle<T>(addImpl(key, data, std::move(loader)));
-	}
-
+	resource_block *doLoad(std::string key);
+	void doUnload(resource_block *handle);
+	resource_block *doRegister(std::string key, CResourceBase* resource);
+	void setLoader(std::unique_ptr<ResourceLoader> loader);
 	void printResources();
 	void unloadAll();
 
-	static ResourceManager &getInstance() {
-		return sInstance;
-	}
-
 private:
-	resource_block *loadImpl(std::string key, std::unique_ptr<ResourceLoader> loader);
-	void unloadImpl(resource_block *handle);
-	resource_block *addImpl(std::string key, void* resource, std::unique_ptr<ResourceLoader> loader);
 
 	//
-	// list of resource blocks
+	// resource loader
+	std::unique_ptr<ResourceLoader> mLoader;
+
+	//
+	// resource blocks
 	std::unordered_map<std::string, std::unique_ptr<resource_block> > resourceMap;
 
 	typedef std::unordered_map<std::string, std::unique_ptr<resource_block> >::iterator map_iterator;
-
-	// resource manager instance
-	static ResourceManager sInstance;
 };
 
+template <typename T>
+class ResourceManager : public ResourceManagerBase
+{
+public:
+	Handle<T> load(std::string key) {
+		return Handle<T>(doLoad(key));
+	}
+
+	void unload(Handle<T> handle) {
+		doUnload(handle.mControlBlock);
+	}
+};
 
 #endif

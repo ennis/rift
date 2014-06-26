@@ -4,8 +4,11 @@
 #include <renderresource.hpp>
 #include <texture.hpp>
 
-struct CMaterial : public CRenderResource
+class CMaterial : public CRenderResource
 {
+public:
+
+private:
 };
 
 #endif

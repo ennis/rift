@@ -68,12 +68,11 @@ CGL3MeshBuffer::~CGL3MeshBuffer()
 {
 }
 
-void CGL3MeshBuffer::destroy()
+void CGL3MeshBuffer::deleteResource()
 {
 	GLCHECK(glDeleteVertexArrays(1, &mVAO));
 	GLCHECK(glDeleteBuffers(1, &mVBO));
 	GLCHECK(glDeleteBuffers(1, &mIBO));
-	LOG << "CGL3MeshBuffer::destroy";
 	delete this;
 }
 

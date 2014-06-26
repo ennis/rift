@@ -4,16 +4,16 @@
 #include <imageloader.hpp>
 
 
-class TextureLoader : public ResourceLoader
+TextureLoader::TextureLoader(CRenderer &renderer) : mRenderer(renderer)
 {
-public:
-	void *load(std::string key);
-	void destroy(std::string const &key, void *resource);
+}
 
-private:
-};
+TextureLoader::~TextureLoader()
+{
 
-void *TextureLoader::load(std::string key)
+}
+
+CResourceBase *TextureLoader::load(std::string key)
 {
 	glm::ivec2 size;
 	int n;
@@ -25,22 +25,14 @@ void *TextureLoader::load(std::string key)
 	td.size = glm::ivec3(size.x, size.y, 1);
 	td.textureType = TextureType::Texture2D;
 	td.numMipMapLevels = 0;
-	CTextureRef tex = CRenderer::getInstance().createTexture(td);
-	auto texPtr = tex.lock();
-	texPtr->update(glm::ivec3(0, 0, 0), td.size, data.get());
-	tex.unlock();
-	return tex.mControlBlock->mData;
+	CTexture *tex = mRenderer.createTexture(td);
+	tex->update(glm::ivec3(0, 0, 0), td.size, data.get());
+	return tex;
 }
 
-void TextureLoader::destroy(std::string const &key, void *resource)
+void TextureLoader::destroy(std::string const &key, CResourceBase *resource)
 {
 	CTexture *tex = static_cast<CTexture*>(resource);
-	//tex->deleteResource();
+	tex->deleteResource();
 	ERROR << "TODO";
-}
-
-
-CTextureRef loadTextureFromFile(std::string path)
-{
-	return ResourceManager::getInstance().load<CTexture>(path, std::unique_ptr<ResourceLoader>(new TextureLoader()));
 }

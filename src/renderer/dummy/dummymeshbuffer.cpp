@@ -6,7 +6,7 @@ CDummyMeshBuffer::CDummyMeshBuffer(MeshBufferDesc &desc)
 	LOG << "dummy mesh buffer";
 }
 
-void CDummyMeshBuffer::destroy()
+void CDummyMeshBuffer::deleteResource()
 {
 	LOG << "dummy delete";
 	delete this;

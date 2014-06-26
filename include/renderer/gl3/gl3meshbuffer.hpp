@@ -25,7 +25,7 @@ struct CGL3MeshBuffer : public CMeshBuffer
 	void setupVAO();
 	void updateVertex(void const *vertexData, std::size_t offset, std::size_t size);
 	void updateIndex(void const *indexData, std::size_t offset, std::size_t size);
-	void destroy();
+	void deleteResource();
 	void draw();
 
 	bool isValid() const {

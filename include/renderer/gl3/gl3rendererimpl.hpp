@@ -7,15 +7,13 @@
 
 struct CGL3MeshBuffer;
 
-typedef Handle<CGL3MeshBuffer> CGL3MeshBufferRef;
-
 struct Submission
 {
-	Submission(CGL3MeshBufferRef meshBuffer, CMaterialRef material, Transform &transform) : mMeshBuffer(meshBuffer), mMaterial(material), mModelTransform(transform)
+	Submission(CGL3MeshBuffer *meshBuffer, CMaterial *material, Transform &transform) : mMeshBuffer(meshBuffer), mMaterial(material), mModelTransform(transform)
 	{}
 
-	CGL3MeshBufferRef mMeshBuffer;
-	CMaterialRef mMaterial;
+	CGL3MeshBuffer *mMeshBuffer;
+	CMaterial *mMaterial;
 	Transform mModelTransform;
 };
 
@@ -23,9 +21,9 @@ class CGL3RendererImpl : public CRendererImplBase
 {
 public:
 	void initialize();
-	CTextureRef createTexture(TextureDesc &desc, std::string name);
-	CMeshBufferRef createMeshBuffer(MeshBufferInit &init, std::string name);
-	void submit(CMeshBufferRef meshBuffer, Transform &transform, CMaterialRef material);
+	CTexture *createTexture(TextureDesc &desc);
+	CMeshBuffer *createMeshBuffer(MeshBufferInit &init);
+	void submit(CMeshBuffer *meshBuffer, Transform &transform, CMaterial *material);
 	void render(RenderData &renderData);
 
 	void setClearColor(glm::vec4 const &color);

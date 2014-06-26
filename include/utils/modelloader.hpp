@@ -3,7 +3,7 @@
 
 #include <renderer.hpp>
 
-CMeshBufferRef loadMeshFromOBJ(CRenderer &renderer, const char *path);
-CModelRef loadModelFromOBJ(CRenderer &renderer, const char *path);
+CMeshBuffer *loadMeshFromOBJ(CRenderer &renderer, const char *path);
+CModel *loadModelFromOBJ(CRenderer &renderer, const char *path);
 
 #endif

@@ -3,7 +3,6 @@
 
 #include <renderer.hpp>
 #include <opengl.hpp>
-#include <texture.hpp>
 
 struct CGL3Texture : public CTexture
 {
@@ -14,7 +13,7 @@ struct CGL3Texture : public CTexture
 	void setActive(int textureUnit);
 
 	void update(glm::ivec3 const &coords, glm::ivec3 const &size, void *data);
-	void destroy();
+	void deleteResource();
 
 	GLuint mObj;
 };
