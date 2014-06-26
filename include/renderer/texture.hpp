@@ -3,6 +3,7 @@
 
 #include <common.hpp>
 #include <renderresource.hpp>
+#include <resourcemanager.hpp>
 
 enum class TextureType
 {
@@ -42,5 +43,7 @@ struct CTexture : public CRenderResource
 
 	virtual void update(glm::ivec3 const &coords, glm::ivec3 const &size, void *data) = 0;
 };
+
+typedef Handle<CTexture> CTextureRef;
 
 #endif

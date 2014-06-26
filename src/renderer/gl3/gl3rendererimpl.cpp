@@ -83,7 +83,9 @@ void CGL3RendererImpl::render(RenderData &renderData)
 	// ignore materials for now
 	for (auto &sub : mSubmissions) {
 		mVertexColorUnlitProgram.uniformMatrix4fv("modelMatrix", sub.mModelTransform.toMatrix());
-		sub.mMeshBuffer->draw();
+		auto meshBufferPtr = sub.mMeshBuffer.lock();
+		meshBufferPtr->draw();
+		sub.mMeshBuffer.unlock();
 	}
 
 	mSubmissions.clear();
@@ -99,19 +101,19 @@ void CGL3RendererImpl::setClearDepth(float depth)
 	mClearDepth = depth;
 }
 
-CTexture *CGL3RendererImpl::createTexture(TextureDesc &desc)
+CTextureRef CGL3RendererImpl::createTexture(TextureDesc &desc, std::string name)
 {
-	return new CGL3Texture(desc);
+	return addRenderResource(new CGL3Texture(desc), name);
 }
 
-CMeshBuffer *CGL3RendererImpl::createMeshBuffer(MeshBufferInit &init)
+CMeshBufferRef CGL3RendererImpl::createMeshBuffer(MeshBufferInit &init, std::string name)
 {
 	auto meshBuffer = new CGL3MeshBuffer();
 	meshBuffer->allocate(init);
-	return meshBuffer;
+	return addRenderResource(meshBuffer, name);
 }
 
-void CGL3RendererImpl::submit(CMeshBuffer *meshBuffer, Transform &transform, CMaterial *material)
+void CGL3RendererImpl::submit(CMeshBufferRef meshBuffer, Transform &transform, CMaterialRef material)
 {
-	mSubmissions.emplace_back(static_cast<CGL3MeshBuffer*>(meshBuffer), material, transform);
+	mSubmissions.emplace_back(static_handle_cast<CGL3MeshBuffer>(meshBuffer), material, transform);
 }

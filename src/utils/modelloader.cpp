@@ -1,5 +1,7 @@
 #include <modelloader.hpp>
 #include <log.hpp>
+#include <mesh.hpp>
+#include <model.hpp>
 
 class OBJModel
 {
@@ -157,7 +159,7 @@ void OBJModel::convertToGLMesh(
 	LOG << "OBJ: " << positions.size() << " unique vertices";
 }
 
-CMeshBuffer *loadMeshFromOBJ(CRenderer &renderer, const char *path)
+CMeshBufferRef loadMeshFromOBJ(CRenderer &renderer, const char *path)
 {
 	OBJModel mesh;
 	mesh.load(path);
@@ -178,10 +180,12 @@ CMeshBuffer *loadMeshFromOBJ(CRenderer &renderer, const char *path)
 	return renderer.getImpl().createMeshBuffer(mbi);
 }
 
-CModel *loadModelFromOBJ(CRenderer &renderer, const char *path)
+CModelRef loadModelFromOBJ(CRenderer &renderer, const char *path)
 {
-	CModel *model = renderer.createModel();
-	CMeshBuffer *buf = loadMeshFromOBJ(renderer, path);
-	model->addMeshPart(buf, nullptr);
+	CModelRef model = renderer.createModel();
+	CMeshBufferRef buf = loadMeshFromOBJ(renderer, path);
+	auto modelPtr = model.lock();
+	modelPtr->addMeshPart(buf, nullptr);
+	model.unlock();
 	return model;
 }
