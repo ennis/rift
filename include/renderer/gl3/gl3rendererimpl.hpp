@@ -7,6 +7,8 @@
 
 struct CGL3MeshBuffer;
 
+typedef Handle<CGL3MeshBuffer> CGL3MeshBufferRef;
+
 struct Submission
 {
 	Submission(CGL3MeshBuffer *meshBuffer, CMaterial *material, Transform &transform) : mMeshBuffer(meshBuffer), mMaterial(material), mModelTransform(transform)

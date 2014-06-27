@@ -11,7 +11,6 @@ GLFWwindow *Game::sWindow = nullptr;
 glm::ivec2 Game::sWindowSize;
 std::unique_ptr<Game> Game::sGameInstance = nullptr;
 std::unique_ptr<CRenderer> Game::sRenderer = nullptr;
-ResourceManager<CTexture> Game::sTextureManager;
 
 Game::Game(glm::ivec2 const &windowSize)
 {
@@ -64,9 +63,6 @@ int Game::initContext()
 	sRenderer = std::unique_ptr<CRenderer>(new CRenderer);
 	sRenderer->initialize(std::unique_ptr<CGL3RendererImpl>(new CGL3RendererImpl()));
 
-	// texture manager
-	sTextureManager.setLoader(std::unique_ptr<ResourceLoader>(new TextureLoader(*sRenderer)));
-
 	return 0;
 }
 
@@ -102,7 +98,7 @@ int Game::run()
 
 		// end of loop
 		// destroy all resources
-		textureManager().unloadAll();
+		ResourceManager::getInstance().unloadAll();
 
 		glfwDestroyWindow(sWindow);
 		glfwTerminate();

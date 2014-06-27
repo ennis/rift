@@ -1,7 +1,7 @@
 #include <resourcemanager.hpp>
 #include <log.hpp>
 
-resource_block *ResourceManagerBase::doLoad(std::string key)
+resource_block *ResourceManager::loadImpl(std::string key, std::unique_ptr<ResourceLoader> loader)
 {
 	// try to insert a resource block
 	auto ins = resourceMap.insert(std::pair<std::string, std::unique_ptr<resource_block> >(key, nullptr));
@@ -12,54 +12,85 @@ resource_block *ResourceManagerBase::doLoad(std::string key)
 	if (ins.second || ins.first->second->mIsLoaded == false) 
 	{
 		if (ins.second) {
-			block = std::unique_ptr<resource_block>(new resource_block(*this));
+			block = std::unique_ptr<resource_block>(new resource_block());
 		}
 
-		CResourceBase *ptr = mLoader->load(key);
+		block->mLoader = std::move(loader);
 		block->mKey = key;
-		block->mData = ptr;
+		block->mData = block->mLoader->load(key);
 		block->mIsLoaded = true;
+		block->mIsDynamic = false;
 	}
 
 	return block.get();
 }
 
-void ResourceManagerBase::doUnload(resource_block *block)
+
+resource_block *ResourceManager::addImpl(std::string key, void *data, std::unique_ptr<ResourceLoader> loader)
+{
+	// try to insert a resource block
+	if (key.size() == 0) {
+		key = unique_key();
+	}
+
+	auto ins = resourceMap.insert(std::pair<std::string, std::unique_ptr<resource_block> >(key, nullptr));
+
+	auto &block = ins.first->second;
+
+	// not yet loaded
+	if (ins.second || ins.first->second->mIsLoaded == false)
+	{
+		if (ins.second) {
+			block = std::unique_ptr<resource_block>(new resource_block());
+		}
+
+		block->mLoader = std::move(loader);
+		block->mKey = key;
+		// do not load
+		block->mData = data;
+		block->mIsLoaded = true;
+		block->mIsDynamic = true;
+	}
+
+	return block.get();
+}
+
+
+void ResourceManager::unloadImpl(resource_block *block)
 {
 	if (block->mIsLoaded) {
 		auto &key = block->mKey;
 		block->check_ref_counts();
-		mLoader->destroy(key, block->mData);
 		block->mIsLoaded = false;
+		if (block->mLoader)
+			block->mLoader->destroy(block->mKey, block->mData);
+		// lost forever
 		block->mData = nullptr;
 		//resourceMap.erase(key);
 		LOG << "unloaded " << key;
 	}
 }
 
-void ResourceManagerBase::unloadAll()
+void ResourceManager::unloadAll()
 {
 	for (auto &e : resourceMap) {
-		doUnload(e.second.get());
+		unloadImpl(e.second.get());
 	}
 }
 
-void ResourceManagerBase::setLoader(std::unique_ptr<ResourceLoader> loader)
-{
-	mLoader = std::move(loader);
-}
-
-void ResourceManagerBase::printResources()
+void ResourceManager::printResources()
 {
 	LOG << "Resource map:";
 	LOG << "-------------";
 
 	for (auto &e : resourceMap) {
 		if (e.second->mIsLoaded) {
-			LOG << e.first << " -> " << e.second->mData << " (strong refs=" << e.second->mData->getRefCount() << ")";
+			LOG << e.first << " -> " << e.second->mData << " (strong refs=" << e.second->mStrongRefs << ")";
 		}
 		else {
 			LOG << e.first << " (unloaded)";
 		}
 	}
 }
+
+ResourceManager ResourceManager::sInstance;

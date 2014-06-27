@@ -2,7 +2,7 @@
 #include <log.hpp>
 #include <renderer.hpp>
 
-void CModel::addMeshPart(CMeshBuffer *meshBuffer, CMaterial *material)
+void CModel::addMeshPart(CMeshBufferRef meshBuffer, CMaterialRef material)
 {
 	MeshPart part;
 	part.mMeshBuffer = meshBuffer;
@@ -10,16 +10,7 @@ void CModel::addMeshPart(CMeshBuffer *meshBuffer, CMaterial *material)
 	mMeshParts.push_back(part);
 }
 
-void CModel::render(Transform &transform) 
-{
-	auto &renderer = CRenderer::getInstance();
-	for (auto &part : mMeshParts) {
-		auto &impl = renderer.getImpl();
-		impl.submit(part.mMeshBuffer, transform, part.mMaterial);
-	}
-}
-
-void CModel::deleteResource()
+void CModel::destroy()
 {
 	delete this;
 }

@@ -1,5 +1,7 @@
 #include <modelloader.hpp>
 #include <log.hpp>
+#include <mesh.hpp>
+#include <model.hpp>
 
 class OBJModel
 {
@@ -157,31 +159,59 @@ void OBJModel::convertToGLMesh(
 	LOG << "OBJ: " << positions.size() << " unique vertices";
 }
 
-CMeshBuffer *loadMeshFromOBJ(CRenderer &renderer, const char *path)
+
+class ModelLoader : public ResourceLoader
 {
-	OBJModel mesh;
-	mesh.load(path);
-	std::vector<float> positions;
-	std::vector<float> normals;
-	std::vector<float> texcoords;
-	mesh.convertToGLMesh(positions, normals, texcoords);
+public:
+	ModelLoader(CRenderer &renderer_) : renderer(renderer_)
+	{}
 
-	MeshBufferInit mbi;
-	mbi.desc.numVertices = positions.size()/3;
-	mbi.desc.numIndices = 0;
-	mbi.desc.layoutType = Layout_Full;
-	mbi.desc.primitiveType = PrimitiveType::Triangles;
-	mbi.positions = positions.data();
-	mbi.normals = normals.data();
-	mbi.texcoords = texcoords.data();
+	void *load(std::string key) {
+		return loadModelFromOBJ(key.c_str());
+	}
 
-	return renderer.getImpl().createMeshBuffer(mbi);
-}
+	void destroy(std::string const &key, void *resource) {
+		// TODO also destroy the MeshPart since we loaded it
+		static_cast<CModel*>(resource)->destroy();
+	}
 
-CModel *loadModelFromOBJ(CRenderer &renderer, const char *path)
+private:
+
+	CMeshBuffer *loadMeshFromOBJ(const char *path)
+	{
+		OBJModel mesh;
+		mesh.load(path);
+		std::vector<float> positions;
+		std::vector<float> normals;
+		std::vector<float> texcoords;
+		mesh.convertToGLMesh(positions, normals, texcoords);
+
+		MeshBufferInit mbi;
+		mbi.desc.numVertices = positions.size() / 3;
+		mbi.desc.numIndices = 0;
+		mbi.desc.layoutType = Layout_Full;
+		mbi.desc.primitiveType = PrimitiveType::Triangles;
+		mbi.positions = positions.data();
+		mbi.normals = normals.data();
+		mbi.texcoords = texcoords.data();
+
+		return renderer.getImpl().createMeshBuffer(mbi);
+	}
+
+	CModel *loadModelFromOBJ(const char *path)
+	{
+		CModel *model = renderer.createModel();
+		CMeshBuffer *buf = loadMeshFromOBJ(path);
+		// wrap it in a handle
+		auto bufHandle = make_handle<CMeshBuffer>(buf, nullptr);
+		model->addMeshPart(bufHandle, nullptr);
+		return model;
+	}
+
+	CRenderer &renderer;
+};
+
+CModelRef loadModel(CRenderer &renderer, const char *path)
 {
-	CModel *model = renderer.createModel();
-	CMeshBuffer *buf = loadMeshFromOBJ(renderer, path);
-	model->addMeshPart(buf, nullptr);
-	return model;
+	return ResourceManager::getInstance().load<CModel>(std::string(path), std::unique_ptr<ResourceLoader>(new ModelLoader(renderer)));
 }

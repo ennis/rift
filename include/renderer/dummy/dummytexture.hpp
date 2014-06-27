@@ -9,7 +9,7 @@ struct CDummyTexture : public CTexture
 	~CDummyTexture();
 
 	void update(glm::ivec3 const &coords, glm::ivec3 const &size, void *data);
-	void deleteResource();
+	void destroy();
 };
 
 #endif

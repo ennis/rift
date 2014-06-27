@@ -120,10 +120,10 @@ void CGL3Texture::initialize()
 	GLCHECK(glBindTexture(GL_TEXTURE_2D, 0));
 }
 
-void CGL3Texture::deleteResource()
+void CGL3Texture::destroy()
 {
 	GLCHECK(glDeleteTextures(1, &mObj));
-	LOG << "CGL3Texture::deleteResource";
+	LOG << "CGL3Texture::destroy";
 	// later, remove ourselves from the pool
 	delete this;
 }

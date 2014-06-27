@@ -4,6 +4,8 @@
 #include <log.hpp>
 #include <freecameracontrol.hpp>
 #include <modelloader.hpp>
+#include <textureloader.hpp>
+#include <mesh.hpp>
 
 //============================================================================
 // Test test test
@@ -33,7 +35,7 @@ private:
 	float mTotalTime = 0.f;
 	CMesh *cubeMesh = nullptr;
 	CTexture *texture = nullptr;
-	CModel *buddha = nullptr;
+	CModelRef buddha = nullptr;
 	Transform meshPosition;
 
 	Transform camPosition;
@@ -86,10 +88,11 @@ void RiftGame::init()
 	texture = renderer().createTexture(td);
 
 	// load model
-	buddha = loadModelFromOBJ(renderer(), "resources/models/buddha.obj");
+	buddha = loadModel(renderer(), "resources/models/buddha.obj");
 
-	auto tex2 = textureManager().load("resources/img/mb_rocklface07_d.jpg");
-	textureManager().printResources();
+	auto tex2 = loadTextureFromFile("resources/img/mb_rocklface07_d.jpg");
+
+	ResourceManager::getInstance().printResources();
 }
 
 
@@ -102,8 +105,8 @@ void RiftGame::render(float dt)
 	rd.setCamera(cam);
 
 	// ici: rendu des objets
-	cubeMesh->render(meshPosition);
-	buddha->render(meshPosition);
+	rd.render(cubeMesh, meshPosition);
+	rd.render(buddha.get(), meshPosition);
 	rd.render();
 }
 
