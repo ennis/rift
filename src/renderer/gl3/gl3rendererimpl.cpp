@@ -4,6 +4,7 @@
 #include <gl3error.hpp>
 #include <log.hpp>
 #include <gl3shader.hpp>
+#include <gl3material.hpp>
 #include <textureloader.hpp>
 
 
@@ -20,6 +21,26 @@ struct RenderDataStd140
 
 static const std::size_t GL3_RenderData_Size = sizeof(RenderDataStd140);
 static const int GL3_RenderData_Binding = 0;	// bind to location 0
+
+class CGL3ResourceLoader : public ResourceLoader
+{
+	void *load(std::string key) override {
+		throw std::logic_error("load");
+	}
+
+	void destroy(std::string const &key, void *resource) override {
+		static_cast<CRenderResource*>(resource)->destroy();
+	}
+};
+
+enum GL3TextureUnits
+{
+	GL3_Texture_Envmap = 0,
+	GL3_Texture_DiffuseMap,
+	GL3_Texture_NormalMap,
+	GL3_Texture_SpecularMap,
+	GL3_Texture_RoughnessMap
+};
 
 struct MaterialParametersStd140
 {
@@ -91,16 +112,23 @@ void CGL3RendererImpl::initialize()
 	// default textures
 	static const uint8_t data[] = { 128, 128, 128, 255 };
 	static const void *faceData[] = { data, data, data, data, data, data };
+
 	Texture2DDesc defaultTexture2DDesc;
 	defaultTexture2DDesc.format = PixelFormat::R8G8B8A8;
 	defaultTexture2DDesc.size = glm::ivec2(1, 1);
-	defaultTexture2DDesc.numMipMapLevels = 0; 
-	mDefaultTexture = createTexture2D(defaultTexture2DDesc, data);
+	defaultTexture2DDesc.numMipMapLevels = 1; 
+
+	mEmptyTexture = make_handle<CTexture2D>(
+		createTexture2D(defaultTexture2DDesc, data), 
+		std::unique_ptr<ResourceLoader>(new CGL3ResourceLoader()), 
+		"<default texture>");
+
+	mDefaultTexture = loadTexture2DFromFile("resources/img/default.tga");
 
 	TextureCubeMapDesc defaultTextureCubeMapDesc;
 	defaultTextureCubeMapDesc.format = PixelFormat::R8G8B8A8;
 	defaultTextureCubeMapDesc.size = glm::ivec2(1, 1);
-	defaultTextureCubeMapDesc.numMipMapLevels = 0;
+	defaultTextureCubeMapDesc.numMipMapLevels = 1;
 	mDefaultCubeMap = createTextureCubeMap(defaultTextureCubeMapDesc, faceData);
 
 	// envmap
@@ -111,6 +139,18 @@ void CGL3RendererImpl::initialize()
 		"resources/img/env/uffizi/4.jpg",
 		"resources/img/env/uffizi/5.jpg",
 		"resources/img/env/uffizi/6.jpg");
+
+	// default material
+	MaterialDesc defaultMaterialDesc;
+	defaultMaterialDesc.diffuseMap = mDefaultTexture;
+	defaultMaterialDesc.normalMap = mEmptyTexture;
+	defaultMaterialDesc.specularMap = mEmptyTexture;
+	defaultMaterialDesc.roughnessMap = mEmptyTexture;
+
+	mDefaultMaterial = make_handle<CMaterial>(
+		createMaterial(defaultMaterialDesc),
+		std::unique_ptr<ResourceLoader>(new CGL3ResourceLoader()),
+		"<default material>");
 	
 	LOG << "Initialized GL3 renderer";
 }
@@ -142,29 +182,12 @@ void CGL3RendererImpl::render(RenderData &renderData)
 	GLCHECK(glBufferSubData(GL_UNIFORM_BUFFER, 0, GL3_RenderData_Size, &uboData));
 	GLCHECK(glBindBuffer(GL_UNIFORM_BUFFER, 0));
 
-	mDefaultProgram.use();
-	// bind render data
-	// TODO do this once for each shader...
-	bindRenderData(mDefaultProgram);
-	mDefaultProgram.uniform1i("gEnvmap", 0);
-	mDefaultProgram.uniform1i("gDiffuse", 1);
-	mDefaultProgram.uniform1i("gSpecular", 2);
-
-	// bind textures
-	auto envmap = static_cast<CGL3TextureCubeMap*>(mDefaultEnvmap.get());
-	envmap->setActive(0);
-	auto tex = static_cast<CGL3Texture2D*>(mDefaultTexture);
-	tex->setActive(1);
-	tex->setActive(2);
-
 	// ignore materials for now
 	for (auto &sub : mSubmissions) {
+		prepareMaterial(static_cast<CGL3Material*>(sub.mMaterial));
 		mDefaultProgram.uniformMatrix4fv("modelMatrix", sub.mModelTransform.toMatrix());
 		sub.mMeshBuffer->draw();
 	}
-
-	// default texture
-
 
 	mSubmissions.clear();
 }
@@ -203,8 +226,17 @@ CMeshBuffer *CGL3RendererImpl::createMeshBuffer(MeshBufferInit &init)
 	return meshBuffer;
 }
 
+CMaterial *CGL3RendererImpl::createMaterial(MaterialDesc &desc)
+{
+	return new CGL3Material(desc);
+}
+
 void CGL3RendererImpl::submit(CMeshBuffer *meshBuffer, Transform &transform, CMaterial *material)
 {
+	if (material == nullptr) {
+		// TODO shouldn't be done here: material should not be NULL
+		material = mDefaultMaterial.get();
+	}
 	mSubmissions.emplace_back(static_cast<CGL3MeshBuffer*>(meshBuffer), material, transform);
 }
 
@@ -219,4 +251,31 @@ void CGL3RendererImpl::debugBlit(CGL3Texture2D *texture, glm::ivec2 screenPos, f
 	GLCHECK(glBindSampler(0, mBlitSampler));
 
 	mScreenQuad->draw();
+}
+
+void CGL3RendererImpl::prepareMaterial(CGL3Material *material)
+{
+	mDefaultProgram.use();
+	bindRenderData(mDefaultProgram);
+	// TODO do this once
+	mDefaultProgram.uniform1i("gEnvmap", GL3_Texture_Envmap);
+	mDefaultProgram.uniform1i("gDiffuse", GL3_Texture_DiffuseMap);
+	mDefaultProgram.uniform1i("gNormal", GL3_Texture_NormalMap);
+	mDefaultProgram.uniform1i("gSpecular", GL3_Texture_SpecularMap);
+	mDefaultProgram.uniform1i("gRoughness", GL3_Texture_RoughnessMap);
+
+	// bind textures
+	auto envmap = static_cast<CGL3TextureCubeMap*>(mDefaultEnvmap.get());
+	envmap->setActive(0);
+
+	CGL3Texture2D *diffuseMap = static_cast<CGL3Texture2D*>(material->mDesc.diffuseMap.empty() ? mDefaultTexture.get() : material->mDesc.diffuseMap.get());
+	CGL3Texture2D *normalMap = static_cast<CGL3Texture2D*>(material->mDesc.normalMap.empty() ? mEmptyTexture.get() : material->mDesc.normalMap.get());
+	CGL3Texture2D *specularMap = static_cast<CGL3Texture2D*>(material->mDesc.specularMap.empty() ? mEmptyTexture.get() : material->mDesc.specularMap.get());
+	CGL3Texture2D *roughnessMap = static_cast<CGL3Texture2D*>(material->mDesc.roughnessMap.empty() ? mEmptyTexture.get() : material->mDesc.roughnessMap.get());
+
+	diffuseMap->setActive(GL3_Texture_DiffuseMap);
+	normalMap->setActive(GL3_Texture_NormalMap);
+	specularMap->setActive(GL3_Texture_SpecularMap);
+	roughnessMap->setActive(GL3_Texture_RoughnessMap);
+
 }

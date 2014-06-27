@@ -15,6 +15,7 @@ struct CModel : public CRenderResource
 	};
 
 	void addMeshPart(CMeshBufferRef meshBuffer, CMaterialRef material);
+	void setMaterial(int meshPart, CMaterialRef material);
 	void destroy();
 
 	std::vector<MeshPart> mMeshParts;

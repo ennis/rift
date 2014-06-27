@@ -29,6 +29,7 @@ typedef Handle<CMaterial> CMaterialRef;
 struct Texture2DDesc;
 struct TextureCubeMapDesc;
 struct MeshBufferInit;
+struct MaterialDesc;
 
 struct RenderData
 {
@@ -47,6 +48,7 @@ public:
 	
 	virtual CTexture2D *createTexture2D(Texture2DDesc &desc, const void *initialData) = 0;
 	virtual CTextureCubeMap *createTextureCubeMap(TextureCubeMapDesc &desc, const void *initialData[6]) = 0;
+	virtual CMaterial *createMaterial(MaterialDesc &desc) = 0;
 
 	virtual CMeshBuffer *createMeshBuffer(MeshBufferInit &init) = 0;
 
@@ -88,6 +90,7 @@ public:
 
 	CTexture2D *createTexture2D(Texture2DDesc &desc, void const *initialData);
 	CTextureCubeMap *createTextureCubeMap(TextureCubeMapDesc &desc, void const *initialData[6]);
+	CMaterial *createMaterial(MaterialDesc &desc);
 
 	CMesh *createMesh(MeshBufferInit &init);
 	CModel *createModel();

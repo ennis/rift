@@ -126,6 +126,14 @@ struct Handle
 		return Handle<U>(mControlBlock);
 	}
 
+	bool empty() {
+		return mControlBlock == nullptr;
+	}
+
+	bool operator==(std::nullptr_t) {
+		return mControlBlock == nullptr;
+	}
+
 	resource_block *mControlBlock;
 	int mGeneration;
 };

@@ -109,14 +109,13 @@ void CGL3Texture2D::initialize()
 	// TODO 1D, 2D, 3D textures, cubemaps, texture arrays, etc.
 	GLCHECK(glBindTexture(GL_TEXTURE_2D, mObj));
 	// allocate storage
-	GLCHECK(glTexStorage2D(GL_TEXTURE_2D, 1, pixelFormatToGLenumInternalFormat(mDesc.format), mDesc.size.x, mDesc.size.y));
+	GLCHECK(glTexStorage2D(GL_TEXTURE_2D, mDesc.numMipMapLevels, pixelFormatToGLenumInternalFormat(mDesc.format), mDesc.size.x, mDesc.size.y));
 	// default sampling parameters
 	GLCHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST));
 	GLCHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 	// mipmaps?
-	if (mDesc.numMipMapLevels > 0) {
-		GLCHECK(glGenerateMipmap(GL_TEXTURE_2D));
-	}
+	//GLCHECK(glGenerateMipmap(GL_TEXTURE_2D));
+
 	GLCHECK(glBindTexture(GL_TEXTURE_2D, 0));
 }
 
@@ -174,12 +173,12 @@ void CGL3TextureCubeMap::initialize()
 	GLCHECK(glBindTexture(GL_TEXTURE_CUBE_MAP, mObj));
 
 	// ...
-	GLCHECK(glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, pixelFormatToGLenumInternalFormat(mDesc.format), mDesc.size.x, mDesc.size.y));
-	
+	GLCHECK(glTexStorage2D(GL_TEXTURE_CUBE_MAP, mDesc.numMipMapLevels, pixelFormatToGLenumInternalFormat(mDesc.format), mDesc.size.x, mDesc.size.y));
 	
 	// default sampling parameters (needed?)
 	GLCHECK(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST));
 	GLCHECK(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+	//GLCHECK(glGenerateMipmap(GL_TEXTURE_CUBE_MAP));
 
 	GLCHECK(glBindTexture(GL_TEXTURE_CUBE_MAP, 0));
 }

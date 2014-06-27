@@ -29,4 +29,5 @@ void main()
 	gl_Position = gRenderData.viewProjMatrix * modelPos;
 	fposition = modelPos.xyz;
 	fnormal = normal;
+	ftexcoord = texcoord;
 }

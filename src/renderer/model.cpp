@@ -10,6 +10,12 @@ void CModel::addMeshPart(CMeshBufferRef meshBuffer, CMaterialRef material)
 	mMeshParts.push_back(part);
 }
 
+void CModel::setMaterial(int meshPart, CMaterialRef material)
+{
+	assert(meshPart < mMeshParts.size());
+	mMeshParts[meshPart].mMaterial = material;
+}
+
 void CModel::destroy()
 {
 	delete this;

@@ -50,6 +50,12 @@ CTextureCubeMap *CRenderer::createTextureCubeMap(TextureCubeMapDesc &desc, const
 	return mImpl->createTextureCubeMap(desc, initialData);
 }
 
+CMaterial *CRenderer::createMaterial(MaterialDesc &desc)
+{
+	assert(mImpl);
+	return mImpl->createMaterial(desc);
+}
+
 void CRenderer::render(CMesh *mesh, Transform &transform)
 {
 	mImpl->submit(mesh->mMeshBuffer, transform, nullptr);

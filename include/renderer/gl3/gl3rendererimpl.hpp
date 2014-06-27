@@ -8,6 +8,7 @@
 struct CGL3MeshBuffer;
 struct CGL3Texture2D;
 struct CGL3TextureCubeMap;
+struct CGL3Material;
 
 typedef Handle<CGL3MeshBuffer> CGL3MeshBufferRef;
 
@@ -28,8 +29,9 @@ public:
 
 	CTexture2D *createTexture2D(Texture2DDesc &desc, const void *initialData) override;
 	CTextureCubeMap *createTextureCubeMap(TextureCubeMapDesc &desc, const void *initialData[6]) override;
-
+	CMaterial *createMaterial(MaterialDesc &desc) override;
 	CMeshBuffer *createMeshBuffer(MeshBufferInit &init) override;
+
 	void submit(CMeshBuffer *meshBuffer, Transform &transform, CMaterial *material) override;
 	void render(RenderData &renderData);
 
@@ -37,6 +39,7 @@ public:
 	void setClearDepth(float color);
 	void debugBlit(CGL3Texture2D *texture, glm::ivec2 screenPos, float scale);
 	void bindRenderData(GLProgram &prog);
+	void prepareMaterial(CGL3Material *material);
 
 private:
 	std::vector<Submission> mSubmissions;
@@ -46,9 +49,12 @@ private:
 	GLuint mRenderDataUBO;
 	CGL3MeshBuffer *mScreenQuad;
 	GLProgram mBlitProgram;
-	CTexture2D *mDefaultTexture;
+	CTexture2DRef mDefaultTexture;
+	CTexture2DRef mEmptyTexture;
 	CTextureCubeMap *mDefaultCubeMap;
 	CTextureCubeMapRef mDefaultEnvmap;
+
+	CMaterialRef mDefaultMaterial;
 
 	// default sampler object (nearest, no mip maps)
 	GLuint mBlitSampler;

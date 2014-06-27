@@ -82,13 +82,6 @@ void RiftGame::init()
 	cubeMbi.indices = cubeIndices;
 	cubeMesh = renderer().createMesh(cubeMbi);
 
-	// Test texture
-	Texture2DDesc td;
-	td.format = PixelFormat::R8G8B8A8;
-	td.size = glm::ivec2(800, 600);
-	td.numMipMapLevels = 0;
-	texture = renderer().createTexture2D(td, nullptr);
-
 	// load model
 	buddha = loadModel(renderer(), "resources/models/rock2.obj");
 

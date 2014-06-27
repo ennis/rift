@@ -23,7 +23,7 @@ void *Texture2DLoader::load(std::string key)
 	Texture2DDesc td;
 	td.format = PixelFormat::R8G8B8A8;
 	td.size = size;
-	td.numMipMapLevels = 0;
+	td.numMipMapLevels = 1;
 	CTexture2D *tex = CRenderer::getInstance().createTexture2D(td, data.get());
 	return tex;
 }
@@ -80,7 +80,7 @@ CTextureCubeMapRef loadTextureCubeMapFromFile(
 
 	TextureCubeMapDesc desc;
 	desc.format = PixelFormat::R8G8B8A8;
-	desc.numMipMapLevels = 0;
+	desc.numMipMapLevels = 1;		// TODO specify this somewhere
 	desc.size = sizePX;
 
 	const void *initialData[6] = { dataPX.get(), dataNX.get(), dataPY.get(), dataNY.get(), dataPZ.get(), dataNZ.get() };
