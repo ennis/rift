@@ -1,10 +1,10 @@
 #version 330
 
 //--- IN -----------------------------
-in vec4 fcolor;
+layout(location = 0) in vec3 position;
 
 //--- OUT ----------------------------
-out vec4 out_color;
+out vec2 ftexcoord;
 
 //--- UNIFORMS -----------------------
 layout(std140) uniform RenderData {
@@ -15,8 +15,12 @@ layout(std140) uniform RenderData {
 	vec2 viewportSize;
 } rd;
 
+uniform vec2 screenPosition;
+uniform vec2 textureSize;
+
 //--- CODE ---------------------------
-void main()
-{
-	out_color = fcolor;
+void main() {
+	vec2 pos = (screenPosition + position.xy * textureSize / rd.viewportSize) * 2 - 1;
+    gl_Position = vec4(pos.x, pos.y, 0, 1);
+    ftexcoord = position.xy;
 }

@@ -93,4 +93,10 @@ void ResourceManager::printResources()
 	}
 }
 
+std::string unique_key()
+{
+	static int counter = 0;
+	return "<" + std::to_string(counter++) + ">";
+}
+
 ResourceManager ResourceManager::sInstance;

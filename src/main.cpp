@@ -6,6 +6,8 @@
 #include <modelloader.hpp>
 #include <textureloader.hpp>
 #include <mesh.hpp>
+#include <gl3rendererimpl.hpp>
+#include <gl3texture.hpp>
 
 //============================================================================
 // Test test test
@@ -34,8 +36,9 @@ private:
 	float mLastTime = 0.f;
 	float mTotalTime = 0.f;
 	CMesh *cubeMesh = nullptr;
-	CTexture *texture = nullptr;
+	CTexture2D *texture = nullptr;
 	CModelRef buddha = nullptr;
+	CTextureCubeMapRef envmap = nullptr;
 	Transform meshPosition;
 
 	Transform camPosition;
@@ -80,19 +83,19 @@ void RiftGame::init()
 	cubeMesh = renderer().createMesh(cubeMbi);
 
 	// Test texture
-	TextureDesc td;
+	Texture2DDesc td;
 	td.format = PixelFormat::R8G8B8A8;
-	td.size = glm::ivec3(800, 600, 1);
-	td.textureType = TextureType::Texture2D;
+	td.size = glm::ivec2(800, 600);
 	td.numMipMapLevels = 0;
-	texture = renderer().createTexture(td);
+	texture = renderer().createTexture2D(td, nullptr);
 
 	// load model
-	buddha = loadModel(renderer(), "resources/models/buddha.obj");
+	buddha = loadModel(renderer(), "resources/models/banana.obj");
 
-	auto tex2 = loadTextureFromFile("resources/img/mb_rocklface07_d.jpg");
-
+	// TODO resourcemanager static methods
 	ResourceManager::getInstance().printResources();
+
+	meshPosition.scale(0.01f);
 }
 
 
@@ -105,8 +108,9 @@ void RiftGame::render(float dt)
 	rd.setCamera(cam);
 
 	// ici: rendu des objets
-	rd.render(cubeMesh, meshPosition);
+	//rd.render(cubeMesh, meshPosition);
 	rd.render(buddha.get(), meshPosition);
+
 	rd.render();
 }
 
@@ -121,7 +125,6 @@ void RiftGame::update(float dt)
 		glfwSetWindowTitle(Game::window(), ("Rift (" + std::to_string(1.f / dt) + " FPS)").c_str());
 	}
 }
-
 
 int main()
 {

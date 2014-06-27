@@ -8,9 +8,14 @@ void CDummyRendererImpl::initialize()
 
 }
 
-CTexture *CDummyRendererImpl::createTexture(TextureDesc &desc)
+CTexture2D *CDummyRendererImpl::createTexture2D(Texture2DDesc &desc, const void *initialData)
 {
-	return new CDummyTexture(desc);
+	return nullptr;
+}
+
+CTextureCubeMap *CDummyRendererImpl::createTextureCubeMap(TextureCubeMapDesc &desc, const void *initialData[6])
+{
+	return nullptr;
 }
 
 CMeshBuffer *CDummyRendererImpl::createMeshBuffer(MeshBufferInit &init)

@@ -1,10 +1,13 @@
 #version 330
 
 //--- IN -----------------------------
-in vec4 fcolor;
+layout(location = 0) in vec3 position;
+layout(location = 1) in vec3 normal;
+layout(location = 2) in vec2 texcoord;
 
 //--- OUT ----------------------------
-out vec4 out_color;
+out vec3 fnormal;
+out vec2 ftexcoord;
 
 //--- UNIFORMS -----------------------
 layout(std140) uniform RenderData {
@@ -15,8 +18,11 @@ layout(std140) uniform RenderData {
 	vec2 viewportSize;
 } rd;
 
+uniform mat4 modelMatrix;
+
 //--- CODE ---------------------------
-void main()
+void main() 
 {
-	out_color = fcolor;
+	gl_Position = rd.viewProjMatrix * modelMatrix * vec4(position, 1.f);
+	fnormal = normal;
 }

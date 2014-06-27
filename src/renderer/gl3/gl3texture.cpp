@@ -93,17 +93,17 @@ static GLenum pixelFormatToGLenumComponent(PixelFormat pf)
 	return GL_UNSIGNED_BYTE;
 }
 
-CGL3Texture::CGL3Texture(TextureDesc &desc) : mObj(-1)
+CGL3Texture2D::CGL3Texture2D(Texture2DDesc &desc) : mObj(-1)
 {
 	mDesc = desc;
 	initialize();
 }
 
-CGL3Texture::~CGL3Texture()
+CGL3Texture2D::~CGL3Texture2D()
 {
 }
 
-void CGL3Texture::initialize()
+void CGL3Texture2D::initialize()
 {
 	GLCHECK(glGenTextures(1, &mObj));
 	// TODO 1D, 2D, 3D textures, cubemaps, texture arrays, etc.
@@ -120,7 +120,7 @@ void CGL3Texture::initialize()
 	GLCHECK(glBindTexture(GL_TEXTURE_2D, 0));
 }
 
-void CGL3Texture::destroy()
+void CGL3Texture2D::destroy()
 {
 	GLCHECK(glDeleteTextures(1, &mObj));
 	LOG << "CGL3Texture::destroy";
@@ -128,21 +128,92 @@ void CGL3Texture::destroy()
 	delete this;
 }
 
-void CGL3Texture::update(glm::ivec3 const &coords, glm::ivec3 const &size, void *pixels)
+void CGL3Texture2D::update(int mipLevel, glm::ivec2 coords, glm::ivec2 size, const void *data)
 {
 	assert(mObj != -1);
 	GLCHECK(glBindTexture(GL_TEXTURE_2D, mObj));
-	GLCHECK(glTexSubImage2D(GL_TEXTURE_2D, coords.z, coords.x, coords.y, size.x, size.y,
+
+	GLCHECK(glTexSubImage2D(
+		GL_TEXTURE_2D, 
+		mipLevel, 
+		coords.x, 
+		coords.y,
+		size.x, 
+		size.y,
 		pixelFormatToGLenumExternalFormat(mDesc.format), 
 		pixelFormatToGLenumComponent(mDesc.format), 
-		pixels));
+		data));
 	GLCHECK(glBindTexture(GL_TEXTURE_2D, 0));
 }
 
 
-void CGL3Texture::setActive(int textureUnit)
+void CGL3Texture2D::setActive(int textureUnit)
 {
 	assert(mObj != -1);
 	GLCHECK(glActiveTexture(GL_TEXTURE0 + textureUnit));
 	GLCHECK(glBindTexture(GL_TEXTURE_2D, mObj));
+}
+
+//==========================================================
+//
+// Cubemaps
+//
+CGL3TextureCubeMap::CGL3TextureCubeMap(TextureCubeMapDesc &desc) : mObj(-1)
+{
+	mDesc = desc;
+	initialize();
+}
+
+CGL3TextureCubeMap::~CGL3TextureCubeMap()
+{
+}
+
+void CGL3TextureCubeMap::initialize()
+{
+	GLCHECK(glGenTextures(1, &mObj));
+	GLCHECK(glBindTexture(GL_TEXTURE_CUBE_MAP, mObj));
+
+	// ...
+	GLCHECK(glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, pixelFormatToGLenumInternalFormat(mDesc.format), mDesc.size.x, mDesc.size.y));
+	
+	
+	// default sampling parameters (needed?)
+	GLCHECK(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST));
+	GLCHECK(glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
+	GLCHECK(glBindTexture(GL_TEXTURE_CUBE_MAP, 0));
+}
+
+void CGL3TextureCubeMap::destroy()
+{
+	GLCHECK(glDeleteTextures(1, &mObj));
+	delete this;
+}
+
+void CGL3TextureCubeMap::update(int mipLevel, int face, glm::ivec2 coords, glm::ivec2 size, const void *data)
+{
+	assert(mObj != -1);
+	GLCHECK(glBindTexture(GL_TEXTURE_CUBE_MAP, mObj));
+
+	GLCHECK(glTexSubImage2D(
+		GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 
+		mipLevel, 
+		coords.x,
+		coords.y, 
+		size.x, 
+		size.y, 
+		pixelFormatToGLenumExternalFormat(mDesc.format),
+		pixelFormatToGLenumComponent(mDesc.format), 
+		data));
+	// ...
+
+	GLCHECK(glBindTexture(GL_TEXTURE_CUBE_MAP, 0));
+}
+
+
+void CGL3TextureCubeMap::setActive(int textureUnit)
+{
+	assert(mObj != -1);
+	GLCHECK(glActiveTexture(GL_TEXTURE0 + textureUnit));
+	GLCHECK(glBindTexture(GL_TEXTURE_CUBE_MAP, mObj));
 }

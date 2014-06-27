@@ -6,12 +6,15 @@
 #include <camera.hpp>
 #include <material.hpp>
 #include <model.hpp>
+#include <game.hpp>
 
 void CRenderer::initialize(std::unique_ptr<CRendererImplBase> impl)
 {
 	mImpl = std::move(impl);
 	sInstance = this;
 	mImpl->initialize();
+	// TODO c'est laid
+	mRenderData.mViewportSize = Game::getSize();
 }
 
 void CRenderer::setCamera(Camera &camera)
@@ -33,10 +36,16 @@ CModel *CRenderer::createModel()
 	return new CModel();
 }
 
-CTexture *CRenderer::createTexture(TextureDesc &desc)
+CTexture2D *CRenderer::createTexture2D(Texture2DDesc &desc, const void *initialData)
 {
 	assert(mImpl);
-	return mImpl->createTexture(desc);
+	return mImpl->createTexture2D(desc, initialData);
+}
+
+CTextureCubeMap *CRenderer::createTextureCubeMap(TextureCubeMapDesc &desc, const void *initialData[6])
+{
+	assert(mImpl);
+	return mImpl->createTextureCubeMap(desc, initialData);
 }
 
 void CRenderer::render(CMesh *mesh, Transform &transform)

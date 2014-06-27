@@ -12,19 +12,22 @@
 
 
 // fwd decls
-struct CTexture;
+struct CTexture2D;
+struct CTextureCubeMap;
 struct CMesh;
 struct CMeshBuffer;
 struct CModel;
 struct CMaterial;
 
-typedef Handle<CTexture> CTextureRef;
+typedef Handle<CTexture2D> CTexture2DRef;
+typedef Handle<CTextureCubeMap> CTextureCubeMapRef;
 typedef Handle<CMesh> CMeshRef;
 typedef Handle<CMeshBuffer> CMeshBufferRef;
 typedef Handle<CModel> CModelRef;
 typedef Handle<CMaterial> CMaterialRef;
 
-struct TextureDesc;
+struct Texture2DDesc;
+struct TextureCubeMapDesc;
 struct MeshBufferInit;
 
 struct RenderData
@@ -39,7 +42,10 @@ class CRendererImplBase
 {
 public:
 	virtual void initialize() = 0;
-	virtual CTexture *createTexture(TextureDesc &desc) = 0;
+	
+	virtual CTexture2D *createTexture2D(Texture2DDesc &desc, const void *initialData) = 0;
+	virtual CTextureCubeMap *createTextureCubeMap(TextureCubeMapDesc &desc, const void *initialData[6]) = 0;
+
 	virtual CMeshBuffer *createMeshBuffer(MeshBufferInit &init) = 0;
 
 	// TODO parameters into a struct
@@ -77,7 +83,10 @@ class CRenderer
 {
 public:
 	void initialize(std::unique_ptr<CRendererImplBase> impl);
-	CTexture *createTexture(TextureDesc &desc);
+
+	CTexture2D *createTexture2D(Texture2DDesc &desc, void const *initialData);
+	CTextureCubeMap *createTextureCubeMap(TextureCubeMapDesc &desc, void const *initialData[6]);
+
 	CMesh *createMesh(MeshBufferInit &init);
 	CModel *createModel();
 

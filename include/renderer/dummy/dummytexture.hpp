@@ -3,12 +3,12 @@
 
 #include <texture.hpp>
 
-struct CDummyTexture : public CTexture
+struct CDummyTexture2D : public CTexture2D
 {
-	CDummyTexture(TextureDesc &desc);
-	~CDummyTexture();
+	CDummyTexture2D(Texture2DDesc &desc);
+	~CDummyTexture2D();
 
-	void update(glm::ivec3 const &coords, glm::ivec3 const &size, void *data);
+	//void update(glm::ivec3 const &coords, glm::ivec3 const &size, void *data);
 	void destroy();
 };
 

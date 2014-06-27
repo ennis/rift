@@ -126,7 +126,6 @@ struct Handle
 		return Handle<U>(mControlBlock);
 	}
 
-
 	resource_block *mControlBlock;
 	int mGeneration;
 };
@@ -202,11 +201,7 @@ public:
 private:
 };
 
-static inline std::string unique_key()
-{
-	static int counter = 0;
-	return "<" + std::to_string(counter++) + ">";
-}
+std::string unique_key();
 
 template <typename T>
 Handle<T> make_handle(

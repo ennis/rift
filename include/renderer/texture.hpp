@@ -31,19 +31,47 @@ const char *pixelFormatToString(PixelFormat pf);
 
 struct TextureDesc
 {
-	glm::ivec3 size;
-	TextureType textureType;
 	PixelFormat format;
 	int numMipMapLevels;
 };
 
-struct CTexture : public CRenderResource
+struct Texture2DDesc : public TextureDesc
 {
-	TextureDesc mDesc;
-
-	virtual void update(glm::ivec3 const &coords, glm::ivec3 const &size, void *data) = 0;
+	glm::ivec2 size;
 };
 
-typedef Handle<CTexture> CTextureRef;
+struct TextureCubeMapDesc : public TextureDesc
+{
+	glm::ivec2 size;
+};
+
+
+struct CTexture2D : public CRenderResource
+{
+	Texture2DDesc mDesc;
+
+	virtual void update(int mipLevel, glm::ivec2 coords, glm::ivec2 size, const void *data) = 0;
+};
+
+enum CubeMapFace
+{
+	CubeMap_PositiveX = 0,
+	CubeMap_NegativeX,
+	CubeMap_PositiveY,
+	CubeMap_NegativeY,
+	CubeMap_PositiveZ,
+	CubeMap_NegativeZ,
+};
+
+struct CTextureCubeMap : public CRenderResource
+{
+	TextureCubeMapDesc mDesc;
+
+	virtual void update(int mipLevel, int face, glm::ivec2 coords, glm::ivec2 size, const void *data) = 0;
+};
+
+
+typedef Handle<CTexture2D> CTexture2DRef;
+typedef Handle<CTextureCubeMap> CTextureCubeMapRef;
 
 #endif

@@ -1,22 +1,26 @@
 #version 330
 
 //--- IN -----------------------------
-in vec4 fcolor;
+in vec2 ftexcoord;
 
 //--- OUT ----------------------------
-out vec4 out_color;
+out vec4 color;
 
 //--- UNIFORMS -----------------------
+uniform sampler2D tex0;
+
 layout(std140) uniform RenderData {
 	mat4 viewMatrix;
 	mat4 projMatrix;
 	mat4 viewProjMatrix;
-	vec4 lightDir;
-	vec2 viewportSize;
+	vec3 lightDir;
+	ivec2 viewportSize;
 } rd;
 
 //--- CODE ---------------------------
 void main()
 {
-	out_color = fcolor;
+	color = texture2D(tex0, ftexcoord);
 }
+
+
