@@ -14,11 +14,13 @@ void CRenderer::initialize(std::unique_ptr<CRendererImplBase> impl)
 	sInstance = this;
 	mImpl->initialize();
 	// TODO c'est laid
-	mRenderData.mViewportSize = Game::getSize();
+	mRenderData.mViewportSize = Game::getSize(); 
+	mRenderData.lightDir = glm::normalize(glm::vec4(-1.f, -1.f, 0.f, 0.f));
 }
 
-void CRenderer::setCamera(Camera &camera)
+void CRenderer::setCamera(Camera &camera, Transform &transform)
 {
+	mRenderData.eyePos = glm::vec4(transform.position, 1.f);
 	mRenderData.mProjMatrix = camera.projMatrix;
 	mRenderData.mViewMatrix = camera.viewMatrix;
 }

@@ -13,7 +13,8 @@ layout(std140) uniform RenderData {
 	mat4 viewMatrix;
 	mat4 projMatrix;
 	mat4 viewProjMatrix;
-	vec3 lightDir;
+	vec4 eyePos;	// in world space
+	vec4 lightDir;
 	ivec2 viewportSize;
 } rd;
 

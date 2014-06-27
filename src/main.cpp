@@ -90,7 +90,7 @@ void RiftGame::init()
 	texture = renderer().createTexture2D(td, nullptr);
 
 	// load model
-	buddha = loadModel(renderer(), "resources/models/banana.obj");
+	buddha = loadModel(renderer(), "resources/models/rock2.obj");
 
 	// TODO resourcemanager static methods
 	ResourceManager::getInstance().printResources();
@@ -105,7 +105,7 @@ void RiftGame::render(float dt)
 
 	// mise à jour de la camera
 	camControl.update(cam, camPosition, dt);
-	rd.setCamera(cam);
+	rd.setCamera(cam, camPosition);
 
 	// ici: rendu des objets
 	//rd.render(cubeMesh, meshPosition);

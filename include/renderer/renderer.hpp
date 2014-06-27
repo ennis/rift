@@ -34,6 +34,8 @@ struct RenderData
 {
 	glm::mat4 mViewMatrix;
 	glm::mat4 mProjMatrix;
+	glm::vec4 eyePos;
+	glm::vec4 lightDir;
 	glm::ivec2 mViewportSize;
 };
 
@@ -97,7 +99,7 @@ public:
 
 	//
 	// Camera
-	void setCamera(Camera &camera);
+	void setCamera(Camera &camera, Transform &transform);
 
 	//
 	// dessin immédiat
