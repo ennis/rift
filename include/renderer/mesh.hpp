@@ -1,20 +1,19 @@
 #ifndef MESH_HPP
 #define MESH_HPP
 
-#include <renderable.hpp>
 #include <meshbuffer.hpp>
+#include <renderer.hpp>
 
-struct CMesh : public CRenderable
+struct CMesh : public CRenderResource
 {
 	CMesh(CMeshBuffer *meshBuffer) : mMeshBuffer(meshBuffer)
 	{}
 
 	virtual ~CMesh() {}
 
-	void render(Transform &transform);
+	void destroy();
 
-	void deleteResource();
-
+	// owned
 	CMeshBuffer *mMeshBuffer;
 };
 

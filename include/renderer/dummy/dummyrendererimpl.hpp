@@ -7,7 +7,8 @@ class CDummyRendererImpl : public CRendererImplBase
 {
 public:
 	void initialize();
-	CTexture *createTexture(TextureDesc &desc);
+	CTexture2D *createTexture2D(Texture2DDesc &desc, const void *initialData) override;
+	CTextureCubeMap *createTextureCubeMap(TextureCubeMapDesc &desc, const void *initialData[6]) override;
 	CMeshBuffer *createMeshBuffer(MeshBufferInit &init);
 	void submit(CMeshBuffer *meshBuffer, Transform &transform);
 	void render(RenderData &renderData);

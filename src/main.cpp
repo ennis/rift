@@ -3,6 +3,11 @@
 #include <transform.hpp>
 #include <log.hpp>
 #include <freecameracontrol.hpp>
+#include <modelloader.hpp>
+#include <textureloader.hpp>
+#include <mesh.hpp>
+#include <gl3rendererimpl.hpp>
+#include <gl3texture.hpp>
 
 //============================================================================
 // Test test test
@@ -30,8 +35,10 @@ public:
 private:
 	float mLastTime = 0.f;
 	float mTotalTime = 0.f;
-	CMesh *cubeMesh;
-	CTexture *texture;
+	CMesh *cubeMesh = nullptr;
+	CTexture2D *texture = nullptr;
+	CModelRef buddha = nullptr;
+	CTextureCubeMapRef envmap = nullptr;
 	Transform meshPosition;
 
 	Transform camPosition;
@@ -46,15 +53,15 @@ private:
 void RiftGame::init()
 {
 	// test cube
-	static glm::vec3 cubeVertices[] = {
-		glm::vec3(-1.0f, -1.0f, 1.0f),
-		glm::vec3(1.0f, -1.0f, 1.0f),
-		glm::vec3(1.0f, 1.0f, 1.0f),
-		glm::vec3(-1.0f, 1.0f, 1.0f),
-		glm::vec3(-1.0f, -1.0f, -1.0f),
-		glm::vec3(1.0f, -1.0f, -1.0f),
-		glm::vec3(1.0f, 1.0f, -1.0f),
-		glm::vec3(-1.0f, 1.0f, -1.0f)
+	static float cubeVertices[] = {
+		-1.0f, -1.0f, 1.0f,
+		1.0f, -1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f,
+		-1.0f, 1.0f, 1.0f,
+		-1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
+		1.0f, 1.0f, -1.0f,
+		-1.0f, 1.0f, -1.0f
 	};
 
 	static uint16_t cubeIndices[] = {
@@ -75,13 +82,13 @@ void RiftGame::init()
 	cubeMbi.indices = cubeIndices;
 	cubeMesh = renderer().createMesh(cubeMbi);
 
-	// Test texture
-	TextureDesc td;
-	td.format = PixelFormat::R8G8B8A8;
-	td.size = glm::ivec3(800, 600, 1);
-	td.textureType = TextureType::Texture2D;
-	td.numMipMapLevels = 1;
-	texture = renderer().createTexture(td);
+	// load model
+	buddha = loadModel(renderer(), "resources/models/rock2.obj");
+
+	// TODO resourcemanager static methods
+	ResourceManager::getInstance().printResources();
+
+	meshPosition.scale(0.01f);
 }
 
 
@@ -91,10 +98,12 @@ void RiftGame::render(float dt)
 
 	// mise à jour de la camera
 	camControl.update(cam, camPosition, dt);
-	rd.setCamera(cam);
+	rd.setCamera(cam, camPosition);
 
 	// ici: rendu des objets
-	cubeMesh->render(meshPosition);
+	//rd.render(cubeMesh, meshPosition);
+	rd.render(buddha.get(), meshPosition);
+
 	rd.render();
 }
 
@@ -113,7 +122,6 @@ void RiftGame::update(float dt)
 	// Gestion des collisions
 	// TODO here
 }
-
 
 int main()
 {

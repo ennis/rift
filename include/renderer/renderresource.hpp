@@ -1,13 +1,12 @@
 #ifndef RENDERRESOURCE_HPP
 #define RENDERRESOURCE_HPP
 
-#include <resource.hpp>
 
-class CRenderResource : public CResourceBase
+class CRenderResource
 {
 public:
 	// delete the resource
-	virtual void deleteResource() = 0;
+	virtual void destroy() = 0;
 };
 
 #endif

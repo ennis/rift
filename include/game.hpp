@@ -4,7 +4,7 @@
 #include <common.hpp>
 #include <renderer.hpp>
 #include <opengl.hpp>
-
+#include <resourcemanager.hpp>
 
 //==========================================
 // classe Game
@@ -61,6 +61,7 @@ public:
 	static Game &instance() {
 		return *sGameInstance;
 	}
+	
 
 private:
 	// make these pointers static to avoid another level of indirection

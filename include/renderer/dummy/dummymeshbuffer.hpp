@@ -9,7 +9,7 @@ struct CDummyMeshBuffer : public CMeshBuffer
 	
 	void updateVertex(void const *vertexData, std::size_t offset, std::size_t size);
 	void updateIndex(void const *vertexData, std::size_t offset, std::size_t size);
-	void deleteResource();
+	void destroy();
 };
 
 #endif

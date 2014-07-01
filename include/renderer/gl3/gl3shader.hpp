@@ -32,6 +32,8 @@ public:
 	void uniform2i(const char *name, glm::ivec2 const &value);
 	void uniformMatrix4fv(const char *name, glm::mat4 const &value);
 
+	GLuint getUniformBlockIndex(const char *name);
+
 	std::vector<GLuint> shaders;
 	GLuint program = -1;
 };
