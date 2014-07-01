@@ -108,6 +108,10 @@ void RiftGame::update(float dt)
 		mLastTime = 0.f;
 		glfwSetWindowTitle(Game::window(), ("Rift (" + std::to_string(1.f / dt) + " FPS)").c_str());
 	}
+
+
+	// Gestion des collisions
+	// TODO here
 }
 
 
