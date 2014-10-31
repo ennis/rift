@@ -2,6 +2,7 @@
 #define RESOURCE_HPP
 
 #include <type_traits>
+#include <string>
 
 enum class DeletionPolicy
 {
@@ -9,12 +10,19 @@ enum class DeletionPolicy
 	KeepAlive	// do not delete
 };
 
-class CResourceBase
+// probably good to make a wrapper class around that
+class Resource
 {
 public:
-	CResourceBase() = default;
-	virtual ~CResourceBase()
+	friend class ResourceManager;
+
+	Resource() = default;
+
+	virtual ~Resource()
 	{}
+
+	// ensures the resource is loaded before use
+	void load();
 
 	void addRef();
 	void release();
@@ -27,11 +35,37 @@ public:
 		mDeletionPolicy = policy;
 	}
 
+	void setName(std::string name)
+	{
+		mKey = name;
+	}
+
+	std::string const &getName() const
+	{
+		return mKey;
+	}
+
 protected:
-	virtual void deleteResource();
+	virtual void destroy();
 
 	DeletionPolicy mDeletionPolicy = DeletionPolicy::Delete;
-	int mRefCount = 0;
+	int mRefCount = 1;
+
+	//
+	// resource key (path)
+	std::string mKey;
+
+	//
+	// is it dynamic (generated)?
+	bool mIsDynamic = false;
+
+	//
+	// is the resource still loaded
+	bool mIsLoaded = false;
+
+	//
+	// generation (incremented each time the resource is reloaded)
+	int mGeneration = 0;
 };
 
 // automatic pointer
@@ -39,9 +73,9 @@ template <typename T>
 class resource_ptr
 {
 public:
-	static_assert(std::is_base_of<CResourceBase, T>::value, "resource_ptr: T must be a subclass of CResourceBase");
+	static_assert(std::is_base_of<Resource, T>::value, "resource_ptr: T must be a subclass of Resource");
 
-	resource_ptr(CResourceBase *ptr) : mPtr(ptr) {
+	resource_ptr(T *ptr) : mPtr(ptr) {
 		mPtr->addRef();
 	}
 

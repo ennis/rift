@@ -2,9 +2,10 @@
 #define GAME_HPP
 
 #include <common.hpp>
-#include <renderer.hpp>
 #include <opengl.hpp>
 #include <resourcemanager.hpp>
+
+class Renderer;
 
 //==========================================
 // classe Game
@@ -39,9 +40,13 @@ public:
 		return sWindowSize;
 	}
 
+	static bool windowResized() {
+		return sWindowResized;
+	}
+
 	//
 	// Retourne l'instance du renderer
-	static CRenderer &renderer() {
+	static Renderer &renderer() {
 		return *sRenderer;
 	}
 
@@ -65,10 +70,11 @@ public:
 
 private:
 	// make these pointers static to avoid another level of indirection
+	static bool sWindowResized;
 	static GLFWwindow *sWindow;
 	static glm::ivec2 sWindowSize;
 	static std::unique_ptr<Game> sGameInstance;
-	static std::unique_ptr<CRenderer> sRenderer;
+	static std::unique_ptr<Renderer> sRenderer;
 };
 
 #endif

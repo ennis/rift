@@ -8,6 +8,8 @@ set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 FIND_PACKAGE(OpenGL REQUIRED)
 include(FindGLEW)
 include(FindGLFW)
+include(FindYAMLCPP)
+include(FindAnttweakBar)
 include(cotire)
 
 set(RIFT_HOME ${CMAKE_SOURCE_DIR})
@@ -15,24 +17,31 @@ set(RIFT_EXECUTABLE rift)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${RIFT_HOME}/bin")
 
 #
+# modelimporter
+#
+add_subdirectory(tools/modelimporter)
+
+#
 # Définitions du préprocesseur
 #
 ADD_DEFINITIONS(-DGLM_FORCE_RADIANS)
 
 IF(WIN32)
-    ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
+    ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -DNOMINMAX)
 ENDIF()
 
 #
 # includes pour nos headers
 #
 INCLUDE_DIRECTORIES(
-	include/
-	include/renderer
-	include/renderer/gl3
-	include/renderer/dummy
-	include/utils
-	src/
+    include/
+    include/renderer
+    include/log
+    include/renderer/gl3
+    include/renderer/dummy
+    include/utils
+    deps/include
+    src/
 )
 
 #
@@ -42,6 +51,7 @@ file(
     GLOB
     RIFT_SOURCES
     src/*.cpp
+    src/log/*.cpp
     src/renderer/*.cpp
     src/renderer/gl3/*.cpp
     src/renderer/dummy/*.cpp
@@ -52,6 +62,7 @@ file(
     GLOB
     RIFT_HEADERS
     include/*.hpp
+    include/log/*.hpp
     include/renderer/*.hpp
     include/renderer/gl3/*.hpp
     include/renderer/dummy/*.hpp
@@ -66,6 +77,8 @@ INCLUDE_DIRECTORIES(
     ${GLFW_INCLUDE_DIR}
     ${GLEW_INCLUDE_PATH}
     ${GLM_INCLUDE_PATH}
+    ${YAMLCPP_INCLUDE_DIR}
+    ${ANTTWEAKBAR_INCLUDE_DIR}
 )
 
 LINK_DIRECTORIES(
@@ -81,7 +94,7 @@ ADD_EXECUTABLE(
 )
 
 set_target_properties(${RIFT_EXECUTABLE} PROPERTIES
-    COTIRE_PREFIX_HEADER_INCLUDE_PATH  "${GLEW_INCLUDE_PATH};${GLFW_LIBRARY_DIR};${GLM_INCLUDE_PATH}")
+    COTIRE_PREFIX_HEADER_INCLUDE_PATH  "${GLEW_INCLUDE_PATH};${GLFW_INCLUDE_DIR};${GLM_INCLUDE_PATH};${YAMLCPP_INCLUDE_DIR};${ANTTWEAKBAR_INCLUDE_DIR}")
 
 cotire(${RIFT_EXECUTABLE})
 
@@ -102,12 +115,16 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         )
 # Windows
 ELSEIF(WIN32)
-     TARGET_LINK_LIBRARIES(
-        ${RIFT_EXECUTABLE}
-        ${OPENGL_LIBRARIES}
-        ${GLFW_LIBRARY}
-        ${GLEW_LIBRARY}
-        )
+TARGET_LINK_LIBRARIES(
+    ${RIFT_EXECUTABLE}
+    ${OPENGL_LIBRARIES}
+    ${GLFW_LIBRARY}
+    ${GLEW_LIBRARY}
+    ${ANTTWEAKBAR_LIBRARY}
+)
+
+target_link_libraries(${RIFT_EXECUTABLE} debug ${YAMLCPP_LIBRARY_DEBUG} optimized ${YAMLCPP_LIBRARY_RELEASE})
+
 # Linux (PC imag)
 ELSE()
     TARGET_LINK_LIBRARIES(
@@ -115,6 +132,7 @@ ELSE()
         ${OPENGL_LIBRARIES}
         ${GLFW_LIBRARY}
         ${GLEW_LIBRARY}
+        ${YAMLCPP_LIBRARY}
         -lX11
         -lXxf86vm
         -lXrandr

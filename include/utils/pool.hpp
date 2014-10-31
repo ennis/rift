@@ -20,10 +20,12 @@ public:
 	}
 
 	template <typename... Args>
-	int allocate(Args&&... args)
+	std::pair<T&, int> allocate(Args&&... args)
 	{
 		Elem &e = store[firstFree];
+		int r = firstFree;
 		firstFree = e.nextFree;
+		return std::pair<T&, int>(e.obj, r);
 	}
 
 private:

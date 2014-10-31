@@ -3,6 +3,7 @@
 
 #include <common.hpp>
 #include <resource.hpp>
+#include <renderer.hpp>
 
 struct ImageLoadParameters
 {
@@ -23,22 +24,44 @@ enum class ImageSamplingMode
 	Bicubic,
 };
 
-template <typename pixel_type>
-class Image 
+class BaseImageView
 {
 public:
-	Image();
-	Image(glm::ivec2 size, pixel_type *data);
+	BaseImageView(void *data, ElementFormat format, glm::ivec2 size, int stride) : 
+	mData(data), 
+	mFormat(format), 
+	mSize(size), 
+	mStride(stride)
+	{}
+
+	template <typename pixel_type>
+	pixel_type &at(float x, float y) const;
 
 	glm::ivec2 size() const;
+
+	void *getPixels();
+
+protected:
+	void *mData;
+	ElementFormat mFormat;
+	glm::ivec2 mSize;
+	int mStride;
+};
+
+template <typename pixel_type>
+class ImageView : public BaseImageView
+{
+public:
+	ImageView(pixel_type *data, glm::ivec2 size, int stride) : 
+	BaseImageView(data, ImageFormatTraits<pixel_type>::format, size, stride)
+	{}
+
 
 	pixel_type *getPixels();
 	pixel_type operator() (int x, int y) const;
 	pixel_type operator() (glm::ivec2 coords) const;
 	pixel_type &operator() (int x, int y);
 	pixel_type &operator() (glm::ivec2 coords);
-
-	void free();
 
 	pixel_type sample(float x, float y) const;
 	pixel_type sample(glm::vec2 coords) const;
@@ -48,15 +71,5 @@ private:
 	glm::ivec2 mSize;
 };
 
-template <typename pixel_type>
-std::unique_ptr<Image<pixel_type> > loadImageFromFile(const char *path, ImageLoadParameters const &imageLoadParameters);
-
-std::unique_ptr<glm::u8> loadImageDataFromFile(const char *path, glm::ivec2 &size, int &numComponents);
-
-typedef Image<glm::u8vec3> Image_U8_RGB;
-typedef Image<glm::u8vec2> Image_U8_RG;
-typedef Image<glm::u8> Image_U8_R;
-typedef Image<glm::vec3> Image_Float_RGB;
-typedef Image<glm::vec3> Image_Float_RG;
 
 #endif

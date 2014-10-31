@@ -3,108 +3,201 @@
 #include <transform.hpp>
 #include <log.hpp>
 #include <freecameracontrol.hpp>
-#include <modelloader.hpp>
-#include <textureloader.hpp>
+#include <yaml-cpp/yaml.h>
+#include <entity.hpp>
+#include <meshrenderable.hpp>
+#include <renderer.hpp>
 #include <mesh.hpp>
-#include <gl3rendererimpl.hpp>
-#include <gl3texture.hpp>
+#include <AntTweakBar.h>
+#include <sky.hpp>
+#include <dds.hpp>
+#include <terrain.hpp>
+#include <sharedresources.hpp>
+#include <shadersource.hpp>
+#include <effect.hpp>
+#include <font.hpp>
 
 //============================================================================
-// Test test test
-//
-//
-struct Bullet
-{
-	Transform transform;
-
-	void render()
-	{
-	}
-};
-
 class RiftGame : public Game
 {
 public:
-	RiftGame() : Game(glm::ivec2(800, 600))
+	RiftGame() : Game(glm::ivec2(1280, 720))
 	{}
 
 	void init();
 	void render(float dt);
 	void update(float dt);
+	void tearDown();
+	void initTweakBar();
 
 private:
 	float mLastTime = 0.f;
 	float mTotalTime = 0.f;
-	CMesh *cubeMesh = nullptr;
-	CTexture2D *texture = nullptr;
-	CModelRef buddha = nullptr;
-	CTextureCubeMapRef envmap = nullptr;
-	Transform meshPosition;
 
-	Transform camPosition;
-	Camera cam;
-	FreeCameraControl camControl;
+	std::unique_ptr<EffectCompiler> effectCompiler;
+	Entity *buddha;
+	Entity *cameraEntity;
+	Entity *light;
+	Entity *sprite;
+
+	ConstantBuffer *frameData = nullptr;
+	Terrain *terrain = nullptr;
+	Sky *sky = nullptr;
+	Effect testEffect;
+
+	TwBar *tweakBar = nullptr;
+
+	float twSunDirection[3];
+	float twTimeOfDay;
 };
 
+//=============================================================================
+void RiftGame::initTweakBar()
+{
+	tweakBar = TwNewBar("Settings");
+	twSunDirection[0] = 0;
+	twSunDirection[1] = -1;
+	twSunDirection[2] = 0;
+	TwAddVarRW(
+		tweakBar,
+		"SunDir",
+		TW_TYPE_DIR3F,
+		&twSunDirection,
+		"label='Sun Direction'");
+	twTimeOfDay = 21.f;
+	TwAddVarRW(
+		tweakBar,
+		"TimeOfDay",
+		TW_TYPE_FLOAT,
+		&twTimeOfDay,
+		"label='Time of day'");
+}
+
 //============================================================================
-// Le code du jeu à proprement parler
-//
-//
 void RiftGame::init()
 {
-	// test cube
-	static float cubeVertices[] = {
-		-1.0f, -1.0f, 1.0f,
-		1.0f, -1.0f, 1.0f,
-		1.0f, 1.0f, 1.0f,
-		-1.0f, 1.0f, 1.0f,
-		-1.0f, -1.0f, -1.0f,
-		1.0f, -1.0f, -1.0f,
-		1.0f, 1.0f, -1.0f,
-		-1.0f, 1.0f, -1.0f
-	};
+	initTweakBar();
+	
+	Renderer &rd = renderer();
+	effectCompiler = std::unique_ptr<EffectCompiler>(new EffectCompiler(&rd, "resources/shaders"));
 
-	static uint16_t cubeIndices[] = {
-		0, 1, 2, 2, 3, 0,
-		3, 2, 6, 6, 7, 3,
-		7, 6, 5, 5, 4, 7,
-		4, 0, 3, 3, 7, 4,
-		0, 5, 1, 5, 0, 4,
-		1, 5, 6, 6, 2, 1
-	};
+	// create the buddha
+	{
+		buddha = Entity::create();
+		// attach a mesh loaded from a file
+		//auto meshRenderable = sceneManager->createMeshInstance(buddha, "resources/models/rock2.mesh");
+		auto mesh = Mesh::loadFromFile(rd, "resources/models/rock2.mesh");
+		buddha->addComponent<MeshRenderable>(rd)->setMesh(mesh);
+		// set the material
+		//meshRenderable->setMaterial(...);
+		// move it to the center and scale it down
+		buddha->getTransform().move(glm::vec3(0, 0, 0)).scale(0.01f);
+	}
 
-	MeshBufferInit cubeMbi;
-	cubeMbi.desc.numVertices = 8;
-	cubeMbi.desc.numIndices = 36;
-	cubeMbi.desc.layoutType = Layout_Full;
-	cubeMbi.desc.primitiveType = PrimitiveType::Triangles;
-	cubeMbi.positions = cubeVertices;
-	cubeMbi.indices = cubeIndices;
-	cubeMesh = renderer().createMesh(cubeMbi);
+	// create the camera object
+	{
+		// create the camera entity (maybe not necessary...)
+		cameraEntity = Entity::create();
+		// create a camera object
+		auto camera = cameraEntity->addComponent<Camera>();
+		// center camera position
+		cameraEntity->getTransform().move(glm::vec3(0, 0, 0));
+		// add camera controller script
+		cameraEntity->addComponent<FreeCameraController>();
+	}
 
-	// load model
-	buddha = loadModel(renderer(), "resources/models/rock2.obj");
+	// light
+	{
+		light = Entity::create();
+		light->getTransform().move(glm::vec3(10, 10, 10));
+	}
 
-	// TODO resourcemanager static methods
-	ResourceManager::getInstance().printResources();
 
-	meshPosition.scale(0.01f);
+	frameData = rd.createConstantBuffer(sizeof(PerFrameShaderParameters), ResourceUsage::Dynamic, nullptr);
+
+	// TEST TEST
+	sky = new Sky();
+	sky->setTimeOfDay(21.0f);
+
+
+	// terrain
+	{
+		TextureData *heightmapData = new TextureData();
+		heightmapData->loadFromFile("resources/img/test_heightmap_2.dds");
+		assert(heightmapData->format() == ElementFormat::Unorm16);
+		terrain = new Terrain(rd, heightmapData);
+	}
+
+	// Effect test
+	Shader *sh = rd.createShader(
+		loadShaderSource("resources/shaders/sprite/vert.glsl").c_str(),
+		loadShaderSource("resources/shaders/sprite/frag.glsl").c_str());
+
+	auto ps1 = effectCompiler->createPipelineStateFromShader(
+		&testEffect, sh);
+
+	// Source code preprocessor test
+	ShaderSource src("resources/shaders/test_include/test.glsl", ShaderSourceType::Vertex);
+	std::ostringstream os;
+	src.preprocess(os, "resources/shaders/", "TEST,TEST2,TEST3");
+	LOG << os.str().c_str();
+
+	ShaderSource src2("resources/shaders/test_include/test2.glsl", ShaderSourceType::Fragment);
+	Effect eff(&src, &src2);
+	
+	//auto ps2 = effectCompiler->createPipelineState(&eff, "TEST,TEST2");
+
+
+	// font loading
+	Font fnt(rd, "resources/img/fonts/test.fnt");
 }
 
 
 void RiftGame::render(float dt)
 {
-	auto &rd = renderer();
+	// rendu de la scene
+	Renderer &R = renderer();
 
-	// mise à jour de la camera
-	camControl.update(cam, camPosition, dt);
-	rd.setCamera(cam, camPosition);
+	// render to screen
+	R.bindRenderTargets(0, nullptr, nullptr);
+	// update viewport
+	glm::ivec2 win_size = Game::getSize();
+	Viewport vp{ 0.f, 0.f, float(win_size.x), float(win_size.y) };
+	Viewport vp_half{ 0.f, 0.f, float(win_size.x/2), float(win_size.y/2) };
+	R.setViewports(1, &vp);
+	// clear RT
+	R.clearColor(glm::vec4(0.1f, 0.1f, 0.1f, 1.0f));
+	R.clearDepth(100.f);
 
-	// ici: rendu des objets
-	//rd.render(cubeMesh, meshPosition);
-	rd.render(buddha.get(), meshPosition);
+	// render context
+	RenderContext rc;
+	auto cam = cameraEntity->getComponent<Camera>();
+	rc.viewMatrix = cam->getViewMatrix();
+	rc.projMatrix = cam->getProjectionMatrix();
+	rc.renderer = &R;
+	rc.camera = cam;
+	rc.perFrameShaderParameters = frameData;
+	rc.renderPass = RenderPass::Opaque;
 
-	rd.render();
+	// update constant buffer
+	PerFrameShaderParameters pfsp;
+	pfsp.eyePos = glm::vec4(cameraEntity->getTransform().position, 0.0f);
+	pfsp.lightDir = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+	pfsp.projMatrix = rc.projMatrix;
+	pfsp.viewMatrix = rc.viewMatrix;
+	pfsp.viewportSize = Game::getSize();
+	pfsp.viewProjMatrix = rc.projMatrix * rc.viewMatrix;
+	R.updateBuffer(frameData, 0, sizeof(PerFrameShaderParameters), &pfsp);
+
+	// draw sky!
+	sky->render(rc);
+
+	// draw terrain!
+	terrain->render(rc);
+
+	// render tweak bar
+	//TwDraw();
+
 }
 
 void RiftGame::update(float dt)
@@ -112,15 +205,23 @@ void RiftGame::update(float dt)
 	mLastTime += dt;
 	mTotalTime += dt;
 
-	// mise à jour du compteur FPS toutes les secondes
+	// mise ï¿½ jour du compteur FPS toutes les secondes
 	if (mLastTime > 1.f) {
 		mLastTime = 0.f;
 		glfwSetWindowTitle(Game::window(), ("Rift (" + std::to_string(1.f / dt) + " FPS)").c_str());
 	}
 
+	sky->setTimeOfDay(twTimeOfDay);
+}
 
-	// Gestion des collisions
-	// TODO here
+void RiftGame::tearDown()
+{
+	TwDeleteAllBars();
+	Entity::destroy(cameraEntity);
+	Entity::destroy(light);
+	Entity::destroy(buddha);
+	delete terrain;
+	delete sky;
 }
 
 int main()

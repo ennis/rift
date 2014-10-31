@@ -1,23 +1,24 @@
 #include <resource.hpp>
 #include <log.hpp>
+#include <common.hpp>
 
-void CResourceBase::addRef()
+void Resource::addRef()
 {
 	mRefCount++;
 }
 
-void CResourceBase::release()
+void Resource::release()
 {
 	mRefCount--;
 	assert(mRefCount >= 0);
 
 	if (mRefCount == 0 && mDeletionPolicy == DeletionPolicy::Delete) {
-		deleteResource();
+		destroy();
 	}
 }
 
-void CResourceBase::deleteResource()
+void Resource::destroy()
 {
-	// does nothing 
+	// does nothing
 	LOG << "CResourceBase::deleteResource";
 }

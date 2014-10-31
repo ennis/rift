@@ -43,14 +43,12 @@ void Terrain::init()
 void Terrain::initHeightmap()
 {
 	mHeightmapView = mHeightmapData->imageView(0, 0).viewAs<uint16_t>();
-
 	mHeightmapTexture = mRenderer.createTexture2D(
 		mHeightmapSize,
 		1,
 		ElementFormat::Unorm16,
 		mHeightmapSize.x * mHeightmapSize.y * sizeof(uint16_t),
 		mHeightmapView.data());
-
 	mLog2HeightmapSize = std::max(1, int(log2(std::max(mHeightmapSize.x / mPatchGridSize, 1))) + 1);
 }
 
@@ -86,20 +84,16 @@ void Terrain::initGrid()
 	int gs = mPatchGridSize+1;
 	mPatchNumVertices = gs*gs;
 	mPatchNumIndices = mPatchGridSize * mPatchGridSize * 6;
-
 	// create patch grid
 	float *vertices = new float[mPatchNumVertices*2];
 	uint16_t *indices = new uint16_t[mPatchNumIndices];
 	int p = 0;
 	float xp = 0.f, yp = 0.f;
 	float dd = 1.f / mPatchGridSize;
-
 	for (int i = 0; i < gs; ++i) {
 		for (int j = 0; j < gs; ++j) {
-
 			vertices[(i*gs+j)*2+0] = i*dd;
 			vertices[(i*gs+j)*2+1] = j*dd;
-
 			if ((i < mPatchGridSize) && (j < mPatchGridSize)) {
 				indices[p++]=i*gs+j+1;
 				indices[p++]=i*gs+j;
@@ -110,20 +104,17 @@ void Terrain::initGrid()
 			}
 		}
 	}
-
 	// create VB and IB
 	mPatchGridVB = mRenderer.createVertexBuffer(
 		2*sizeof(float), 
 		mPatchNumVertices,
 		ResourceUsage::Static, 
 		vertices);
-
 	mPatchGridIB = mRenderer.createIndexBuffer(
 		sizeof(uint16_t),
 		mPatchNumIndices,
 		ResourceUsage::Static,
 		indices);
-
 	delete[] vertices;
 	delete[] indices;
 }
@@ -131,17 +122,18 @@ void Terrain::initGrid()
 //=============================================================================
 void Terrain::renderSelection(RenderContext const &renderContext)
 {
+	// TODO support renderstates
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	mRenderer.setVertexBuffer(0, mPatchGridVB);
 	mRenderer.setIndexBuffer(mPatchGridIB);
 	mRenderer.setVertexLayout(GVertexLayout_V2F);
 	mRenderer.setShader(mShader);
 	mRenderer.setConstantBuffer(0, renderContext.perFrameShaderParameters);
-	mRenderer.setNamedConstantMatrix4("modelMatrix", Transform().scale(1.f).toMatrix());
+	mRenderer.setNamedConstantMatrix4("modelMatrix", 
+		Transform().scale(1.f).toMatrix());
 	mRenderer.setNamedConstantInt2("heightmapSize", mHeightmapSize);
 	mRenderer.setNamedConstantFloat("heightmapScale", mHeightmapVerticalScale);
 	mRenderer.setTexture(0, mHeightmapTexture);
-
 	for (int i = 0; i < mNumSelectedNodes; ++i) {
 		Node const &node = mSelectedNodes[i];
 		renderNode(renderContext, node);
@@ -158,7 +150,12 @@ void Terrain::renderNode(RenderContext const &renderContext, Node const &node)
 	mRenderer.setNamedConstantFloat2("patchOffset", glm::vec2(node.x, node.y));
 	mRenderer.setNamedConstantFloat("patchScale", float(node.size));
 	mRenderer.setNamedConstantInt("lodLevel", node.lod);
-	mRenderer.drawIndexed(PrimitiveType::Triangle, 0, mPatchNumVertices, 0, mPatchNumIndices);
+	mRenderer.drawIndexed(
+		PrimitiveType::Triangle, 
+		0, 
+		mPatchNumVertices, 
+		0, 
+		mPatchNumIndices);
 }
 
 //=============================================================================
@@ -172,7 +169,6 @@ void Terrain::nodeLodSelect(
 		addNodeToSelection(node);
 		return;
 	}
-	
 	// if the current LOD level is higher that the maximum LOD 
 	// the node must be subdivided anyway
 	if (currentLodLevel < mNumLodLevels) {
@@ -181,9 +177,7 @@ void Terrain::nodeLodSelect(
 			return;
 		}
 	}
-
 	currentLodLevel--;
-
 	// subdiv 4x
 	int half = node.size / 2;
 	Node NW, NE, SW, SE;
@@ -203,7 +197,6 @@ void Terrain::nodeLodSelect(
 	SE.y = node.y + half;
 	SE.size = half;
 	SE.lod = currentLodLevel;
-
 	nodeLodSelect(NW, eye, currentLodLevel);
 	nodeLodSelect(NE, eye, currentLodLevel);
 	nodeLodSelect(SW, eye, currentLodLevel);
@@ -211,7 +204,10 @@ void Terrain::nodeLodSelect(
 }
 
 //=============================================================================
-bool Terrain::nodeIntersectLodRange(Node const &node, glm::vec3 const &eye, int lod)
+bool Terrain::nodeIntersectLodRange(
+	Node const &node, 
+	glm::vec3 const &eye, 
+	int lod)
 {
 	// check all corners for intersection
 	AABB aabb;
@@ -245,7 +241,11 @@ void Terrain::calculateLodRanges()
 {
 	// TODO
 	float lodRange = 2.5;
-	mNumLodLevels = std::min(int((1.f / log2(lodRange)) * log2(std::max(mHeightmapSize.x / mPatchGridSize, 1))) + 1, kMaxLodLevel);
+	mNumLodLevels = 
+		std::min(
+			int((1.f / log2(lodRange))
+				 * log2(std::max(mHeightmapSize.x / mPatchGridSize, 1))) + 1, 
+			kMaxLodLevel);
 	LOG << "Terrain: num LOD levels = " << mNumLodLevels;
 	for (int i = 0; i < mNumLodLevels; ++i) {
 		mLodRanges[i] = float(mPatchGridSize) * powf(lodRange, float(i));
