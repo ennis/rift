@@ -347,10 +347,10 @@ static ElementFormat FourCCToPixelFormat(uint32_t flags, uint32_t FourCC)
 		return ElementFormat::BC3;
 	/*case D3DFMT_ATI1:
 	case D3DFMT_AT1N:
-		return ElementFormat::Max;		// XXX
+		return ElementFormat::Max;		// FIXME
 	case D3DFMT_ATI2:
 	case D3DFMT_AT2N:*/
-		return ElementFormat::Max;		// XXX
+		return ElementFormat::Max;		// FIXME
 	case D3DFMT_R16F:
 		return ElementFormat::Float16;
 	case D3DFMT_G16R16F:
@@ -371,10 +371,10 @@ static ElementFormat FourCCToPixelFormat(uint32_t flags, uint32_t FourCC)
 	case D3DFMT_X8B8G8R8:
 		return ElementFormat::Uint8x4;
 	case D3DFMT_R5G6B5:
-		return ElementFormat::Max;		// XXX
+		return ElementFormat::Max;		// FIXME
 	case D3DFMT_A4R4G4B4:
 	case D3DFMT_X4R4G4B4:
-		return ElementFormat::Max;		// XXX
+		return ElementFormat::Max;		// FIXME
 	case D3DFMT_G16R16:
 		return ElementFormat::Uint16x2;
 	case D3DFMT_A16B16G16R16:
@@ -503,14 +503,14 @@ ElementFormat DXGIToPixelFormat(DXGI_FORMAT dxgi_format)
 static const int sElementFormatBits[(int)ElementFormat::Max] = 
 {
 		/*Uint32x4*/   128,
-		/*Sint32x4*/   128,   // XXX
+		/*Sint32x4*/   128,   // FIXME
 		/*Float4*/     128,
 		/*Uint32x3*/   96, 
-		/*Sint32x3*/   96, // XXX
+		/*Sint32x3*/   96, // FIXME
 		/*Float3*/     96,
 		/*Float2*/     64,
 		/*Uint16x4*/   64, 
-		/*Sint16x4*/   64, // XXX 
+		/*Sint16x4*/   64, // FIXME 
 		/*Unorm16x4*/  64,
 		/*Snorm16x4*/  64,
 		/*Float16x4*/  64,
@@ -518,7 +518,7 @@ static const int sElementFormatBits[(int)ElementFormat::Max] =
 		/*Sint16x2*/   32,
 		/*Unorm16x2*/  32,
 		/*Snorm16x2*/  32,
-		/*Float16x2*/  32,    // XXX GL_HALF_FLOAT_ARB 
+		/*Float16x2*/  32,    // FIXME GL_HALF_FLOAT_ARB 
 		/*Uint8x4*/    32,
 		/*Sint8x4*/    32,
 		/*Unorm8x4*/   32,

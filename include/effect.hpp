@@ -28,7 +28,7 @@ public:
 
 private:
 	// same
-	unsigned int mID = 0;
+	unsigned int mID = 0; 
 	// TODO: with effect files, the shaders will be merged into one source file
 	// remove the ShaderSource class
 	// will contain passes and techniques
