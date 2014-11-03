@@ -26,16 +26,6 @@ enum class RenderPass
 	Shadow
 };
 
-struct RenderContext
-{
-	Renderer *renderer;
-	Camera *camera;
-	glm::mat4 viewMatrix;
-	glm::mat4 projMatrix;
-	RenderPass renderPass;
-	ConstantBuffer *perFrameShaderParameters;
-};
-
 struct PerFrameShaderParameters
 {
 	glm::mat4 viewMatrix;
@@ -45,6 +35,18 @@ struct PerFrameShaderParameters
 	glm::vec4 lightDir;
 	glm::vec2 viewportSize;
 };
+
+struct RenderContext
+{
+	Renderer *renderer;
+	Camera *camera;
+	glm::mat4 viewMatrix;
+	glm::mat4 projMatrix;
+	RenderPass renderPass;
+	PerFrameShaderParameters pfsp;
+	ConstantBuffer *perFrameShaderParameters;
+};
+
 
 // Renderable objects
 // These objects have a render method

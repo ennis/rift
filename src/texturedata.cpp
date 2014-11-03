@@ -71,12 +71,15 @@ void TextureData::loadFromFile(const char *filePath)
 			mMainSize.x = width;
 			mMainSize.y = height;
 			mMipData = std::unique_ptr<PtrWrap>(new MallocPtrWrap(data));
-			if (comp == 4) mFormat = ElementFormat::Uint8x4;
-			else if (comp == 3) mFormat = ElementFormat::Uint8x3;
-			else if (comp == 2) mFormat = ElementFormat::Uint8x2;
-			else if (comp == 1) mFormat = ElementFormat::Uint8;
+			if (comp == 4) mFormat = ElementFormat::Unorm8x4;
+			else if (comp == 3) mFormat = ElementFormat::Unorm8x3;
+			else if (comp == 2) mFormat = ElementFormat::Unorm8x2;
+			else if (comp == 1) mFormat = ElementFormat::Unorm8;
 			else assert(false); 
 			mDataSize = width * height * comp;
+			mMipMaps[0][0].offset = 0;
+			mMipMaps[0][0].bytes = mDataSize;
+			mMipMaps[0][0].size = mMainSize;
 			mNumMipLevels = 1;
 			mNumFaces = 1;
 		}

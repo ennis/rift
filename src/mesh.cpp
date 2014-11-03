@@ -40,7 +40,9 @@ void Mesh::addSubMesh(SubMeshDesc const &subMeshDesc)
 
 //=============================================================================
 // ctor
-Mesh::Mesh(VertexBuffer *vb, IndexBuffer *ib) : mVertexBuffer(vb), mIndexBuffer(ib)
+Mesh::Mesh(VertexBuffer *vb, IndexBuffer *ib) : 
+mVertexBuffer(vb), 
+mIndexBuffer(ib)
 {}
 
 //=============================================================================
@@ -60,56 +62,55 @@ Mesh *Mesh::create(
 	ResourceUsage vertexBufferUsage,
 	ResourceUsage indexBufferUsage)
 {
-	VertexBuffer *vb = renderer.createVertexBuffer(sizeof(MeshVertex), numVertices, vertexBufferUsage, vertexData);
-	IndexBuffer *ib = renderer.createIndexBuffer(sizeof(uint16_t), numIndices, indexBufferUsage, indexData);
+	VertexBuffer *vb = renderer.createVertexBuffer(
+		sizeof(MeshVertex), 
+		numVertices, 
+		vertexBufferUsage, 
+		vertexData);
+	// TODO 32-bit indices
+	IndexBuffer *ib = renderer.createIndexBuffer(
+		sizeof(uint16_t), 
+		numIndices, 
+		indexBufferUsage, 
+		indexData);
 	Mesh *mesh = new Mesh(vb, ib);	
 	return mesh;
 }
 
 //=============================================================================
 // loadFromFile
+// TODO rewrite with endianness-safe functions
 Mesh *Mesh::loadFromFile(
 	Renderer &renderer, 
 	const char *path)
 {
 	// TODO check signature, extension
 	MDAT_Header header;
-
-	// open file
-	std::ifstream inputFile(path, std::ios::binary);
-
-	// read header
-	inputFile.read(reinterpret_cast<char*>(&header), sizeof(MDAT_Header));
-	// calculate buffer size
+	std::ifstream fileIn(path, std::ios::in | std::ios::binary);
+	assert(fileIn.is_open());
+	fileIn.read(reinterpret_cast<char*>(&header), sizeof(MDAT_Header));
 	std::size_t vertexBufferSize;
 	std::size_t indexBufferSize;
-
 	if (header.vertexFormat != MDAT_Layout_FullPacked) {
 		ERROR << path << ": unrecognized vertex format (" << header.vertexFormat << ")";
 		throw std::runtime_error("MDAT: unrecognized vertex format");
 	}
-
 	vertexBufferSize = header.vertexSize * sizeof(MeshVertex);
 	indexBufferSize = header.indexSize * 2;
-
-	// read submesh descriptors
 	MDAT_SubMeshDesc *subMeshDesc = new MDAT_SubMeshDesc[header.numSubMeshes];
-	inputFile.read(reinterpret_cast<char*>(subMeshDesc), header.numSubMeshes * sizeof(MDAT_SubMeshDesc));
-
-	// allocate buffers for vertex/index data
+	fileIn.read(
+		reinterpret_cast<char*>(subMeshDesc), 
+		header.numSubMeshes * sizeof(MDAT_SubMeshDesc));
 	char *vertexData = new char[vertexBufferSize];
 	char *indexData = nullptr;
 	if (indexBufferSize) {
 		indexData = new char[indexBufferSize];
 	}
-
-	// vertex data follows
-	inputFile.read(vertexData, vertexBufferSize);
+	// vertex data follows in the file
+	fileIn.read(vertexData, vertexBufferSize);
 	if (indexBufferSize) {
-		inputFile.read(indexData, indexBufferSize);
+		fileIn.read(indexData, indexBufferSize);
 	}
-
-	// create mesh
 	Mesh *mesh = Mesh::create(
 		renderer, 
 		header.vertexSize,
@@ -118,8 +119,6 @@ Mesh *Mesh::loadFromFile(
 		reinterpret_cast<uint16_t const*>(indexData), 
 		0, 
 		nullptr);
-
-	// initialize submeshes
 	mesh->mSubMeshes.reserve(header.numSubMeshes);
 	for (int i = 0; i < header.numSubMeshes; ++i) {
 		SubMeshDesc smd;
@@ -131,11 +130,9 @@ Mesh *Mesh::loadFromFile(
 		smd.mPrimitiveType = PrimitiveType::Triangle;
 		mesh->addSubMesh(smd);
 	}
-
 	delete[] vertexData;
 	delete[] indexData;
 	delete[] subMeshDesc;
-
 	return mesh;
 }
 

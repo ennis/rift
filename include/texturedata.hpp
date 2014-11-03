@@ -63,6 +63,7 @@ private:
 	int mNumFaces;
 	static const int kMaxMipLevels = 32;
 	static const int kMaxFaces = 6;
+	// TODO rename MipData: a member with the same name already exists
 	struct MipData {
 		int offset;
 		int bytes;

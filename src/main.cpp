@@ -16,6 +16,7 @@
 #include <shadersource.hpp>
 #include <effect.hpp>
 #include <font.hpp>
+#include <hudtext.hpp>
 
 //============================================================================
 class RiftGame : public Game
@@ -35,6 +36,8 @@ private:
 	float mTotalTime = 0.f;
 
 	std::unique_ptr<EffectCompiler> effectCompiler;
+	std::unique_ptr<HUDTextRenderer> hudTextRenderer;
+	Font fnt;
 	Entity *buddha;
 	Entity *cameraEntity;
 	Entity *light;
@@ -80,6 +83,7 @@ void RiftGame::init()
 	
 	Renderer &rd = renderer();
 	effectCompiler = std::unique_ptr<EffectCompiler>(new EffectCompiler(&rd, "resources/shaders"));
+	hudTextRenderer = std::unique_ptr<HUDTextRenderer>(new HUDTextRenderer(rd));
 
 	// create the buddha
 	{
@@ -123,7 +127,7 @@ void RiftGame::init()
 	// terrain
 	{
 		TextureData *heightmapData = new TextureData();
-		heightmapData->loadFromFile("resources/img/test_heightmap_2.dds");
+		heightmapData->loadFromFile("resources/img/terrain/tamrielheightsmall.dds");
 		assert(heightmapData->format() == ElementFormat::Unorm16);
 		terrain = new Terrain(rd, heightmapData);
 	}
@@ -149,7 +153,7 @@ void RiftGame::init()
 
 
 	// font loading
-	Font fnt(rd, "resources/img/fonts/test.fnt");
+	fnt.loadFromFile(rd, "resources/img/fonts/arno_pro.fnt");
 }
 
 
@@ -188,6 +192,7 @@ void RiftGame::render(float dt)
 	pfsp.viewportSize = Game::getSize();
 	pfsp.viewProjMatrix = rc.projMatrix * rc.viewMatrix;
 	R.updateBuffer(frameData, 0, sizeof(PerFrameShaderParameters), &pfsp);
+	rc.pfsp = pfsp;
 
 	// draw sky!
 	sky->render(rc);
@@ -195,9 +200,18 @@ void RiftGame::render(float dt)
 	// draw terrain!
 	terrain->render(rc);
 
+	// draw stuff!
+	hudTextRenderer->renderString(
+		rc, 
+		"Hello world!", 
+		&fnt, 
+		glm::ivec2(0, 0), 
+		glm::vec4(1.0f),
+		glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	
+
 	// render tweak bar
 	//TwDraw();
-
 }
 
 void RiftGame::update(float dt)

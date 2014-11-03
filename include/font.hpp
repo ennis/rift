@@ -71,6 +71,10 @@ public:
 		assert(page < mNumGlyphPages);
 		return mGlyphPages[page].data;
 	}
+	Texture *getTexture(unsigned int page) {
+		assert(page < mNumGlyphPages);
+		return mGlyphPages[page].tex;
+	} 
 private:
 	Metrics mMetrics;
 	// number of pages
