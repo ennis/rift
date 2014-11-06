@@ -44,40 +44,32 @@ public:
 	mSize(size), 
 	mStride(stride)
 	{}
-
 	template <typename pixel_type>
 	pixel_type &at(int x, int y)
 	{
-		// not type-safe (verify size of pixel_type before)
+		// XXX not type-safe (verify size of pixel_type before)
 		return *((pixel_type*)mData + y * stride + x);
 	}
-
 	template <typename pixel_type>
 	pixel_type at(int x, int y) const
 	{
-		// not type-safe (verify size of pixel_type before)
+		// XXX not type-safe (verify size of pixel_type before)
 		return *((const pixel_type*)mData + y * stride + x);
 	}
-
 	glm::ivec2 size() const {
 		return mSize;
 	}
-
 	void *data() {
 		return mData;
 	}
-
 	int stride() const {
 		return mStride;
 	}
-
 	ElementFormat format() const {
 		return mFormat;
 	}
-
 	template <typename pixel_type>
 	ImageView<pixel_type> viewAs();
-
 protected:
 	void *mData;
 	ElementFormat mFormat;
@@ -94,19 +86,13 @@ class ImageView : public BaseImageView
 public:
 	ImageView() : BaseImageView()
 	{}
-
 	ImageView(void *data, ElementFormat format, glm::ivec2 size, int stride) : 
 	BaseImageView(data, format, size, stride)
-	{
-	}
-
-	pixel_type &operator()(int x, int y)
-	{
+	{}
+	pixel_type &operator()(int x, int y) {
 		return at<pixel_type>(x, y);
 	}
-
-	pixel_type operator()(int x, int y) const
-	{
+	pixel_type operator()(int x, int y) const {
 		return at<pixel_type>(x, y);
 	}
 };

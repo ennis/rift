@@ -84,11 +84,14 @@ Mesh *Mesh::loadFromFile(
 	Renderer &renderer, 
 	const char *path)
 {
-	// TODO check signature, extension
 	MDAT_Header header;
 	std::ifstream fileIn(path, std::ios::in | std::ios::binary);
 	assert(fileIn.is_open());
 	fileIn.read(reinterpret_cast<char*>(&header), sizeof(MDAT_Header));
+	assert(header.sig[0] == 'M' && 
+		header.sig[1] == 'E' &&
+		header.sig[2] == 'S' &&
+		header.sig[3] == 'H');
 	std::size_t vertexBufferSize;
 	std::size_t indexBufferSize;
 	if (header.vertexFormat != MDAT_Layout_FullPacked) {
@@ -137,7 +140,7 @@ Mesh *Mesh::loadFromFile(
 }
 
 //=============================================================================
-// Put this somewhere else?
+// TODO Put this somewhere else?
 VertexLayout *Mesh::sVertexLayout = nullptr;
 
 //=============================================================================

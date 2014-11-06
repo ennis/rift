@@ -14,7 +14,7 @@ public:
 		RenderContext &renderContext,
 		const char *str,
 		Font *font,
-		glm::ivec2 viewPos,
+		glm::vec2 viewPos,
 		glm::vec4 const &color = glm::vec4(1.0f),
 		glm::vec4 const &outlineColor = glm::vec4(0.0f));
 private:

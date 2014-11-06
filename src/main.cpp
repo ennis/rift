@@ -34,6 +34,7 @@ public:
 private:
 	float mLastTime = 0.f;
 	float mTotalTime = 0.f;
+	float mFPS = 0;
 
 	std::unique_ptr<EffectCompiler> effectCompiler;
 	std::unique_ptr<HUDTextRenderer> hudTextRenderer;
@@ -205,10 +206,17 @@ void RiftGame::render(float dt)
 		rc, 
 		"Hello world!", 
 		&fnt, 
-		glm::ivec2(0, 0), 
+		glm::vec2(200,200), 
 		glm::vec4(1.0f),
 		glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 	
+	hudTextRenderer->renderString(
+		rc, 
+		std::to_string(mFPS).c_str(), 
+		&fnt, 
+		glm::vec2(0,mFPS), 
+		glm::vec4(1.0f),
+		glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	// render tweak bar
 	//TwDraw();
@@ -222,7 +230,8 @@ void RiftGame::update(float dt)
 	// mise � jour du compteur FPS toutes les secondes
 	if (mLastTime > 1.f) {
 		mLastTime = 0.f;
-		glfwSetWindowTitle(Game::window(), ("Rift (" + std::to_string(1.f / dt) + " FPS)").c_str());
+		mFPS = 1.f / dt;
+		glfwSetWindowTitle(Game::window(), ("Rift (" + std::to_string(mFPS) + " FPS)").c_str());
 	}
 
 	sky->setTimeOfDay(twTimeOfDay);
