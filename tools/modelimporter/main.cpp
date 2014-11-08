@@ -28,48 +28,6 @@ public:
 };
 
 // convert vertex data imported by assimp  
-void convertVertexFull(
-	const aiScene *scene, 
-	int numTotalVertices, 
-	int numTotalIndices, 
-	char *&outVertexData,
-	std::size_t &outVertexSize,
-	char *&outIndexData,
-	std::size_t &outIndexSize)
-{
-	auto vertexData = new MDAT_VertexLayoutFull[numTotalVertices];
-	auto indexData = new uint16_t[numTotalIndices];
-	auto vertexPtr = vertexData;
-	auto indexPtr = indexData;
-
-	// process each mesh (or submesh, as we call it)
-	for (unsigned int imesh = 0; imesh < scene->mNumMeshes; ++imesh) {
-		auto mesh = scene->mMeshes[imesh];
-		for (unsigned int i = 0; i < mesh->mNumVertices; ++i) {
-			vertexPtr->position = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
-			vertexPtr->normal = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
-			vertexPtr->tangent = glm::vec3(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z);
-			vertexPtr->bitangent = glm::vec3(mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z);
-			vertexPtr->texcoord = glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
-			++vertexPtr;
-		}
-		// just copy the indices
-		// TODO more than 65536 indices?
-		for (unsigned int i = 0; i < mesh->mNumFaces; ++i) {
-			*indexPtr++ = mesh->mFaces[i].mIndices[0];
-			*indexPtr++ = mesh->mFaces[i].mIndices[1];
-			*indexPtr++ = mesh->mFaces[i].mIndices[2];
-		}
-	}
-
-	outVertexData = reinterpret_cast<char*>(vertexData);
-	outVertexSize = numTotalVertices * sizeof(MDAT_VertexLayoutFull);
-	outIndexData = reinterpret_cast<char*>(indexData);
-	outIndexSize = numTotalIndices * 2;
-}
-
-
-// convert vertex data imported by assimp  
 void convertVertexPacked(
 	const aiScene *scene,
 	int numTotalVertices,

@@ -2,6 +2,7 @@
 #define SERIALIZATION_HPP
 
 #include <istream>
+#include <cstdint>
 
 template <typename T>
 void read_u8(std::istream &streamIn, T &v)
@@ -56,6 +57,87 @@ void read_i32le(std::istream &streamIn, T &v)
 	v = tmp;
 }
 
-// TODO write
- 
+void write_u8(std::ostream &streamOut, uint8_t v);
+
+void write_u16le(std::ostream &streamOut, uint16_t v);
+
+void write_u32le(std::ostream &streamOut, uint32_t v);
+
+void write_i8(std::ostream &streamOut, int8_t v);
+
+void write_i16le(std::ostream &streamOut, int16_t v);
+
+void write_i32le(std::ostream &streamOut, int32_t v);
+
+enum class TagType : unsigned int 
+{
+	Int = 0,
+	Uint,
+	String,
+	Float,
+	Blob,
+	Array,
+	Compound,
+	End,
+	Max
+};
+
+namespace BinaryTag 
+{
+	static const unsigned int kMaxTagNameSize = 64;
+	class Reader
+	{
+	public:
+		Reader(std::istream &streamIn);
+		bool nextTag();
+		void skip();
+		// zero-terminated tag name
+		const char *tagName() {
+			return mCurTagName;
+		}
+		TagType tagType() {
+			return static_cast<TagType>(mCurTagType);
+		}
+		unsigned int payloadSize() {
+			return mCurPayloadSize;
+		}
+		void readUint(unsigned int &v);
+		void readInt(int &v);
+		void readFloat(float &v);
+		void readBlob(void *out);
+		void readString(std::string &v);
+		bool match(const char *name, TagType tagType);
+	private:
+		std::istream &mStreamIn;
+		unsigned int mCurTagNameSize;
+		char mCurTagName[kMaxTagNameSize+1];
+		unsigned int mCurTagType;
+		unsigned int mCurPayloadSize;
+	};
+
+	class Writer
+	{
+	public:
+		Writer(std::ostream &streamOut);
+		void writeTag(
+			const char *name, 
+			TagType type, 
+			unsigned int payloadSize, 
+			void *payload);
+		void writeTagHeader(
+			const char *name, 
+			TagType type, 
+			unsigned int payloadSize);
+		void writeInt(const char *name, int v);
+		void writeUint(const char *name, unsigned int v);
+		void writeFloat(const char *name, float v);
+		void writeString(const char *name, const char *string);
+		void beginCompound(const char *name);
+		void endCompound();
+	private:
+		std::ostream &mStreamOut;
+	};
+}
+
+
 #endif /* end of include guard: SERIALIZATION_HPP */

@@ -17,6 +17,7 @@
 #include <effect.hpp>
 #include <font.hpp>
 #include <hudtext.hpp>
+#include <serialization.hpp>
 
 //============================================================================
 class RiftGame : public Game
@@ -154,6 +155,20 @@ void RiftGame::init()
 
 	// font loading
 	fnt.loadFromFile(rd, "resources/img/fonts/arno_pro.fnt");
+
+	// test serialization
+	std::ofstream fileOut("test.bin", std::ios::binary | std::ios::out);
+	BinaryTag::Writer testBT(fileOut);
+	testBT.beginCompound("root");
+	testBT.writeFloat("scaleX", 1.0f);
+	testBT.writeFloat("scaleY", 2.0f);
+	testBT.writeFloat("scaleZ", 3.0f);
+	testBT.writeInt("int", -1);
+	testBT.writeUint("uint", 2);
+	testBT.beginCompound("rotation");
+	testBT.writeString("path", "this/is/a/path");
+	testBT.endCompound();
+	testBT.endCompound();
 }
 
 
