@@ -33,8 +33,8 @@ private:
 	float right;
 	float top;
 	float bottom;
-	float nearPlane = 0.001f;
-	float farPlane = 10000.f;
+	float nearPlane = 0.1f;
+	float farPlane = 100000.f;
 };
 
 #endif

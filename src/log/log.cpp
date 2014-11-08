@@ -1,5 +1,4 @@
-#include "log.hpp"
-
+#include <log.hpp>
 #include <chrono>
 
 #ifdef _WIN32

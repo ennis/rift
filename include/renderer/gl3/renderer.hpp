@@ -222,7 +222,7 @@ public:
     friend class Renderer;
 
     ~Shader();
-
+	std::unique_ptr<uint8_t[]> getProgramBinary(int &binaryLength);
 
 protected:
     Shader(GLuint program);

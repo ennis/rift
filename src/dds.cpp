@@ -1,4 +1,4 @@
-#include <texturedata.hpp>
+#include <image.hpp>
 #include <fstream>
 #include <cstring>
 #include <log.hpp>
@@ -572,7 +572,7 @@ static inline int mipSize(ElementFormat fmt, int width, int height)
 }
 
 //=============================================================================
-void TextureData::loadDDS(std::istream &streamIn)
+void Image::loadDDS(std::istream &streamIn)
 {
 	// read magic ('DDS ')
 	char magic[4];
@@ -647,7 +647,7 @@ void TextureData::loadDDS(std::istream &streamIn)
 //=============================================================================
 Texture2D *loadTexture2D_DDS(Renderer &renderer, const char *ddsFilePath)
 {
-	TextureData ddsFile;
+	Image ddsFile;
 	ddsFile.loadFromFile(ddsFilePath);
 	return ddsFile.convertToTexture2D(renderer);
 }

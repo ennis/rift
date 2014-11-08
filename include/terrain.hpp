@@ -3,13 +3,13 @@
 
 #include <renderer.hpp>
 #include <renderable.hpp>
-#include <texturedata.hpp>
+#include <image.hpp>
 
 class Terrain : public Renderable
 {
 public:
 	// TODO reference
-	Terrain(Renderer &renderer, TextureData *heightmapData);
+	Terrain(Renderer &renderer, Image *heightmapData);
 	~Terrain();
 
 	void render(RenderContext const &renderContext) override;
@@ -54,7 +54,7 @@ private:
 	IndexBuffer *mPatchGridIB; // unique_ptr
 
 	// Terrain heightmap data & texture
-	TextureData *mHeightmapData; // non-owning reference
+	Image *mHeightmapData; // non-owning reference
 	ImageView<uint16_t> mHeightmapView;
 	Texture2D *mHeightmapTexture; // unique_ptr
 

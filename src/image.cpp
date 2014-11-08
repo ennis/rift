@@ -1,4 +1,4 @@
-#include <texturedata.hpp>
+#include <image.hpp>
 #include <string>
 #include <fstream>
 #define STBI_HEADER_FILE_ONLY
@@ -6,7 +6,7 @@
 
 //=============================================================================
 // Default constructor
-TextureData::TextureData() : 
+Image::Image() : 
 mFormat(ElementFormat::Max),
 mMainSize(glm::ivec2(0, 0)),
 mNumMipLevels(0),
@@ -17,18 +17,18 @@ mMipData(nullptr)
 }
 
 //=============================================================================
-TextureData::~TextureData()
+Image::~Image()
 {
 }
 
 //=============================================================================
-void TextureData::allocate(ElementFormat format, glm::ivec3 size, int numMips)
+void Image::allocate(ElementFormat format, glm::ivec3 size, int numMips)
 {
 	// TODO
 }
 
 //=============================================================================
-Texture2D *TextureData::convertToTexture2D(Renderer &renderer)
+Texture2D *Image::convertToTexture2D(Renderer &renderer)
 {
 	auto tex = renderer.createTexture2D(
 		mMainSize, mNumMipLevels, mFormat, 0, nullptr);
@@ -45,13 +45,13 @@ Texture2D *TextureData::convertToTexture2D(Renderer &renderer)
 }
 
 //=============================================================================
-void TextureData::loadFromFile(const char *filePath)
+void Image::loadFromFile(const char *filePath)
 {
 	// extract extension
 	std::string sp(filePath);
 	int dot = sp.find_last_of(".");
 	if (dot == std::string::npos) {
-		WARNING << "TextureData::loadFromFile: no extension, trying DDS\n";
+		WARNING << "Image::loadFromFile: no extension, trying DDS\n";
 		std::ifstream fileIn(filePath, std::ios::in | std::ios::binary);
 		assert(fileIn.is_open());
 		loadDDS(fileIn);

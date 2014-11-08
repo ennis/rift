@@ -7,23 +7,15 @@
 //=============================================================================
 std::string loadShaderSource(const char *fileName)
 {
-	std::ifstream fileIn(fileName, std::ios::binary);
-
-	if (fileIn.fail()) {
+	std::ifstream fileIn(fileName, std::ios::in);
+	if (!fileIn.is_open()) {
 		ERROR << "Could not open shader file " << fileName;
 		throw std::runtime_error("Could not open shader file");
 	}
-
 	std::string str;
-
-	fileIn.seekg(0, std::ios::end);
-	str.reserve(fileIn.tellg());
-	fileIn.seekg(0, std::ios::beg);
-
 	str.assign(
 		(std::istreambuf_iterator<char>(fileIn)),
 		std::istreambuf_iterator<char>());
-
 	return str;
 }
 
@@ -41,7 +33,6 @@ std::vector<std::string> split(const std::string& input, const std::regex& regex
 ShaderSource::~ShaderSource()
 {
 }
-
 
 //=============================================================================
 ShaderSource::ShaderSource(const char *fileName, ShaderSourceType shaderType) : mSourcePath(fileName)
@@ -95,20 +86,15 @@ void ShaderSource::preprocessPrivate(
 	const char *defines)
 {
 	static const int kMaxIncludeDepth = 20;
-
 	if (includeDepth > kMaxIncludeDepth) {
 		ERROR << "Maximum include depth reached (circular include?)";
 		return;
 	}
-
 	std::string line;
 	int ln = 1;
-
 	const char *err_invalidDirective = "Invalid directive at line ";
 	const char *err_invalidPragma = "Unrecognized pragma at line ";
-
 	while (std::getline(fileIn, line)) {
-		// handle preprocessor directives
 		if (line[0] == '#') {
 			auto tokens = split(line, std::regex("\\s+"));
 			if (tokens[0] == "#pragma") {
@@ -121,7 +107,6 @@ void ShaderSource::preprocessPrivate(
 						// include directive
 						auto &&path = tokens[2];
 						if (path[0] != '<' || *(path.crbegin()) != '>') {
-							// bad format for filename
 							ERROR << "Bad file path format at line " << ln;
 						}
 						else {
@@ -146,16 +131,15 @@ void ShaderSource::preprocessPrivate(
 								// cannot fail now
 								assert(!incFileIn.fail());
 							}
-
 							preprocessPrivate(incFileIn, fileOut, includeDir, includeDepth + 1, defines);
 						}
 					}
 				}
 			} else {
-				fileOut << line;
+				fileOut << line << '\n';
 			}
 		} else {
-			fileOut << line;
+			fileOut << line << '\n';;
 		}
 		++ln;
 	}

@@ -1,5 +1,6 @@
 #include <effect.hpp>
 #include <sstream>
+#include <algorithm>
 
 //=============================================================================
 Effect::~Effect()
@@ -61,6 +62,14 @@ PipelineState::~PipelineState()
 }
 
 //=============================================================================
+void PipelineState::setup()
+{
+	// TODO bind constant buffers
+	auto rd = mEffectCompiler->getRenderer();
+	rd->setShader(mShader);
+}
+
+//=============================================================================
 EffectCompiler::EffectCompiler(Renderer *renderer, const char *includeDir) :
 	mRenderer(renderer),
 	mIncludeDir(includeDir),
@@ -106,13 +115,16 @@ PipelineState *EffectCompiler::createPipelineState(
 	std::ostringstream fsSource;
 	// insert defines
 	auto defs = split(std::string(defines), std::regex(","));
+	// remove empty defines
+	defs.erase(std::remove(std::begin(defs), std::end(defs), ""), std::end(defs));
+
 	for (auto &&d : defs) {
 		vsSource << "#define " << d.c_str() << "\n";
 		fsSource << "#define " << d.c_str() << "\n";
 	}
 	// preprocess vertex and shader sources
 	effect->mVertexShader->preprocess(vsSource, mIncludeDir.c_str(), defines);
-	effect->mVertexShader->preprocess(fsSource, mIncludeDir.c_str(), defines);
+	effect->mFragmentShader->preprocess(fsSource, mIncludeDir.c_str(), defines);
 	LOG << "//====================\n"
 		   "// Vertex shader \n"
 		   "//====================\n"
@@ -125,6 +137,12 @@ PipelineState *EffectCompiler::createPipelineState(
 	Shader *shader = mRenderer->createShader(
 		vsSource.str().c_str(), 
 		fsSource.str().c_str());
+	// XXX debug
+	int shaderBinaryLength;
+	auto shaderBinary = shader->getProgramBinary(shaderBinaryLength);
+	std::ofstream fileOut("shadercache/out.bin", std::ios::out | std::ios::binary);
+	fileOut.write((const char *)shaderBinary.get(), shaderBinaryLength);
+	fileOut.close();
 	// create pipeline state
 	PipelineState *ps = new PipelineState(
 		/* effectManager */ this,

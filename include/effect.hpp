@@ -90,33 +90,6 @@ private:
 
 typedef std::unique_ptr<PipelineState> PipelineStatePtr;
 
-//=============================================================================
-enum class EffectLightType : int
-{
-	Point = 0,
-	Spot = 1,
-	Directional = 2,
-
-	Max
-};
-
-//=============================================================================
-enum class EffectShadowType : int
-{
-	Disabled = 0,
-
-	Max
-};
-
-//=============================================================================
-enum class EffectRenderPath : int
-{
-	Forward = 0,
-	LightPrepass = 1,
-	Deferred = 2,
-
-	Max
-};
 
 //=============================================================================
 class EffectCompiler
@@ -131,13 +104,16 @@ public:
 	// - configuration string (comma-separated list of list of #defines)
 	PipelineState *createPipelineState(
 		Effect *effect,
-		const char *defines);
-
+		const char *defines = "");
 	// create a pipeline state from a compiled shader
 	PipelineState *createPipelineStateFromShader(
 		// dummy effect
 		Effect *effect,
 		Shader *shader);
+	// returns the renderer object used to create the resources
+	Renderer *getRenderer() const {
+		return mRenderer;
+	}
 
 private:
 	void registerEffect(Effect *effect);

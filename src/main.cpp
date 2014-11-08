@@ -49,6 +49,11 @@ private:
 	Sky *sky = nullptr;
 	Effect testEffect;
 
+	ShaderSource meshVS;
+	ShaderSource meshFS;
+	std::unique_ptr<Effect> meshEffect;
+	PipelineState *meshPS;
+
 	TwBar *tweakBar = nullptr;
 
 	float twSunDirection[3];
@@ -96,7 +101,7 @@ void RiftGame::init()
 		// set the material
 		//meshRenderable->setMaterial(...);
 		// move it to the center and scale it down
-		buddha->getTransform().move(glm::vec3(0, 0, 0)).scale(0.01f);
+		buddha->getTransform().move(glm::vec3(200, 0, 200)).scale(0.1f);
 	}
 
 	// create the camera object
@@ -106,7 +111,7 @@ void RiftGame::init()
 		// create a camera object
 		auto camera = cameraEntity->addComponent<Camera>();
 		// center camera position
-		cameraEntity->getTransform().move(glm::vec3(0, 0, 0));
+		cameraEntity->getTransform().move(glm::vec3(0, 0, -1));
 		// add camera controller script
 		cameraEntity->addComponent<FreeCameraController>();
 	}
@@ -127,7 +132,7 @@ void RiftGame::init()
 
 	// terrain
 	{
-		TextureData *heightmapData = new TextureData();
+		Image *heightmapData = new Image();
 		heightmapData->loadFromFile("resources/img/terrain/tamrielheightsmall.dds");
 		assert(heightmapData->format() == ElementFormat::Unorm16);
 		terrain = new Terrain(rd, heightmapData);
@@ -141,17 +146,11 @@ void RiftGame::init()
 	auto ps1 = effectCompiler->createPipelineStateFromShader(
 		&testEffect, sh);
 
-	// Source code preprocessor test
-	ShaderSource src("resources/shaders/test_include/test.glsl", ShaderSourceType::Vertex);
-	std::ostringstream os;
-	src.preprocess(os, "resources/shaders/", "TEST,TEST2,TEST3");
-	LOG << os.str().c_str();
-
-	ShaderSource src2("resources/shaders/test_include/test2.glsl", ShaderSourceType::Fragment);
-	Effect eff(&src, &src2);
-	
-	//auto ps2 = effectCompiler->createPipelineState(&eff, "TEST,TEST2");
-
+	meshVS.loadFromFile("resources/shaders/mesh_default/vert.glsl", ShaderSourceType::Vertex);
+	meshFS.loadFromFile("resources/shaders/mesh_default/frag.glsl", ShaderSourceType::Fragment);
+	meshEffect = std::unique_ptr<Effect>(new Effect(&meshVS, &meshFS));
+	// create pipeline state
+	meshPS = effectCompiler->createPipelineState(meshEffect.get());
 
 	// font loading
 	fnt.loadFromFile(rd, "resources/img/fonts/arno_pro.fnt");
@@ -195,6 +194,10 @@ void RiftGame::render(float dt)
 	R.updateBuffer(frameData, 0, sizeof(PerFrameShaderParameters), &pfsp);
 	rc.pfsp = pfsp;
 
+	// draw mesh
+	meshPS->setup();
+	buddha->getComponent<MeshRenderable>()->render(rc);
+
 	// draw sky!
 	sky->render(rc);
 
@@ -202,19 +205,19 @@ void RiftGame::render(float dt)
 	terrain->render(rc);
 
 	// draw stuff!
-	hudTextRenderer->renderString(
+	/*hudTextRenderer->renderString(
 		rc, 
 		"Hello world!", 
 		&fnt, 
 		glm::vec2(200,200), 
 		glm::vec4(1.0f),
-		glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));*/
 	
 	hudTextRenderer->renderString(
 		rc, 
 		std::to_string(mFPS).c_str(), 
 		&fnt, 
-		glm::vec2(0,mFPS), 
+		glm::vec2(0,0), 
 		glm::vec4(1.0f),
 		glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 

@@ -2,7 +2,7 @@
 #define FONT_HPP
 
 #include <renderer.hpp>
-#include <texturedata.hpp>
+#include <image.hpp>
 #include <unordered_map>
 
 //=============================================================================
@@ -67,7 +67,7 @@ public:
 			return false;
 		}
 	}
-	TextureData const &getTextureData(unsigned int page) const {
+	Image const &getTextureData(unsigned int page) const {
 		assert(page < mNumGlyphPages);
 		return mGlyphPages[page].data;
 	}
@@ -81,7 +81,7 @@ private:
 	unsigned int mNumGlyphPages = 0;
 	static const unsigned int kMaxGlyphPages = 8;
 	struct GlyphPage {
-		TextureData data;
+		Image data;
 		Texture *tex;
 	} mGlyphPages[kMaxGlyphPages];
 	// glyph map

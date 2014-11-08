@@ -5,7 +5,7 @@
 #include <algorithm>
 
 //=============================================================================
-Terrain::Terrain(Renderer &renderer, TextureData *heightmapData) :
+Terrain::Terrain(Renderer &renderer, Image *heightmapData) :
 Renderable(renderer),
 mNumSelectedNodes(0), 
 mPatchGridSize(16),
@@ -13,7 +13,7 @@ mPatchGridVB(nullptr),
 mPatchGridIB(nullptr),
 mHeightmapData(heightmapData),
 mHeightmapTexture(nullptr),
-mHeightmapVerticalScale(100.f),
+mHeightmapVerticalScale(200.f),
 mHeightmapSize(heightmapData->imageView(0, 0).size()),
 mNumLodLevels(0),
 mShader(nullptr)
@@ -212,7 +212,7 @@ bool Terrain::nodeIntersectLodRange(
 	// check all corners for intersection
 	AABB aabb;
 	aabb.min.x = float(node.x);
-	aabb.min.y = 0.f;
+	aabb.min.y = 0.f;	// TODO heightmap Y bounds
 	aabb.min.z = float(node.y);
 	aabb.max.x = float(node.x + node.size);
 	aabb.max.y = 0.f;

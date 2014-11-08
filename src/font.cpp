@@ -1,7 +1,7 @@
 #include <font.hpp>
 #include <cstring>
 #include <string>
-#include <endian.hpp>
+#include <serialization.hpp>
 
 //=============================================================================
 Font::Font(Renderer &renderer, const char *fontFilePath)
@@ -105,7 +105,6 @@ void Font::loadFromFile(Renderer &renderer, const char *fontFilePath)
 								x, y, width, height, 
 								xOffset, yOffset, xAdvance, 
 								page)));
-					LOG << "codepoint " << id;
 				}
 			}
 		default:

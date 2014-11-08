@@ -1,5 +1,5 @@
-#ifndef ENDIAN_HPP
-#define ENDIAN_HPP
+#ifndef SERIALIZATION_HPP
+#define SERIALIZATION_HPP
 
 #include <istream>
 
@@ -58,4 +58,4 @@ void read_i32le(std::istream &streamIn, T &v)
 
 // TODO write
  
-#endif /* end of include guard: ENDIAN_HPP */
+#endif /* end of include guard: SERIALIZATION_HPP */
