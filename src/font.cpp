@@ -117,7 +117,7 @@ void Font::loadFromFile(Renderer &renderer, const char *fontFilePath)
 	// load the textures
 	for (unsigned int i = 0; i < mNumGlyphPages; ++i) {
 		std::string sp(fontFilePath);
-		int l = sp.find_last_of('/');
+		auto l = sp.find_last_of('/');
 		if (l != std::string::npos) {
 			sp.erase(sp.cbegin() + l + 1, sp.cend());
 		}

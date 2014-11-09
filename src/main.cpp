@@ -18,6 +18,7 @@
 #include <font.hpp>
 #include <hudtext.hpp>
 #include <serialization.hpp>
+#include <immediatecontext.hpp>
 
 //============================================================================
 class RiftGame : public Game
@@ -39,6 +40,8 @@ private:
 
 	std::unique_ptr<EffectCompiler> effectCompiler;
 	std::unique_ptr<HUDTextRenderer> hudTextRenderer;
+	std::unique_ptr<ImmediateContextFactory> immediateContextFactory;
+	ImmediateContext *immediateContext;
 	Font fnt;
 	Entity *buddha;
 	Entity *cameraEntity;
@@ -91,6 +94,7 @@ void RiftGame::init()
 	Renderer &rd = renderer();
 	effectCompiler = std::unique_ptr<EffectCompiler>(new EffectCompiler(&rd, "resources/shaders"));
 	hudTextRenderer = std::unique_ptr<HUDTextRenderer>(new HUDTextRenderer(rd));
+	immediateContextFactory = std::unique_ptr<ImmediateContextFactory>(new ImmediateContextFactory(rd));
 
 	// create the buddha
 	{
@@ -169,6 +173,9 @@ void RiftGame::init()
 	testBT.writeString("path", "this/is/a/path");
 	testBT.endCompound();
 	testBT.endCompound();
+
+	// test immediate context
+	immediateContext = immediateContextFactory->create(200, PrimitiveType::Triangle);
 }
 
 
@@ -214,7 +221,7 @@ void RiftGame::render(float dt)
 	buddha->getComponent<MeshRenderable>()->render(rc);
 
 	// draw sky!
-	sky->render(rc);
+	//sky->render(rc);
 
 	// draw terrain!
 	terrain->render(rc);
@@ -227,7 +234,7 @@ void RiftGame::render(float dt)
 		glm::vec2(200,200), 
 		glm::vec4(1.0f),
 		glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));*/
-	
+
 	hudTextRenderer->renderString(
 		rc, 
 		std::to_string(mFPS).c_str(), 
@@ -235,6 +242,15 @@ void RiftGame::render(float dt)
 		glm::vec2(0,0), 
 		glm::vec4(1.0f),
 		glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+	immediateContext->clear()
+		.addVertex(Vertex({ 0, 0, 0 }, { 0.0, 0.7, 1.0, 1.0 }))
+		.addVertex(Vertex({ 0, 1, 0 }, { 0.0, 0.7, 1.0, 1.0 }))
+		.addVertex(Vertex({ 0, 1, 1 }, { 1.0, 0.7, 1.0, 1.0 }))
+		.addVertex(Vertex({ 0, 1, 2 }, { 1.0, 0.7, 0.5, 1.0 }))
+		.addVertex(Vertex({ 0, 2, 2 }, { 1.0, 0.7, 0.1, 1.0 }))
+		.addVertex(Vertex({ 1, 2, 2 }, { 1.0, 0.5, 0.0, 1.0 }))
+		.render(rc);
 
 	// render tweak bar
 	//TwDraw();

@@ -3,18 +3,14 @@
 
 void MeshRenderable::render(RenderContext const &context) 
 {
-	//LOG << "MeshRenderable::render";
-
 	context.renderer->setVertexBuffer(0, mMesh->getVertexBuffer());
 	context.renderer->setIndexBuffer(mMesh->getIndexBuffer());
 	context.renderer->setVertexLayout(Mesh::getSharedVertexLayout());
 	context.renderer->setConstantBuffer(0, context.perFrameShaderParameters);
 	context.renderer->setNamedConstantMatrix4("modelMatrix", mEntity->getTransform().toMatrix());
-
 	// TODO:
 	// mesh->prepare(rendercontext)
 	// material->prepare(rendercontext)
-	
 	const int n = mMesh->getNumSubMeshes();
 	for (int i = 0; i < n; ++i) {
 		auto &&subMesh = mMesh->getSubMesh(i);
@@ -25,7 +21,6 @@ void MeshRenderable::render(RenderContext const &context)
 			subMesh.mIndexStartOffset, 
 			subMesh.mNumIndices);
 	}
-
 }
 
 void MeshRenderable::init() 

@@ -10,64 +10,65 @@ static Renderer *GRenderer;
 struct GLVertexElementFormat {
 	GLenum type;
 	int size; 
+	int bytes;
 	bool normalize;
 };
 
 static const GLVertexElementFormat sGLVertexElementFormats[(int)ElementFormat::Max] =
 {
-	/*Uint32x4*/   {GL_UNSIGNED_INT, 4, false},
-	/*Sint32x4*/   {GL_INT, 4, false},
-	/*Float4*/     {GL_FLOAT, 4, false},
-	/*Uint32x3*/   {GL_UNSIGNED_INT, 3, false},
-	/*Sint32x3*/   {GL_INT, 3, false},
-	/*Float3*/	   {GL_FLOAT, 3, false},
-	/*Float2*/     {GL_FLOAT, 2, false},
-	/*Uint16x4*/   {GL_UNSIGNED_SHORT, 4, false},
-	/*Sint16x4*/   {GL_SHORT, 4, false},
-	/*Unorm16x4*/  {GL_UNSIGNED_SHORT, 4, true},
-	/*Snorm16x4*/  {GL_SHORT, 4, true},
-	/*Float16x4*/  {GL_HALF_FLOAT, 4, false},
-	/*Uint16x2*/   {GL_UNSIGNED_SHORT, 2, false},
-	/*Sint16x2*/   {GL_SHORT, 2, false},
-	/*Unorm16x2*/  {GL_UNSIGNED_SHORT, 2, true},
-	/*Snorm16x2*/  {GL_SHORT, 2, true},
-	/*Float16x2*/  {GL_HALF_FLOAT, 2, false},
-	/*Uint8x4*/	   {GL_UNSIGNED_BYTE, 4, false},
-	/*Sint8x4*/    {GL_BYTE, 4, false},
-	/*Unorm8x4*/   {GL_UNSIGNED_BYTE, 4, true},
-	/*Snorm8x4*/   {GL_BYTE, 4, true},
-	/*Uint8x3*/    {GL_UNSIGNED_BYTE, 3, false},
-	/*Sint8x3*/    {GL_BYTE, 3, false},
-	/*Unorm8x3*/   {GL_UNSIGNED_BYTE, 3, true},
-	/*Snorm8x3*/   {GL_BYTE, 3, true},
-	/*Uint8x2*/    {GL_UNSIGNED_BYTE, 2, false},
-	/*Sint8x2*/    {GL_BYTE, 2, false},
-	/*Unorm8x2*/   {GL_UNSIGNED_BYTE, 2, true},
-	/*Snorm8x2*/   {GL_BYTE, 2, true},
-	/*Unorm10x3_1x2*/ {GL_UNSIGNED_INT_2_10_10_10_REV, 4, true},
-	/*Snorm10x3_1x2*/ {GL_INT_2_10_10_10_REV, 4, true},
-	/*BC1*/        {0, 0, false},
-	/*BC2*/        {0, 0, false},
-	/*BC3*/        {0, 0, false},
-	/*UnormBC4*/   {0, 0, false},
-	/*SnormBC4*/   {0, 0, false},
-	/*UnormBC5*/   {0, 0, false},
-	/*SnormBC5*/   {0, 0, false},
-	/*Uint32*/     {GL_UNSIGNED_INT, 1, false},
-	/*Sint32*/     {GL_INT, 1, false},
-	/*Uint16*/     {GL_UNSIGNED_SHORT, 1, false},
-	/*Sint16*/     {GL_SHORT, 1, false},
-	/*Unorm16*/    {GL_UNSIGNED_SHORT, 1, true},
-	/*Snorm16*/    { GL_SHORT, 1, true },
-	/*Uint8*/      {GL_UNSIGNED_BYTE, 1, false},
-	/*Sint8*/      {GL_BYTE, 1, false},
-	/*Unorm8*/     {GL_UNSIGNED_BYTE, 1, true},
-	/*Snorm8*/     {GL_BYTE, 1, true},
-	/*Depth32*/    { 0, 0, false },
-	/*Depth24*/    { 0, 0, false },
-	/*Depth16*/    { 0, 0, false },
-	/*Float16*/    {GL_HALF_FLOAT, 1, false},
-	/*Float*/      {GL_FLOAT, 1, false},
+	/*Uint32x4*/   {GL_UNSIGNED_INT, 4, 4*4, false},
+	/*Sint32x4*/   {GL_INT, 4, 4*4, false},
+	/*Float4*/     {GL_FLOAT, 4, 4*4, false},
+	/*Uint32x3*/   {GL_UNSIGNED_INT, 3, 4*3, false},
+	/*Sint32x3*/   {GL_INT, 3, 4*3, false},
+	/*Float3*/	   {GL_FLOAT, 3, 4*3, false},
+	/*Float2*/     {GL_FLOAT, 2, 4*2, false},
+	/*Uint16x4*/   {GL_UNSIGNED_SHORT, 4, 2*4, false},
+	/*Sint16x4*/   {GL_SHORT, 4, 2*4, false},
+	/*Unorm16x4*/  {GL_UNSIGNED_SHORT, 4, 2*4, true},
+	/*Snorm16x4*/  {GL_SHORT, 4, 2*4, true},
+	/*Float16x4*/  {GL_HALF_FLOAT, 4, 2*4, false},
+	/*Uint16x2*/   {GL_UNSIGNED_SHORT, 2, 2*2, false},
+	/*Sint16x2*/   {GL_SHORT, 2, 2*2, false},
+	/*Unorm16x2*/  {GL_UNSIGNED_SHORT, 2, 2*2, true},
+	/*Snorm16x2*/  {GL_SHORT, 2, 2*2, true},
+	/*Float16x2*/  {GL_HALF_FLOAT, 2, 2*2, false},
+	/*Uint8x4*/	   {GL_UNSIGNED_BYTE, 4, 4, false},
+	/*Sint8x4*/    {GL_BYTE, 4, 4, false},
+	/*Unorm8x4*/   {GL_UNSIGNED_BYTE, 4, 4, true},
+	/*Snorm8x4*/   {GL_BYTE, 4, 4, true},
+	/*Uint8x3*/    {GL_UNSIGNED_BYTE, 3, 3, false},
+	/*Sint8x3*/    {GL_BYTE, 3, 3, false},
+	/*Unorm8x3*/   {GL_UNSIGNED_BYTE, 3, 3, true},
+	/*Snorm8x3*/   {GL_BYTE, 3, 3, true},
+	/*Uint8x2*/    {GL_UNSIGNED_BYTE, 2, 2, false},
+	/*Sint8x2*/    {GL_BYTE, 2, 2, false},
+	/*Unorm8x2*/   {GL_UNSIGNED_BYTE, 2, 2, true},
+	/*Snorm8x2*/   {GL_BYTE, 2, 2, true},
+	/*Unorm10x3_1x2*/ {GL_UNSIGNED_INT_2_10_10_10_REV, 4, 4, true},
+	/*Snorm10x3_1x2*/ {GL_INT_2_10_10_10_REV, 4, 4, true},
+	/*BC1*/        {0, 0, 0, false},	// TODO
+	/*BC2*/        {0, 0, 0, false},
+	/*BC3*/        {0, 0, 0, false},
+	/*UnormBC4*/   {0, 0, 0, false},
+	/*SnormBC4*/   {0, 0, 0, false},
+	/*UnormBC5*/   {0, 0, 0, false},
+	/*SnormBC5*/   {0, 0, 0, false},
+	/*Uint32*/     {GL_UNSIGNED_INT, 1, 4, false},
+	/*Sint32*/     {GL_INT, 1, 4, false},
+	/*Uint16*/     {GL_UNSIGNED_SHORT, 1, 2, false},
+	/*Sint16*/     {GL_SHORT, 1, 2, false},
+	/*Unorm16*/    {GL_UNSIGNED_SHORT, 1, 2, true},
+	/*Snorm16*/    { GL_SHORT, 1, 2, true },
+	/*Uint8*/      {GL_UNSIGNED_BYTE, 1, 1, false},
+	/*Sint8*/      {GL_BYTE, 1, 1, false},
+	/*Unorm8*/     {GL_UNSIGNED_BYTE, 1, 1, true},
+	/*Snorm8*/     {GL_BYTE, 1, 1, true},
+	/*Depth32*/    { 0, 0, 4, false },
+	/*Depth24*/    { 0, 0, 3, false },
+	/*Depth16*/    { 0, 0, 2, false },
+	/*Float16*/    {GL_HALF_FLOAT, 1, 2, false},
+	/*Float*/      {GL_FLOAT, 1, 4, false},
 };
 
 //=============================================================================
@@ -459,6 +460,30 @@ VertexLayout *Renderer::createVertexLayout(
 	layout->mNumElements = numElements;
 	for (int i = 0; i < numElements; ++i) {
 		layout->mVertexElements[i] = vertexElements[i];
+	}
+	return layout;
+}
+
+//=============================================================================
+VertexLayout *Renderer::createVertexLayout2(
+	int numElements, 
+	const VertexElement2 *vertexElements)
+{
+	assert(numElements < VertexLayout::kNumVertexElements);
+	VertexLayout *layout = new VertexLayout();
+	layout->mNumElements = numElements;
+	unsigned int offset[kNumVertexBufferSlots] = {0};
+	for (int i = 0; i < numElements; ++i) {
+		auto &e = layout->mVertexElements[i];
+		e.inputSlot = i;
+		e.bufferSlot = vertexElements[i].bufferSlot;
+		e.offset = offset[e.bufferSlot];
+		e.format = vertexElements[i].format;
+		offset[e.bufferSlot] += sGLVertexElementFormats[(int)vertexElements[i].format].bytes;
+	}
+	for (int i = 0; i < numElements; ++i) {
+		auto &e = layout->mVertexElements[i];
+		e.stride = offset[e.bufferSlot];
 	}
 	return layout;
 }

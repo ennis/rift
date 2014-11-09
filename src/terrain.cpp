@@ -88,13 +88,13 @@ void Terrain::initGrid()
 	float *vertices = new float[mPatchNumVertices*2];
 	uint16_t *indices = new uint16_t[mPatchNumIndices];
 	int p = 0;
-	float xp = 0.f, yp = 0.f;
-	float dd = 1.f / mPatchGridSize;
-	for (int i = 0; i < gs; ++i) {
-		for (int j = 0; j < gs; ++j) {
-			vertices[(i*gs+j)*2+0] = i*dd;
-			vertices[(i*gs+j)*2+1] = j*dd;
-			if ((i < mPatchGridSize) && (j < mPatchGridSize)) {
+	float xp=0.f,yp=0.f;
+	float dd=1.f/mPatchGridSize;
+	for (int i=0;i<gs;++i) {
+		for (int j=0;j<gs;++j) {
+			vertices[(i*gs+j)*2+0]=i*dd;
+			vertices[(i*gs+j)*2+1]=j*dd;
+			if ((i<mPatchGridSize)&&(j<mPatchGridSize)) {
 				indices[p++]=i*gs+j+1;
 				indices[p++]=i*gs+j;
 				indices[p++]=(i+1)*gs+j;
