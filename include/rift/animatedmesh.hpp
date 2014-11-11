@@ -1,6 +1,7 @@
 #ifndef ANIMATEDMESH_HPP
 #define ANIMATEDMESH_HPP
 
+#include <assimp/scene.h>
 #include <renderer.hpp>
 #include <immediatecontext.hpp>
 #include <meshbuffer.hpp>

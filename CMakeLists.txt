@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
-
 PROJECT(rift)
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-
-#
 # Packages requis
 FIND_PACKAGE(OpenGL REQUIRED)
 include(FindGLEW)
@@ -17,14 +14,14 @@ set(RIFT_HOME ${CMAKE_SOURCE_DIR})
 set(RIFT_EXECUTABLE rift)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${RIFT_HOME}/bin")
 
-#
-# modelimporter
-#
-add_subdirectory(tools/modelimporter)
+# librift
+add_subdirectory(src/rift)
+# main
+add_subdirectory(src/main)
+# model_converter
+add_subdirectory(src/model_converter)
 
-#
 # Définitions du préprocesseur
-#
 ADD_DEFINITIONS(-DGLM_FORCE_RADIANS)
 
 IF(WIN32)

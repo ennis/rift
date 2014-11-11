@@ -3,6 +3,7 @@
 
 #include <renderer.hpp>
 #include <shadersource.hpp>
+#include <map>
 
 //=============================================================================
 class Effect

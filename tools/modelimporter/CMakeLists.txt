@@ -25,6 +25,7 @@ include_directories(
     ${ASSIMP_INCLUDE_DIR}
     ${RIFT_HOME}/include
     ${RIFT_HOME}/include/log
+    ${RIFT_HOME}/include/renderer/gl3
 )
 
 file(

@@ -3,6 +3,7 @@
 
 #include <istream>
 #include <cstdint>
+#include <memory>
 
 template <typename T>
 void read_u8(std::istream &streamIn, T &v)
@@ -73,6 +74,8 @@ enum class TagType : unsigned int
 {
 	Int = 0,
 	Uint,
+	IntArray, 
+	UintArray,
 	String,
 	Float,
 	Blob,
@@ -106,6 +109,9 @@ namespace BinaryTag
 		void readFloat(float &v);
 		void readBlob(void *out);
 		void readString(std::string &v);
+		void readArraySize(int &arraySize);
+		std::unique_ptr<int[]> readIntArray();
+		std::unique_ptr<unsigned int[]> readUintArray();
 		bool match(const char *name, TagType tagType);
 	private:
 		std::istream &mStreamIn;
@@ -132,6 +138,29 @@ namespace BinaryTag
 		void writeUint(const char *name, unsigned int v);
 		void writeFloat(const char *name, float v);
 		void writeString(const char *name, const char *string);
+		template <typename Iter>
+		void writeUintArray(const char *name,Iter begin,Iter end) {
+			unsigned int numElements=end-begin;
+			writeTagHeader(name,TagType::UintArray,numElements*4);
+			while (begin!=end) {
+				write_u32le(mStreamOut,*begin++);
+			}
+		}
+		template <typename Iter>
+		void writeIntArray(const char *name,Iter begin,Iter end) {
+			unsigned int numElements=end-begin;
+			writeTagHeader(name,TagType::IntArray,numElements*4);
+			while (begin!=end) {
+				write_i32le(mStreamOut,*begin++);
+			}
+		}
+		void writeUintArray(const char *name,std::initializer_list<unsigned int> values) {
+			writeUintArray(name,values.begin(),values.end());
+		}
+		void writeIntArray(const char *name,std::initializer_list<int> values) {
+			writeIntArray(name,values.begin(),values.end());
+		}
+
 		void beginCompound(const char *name);
 		void endCompound();
 	private:

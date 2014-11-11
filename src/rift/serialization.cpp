@@ -93,6 +93,28 @@ namespace BinaryTag
 		v.assign(buf, mCurPayloadSize+1);
 	}
 
+	std::unique_ptr<int[]> Reader::readIntArray()
+	{
+		unsigned int size;
+		read_u32le(mStreamIn,size);
+		auto ptr=std::unique_ptr<int[]>(new int[size]);
+		for (unsigned int i=0;i<size;++i) {
+			read_i32le(mStreamIn,ptr[i]);
+		}
+		return std::move(ptr);
+	}
+	
+	std::unique_ptr<unsigned int[]> Reader::readUintArray()
+	{
+		unsigned int size;
+		read_u32le(mStreamIn,size);
+		auto ptr=std::unique_ptr<unsigned int[]>(new unsigned int[size]);
+		for (unsigned int i=0;i<size;++i) {
+			read_u32le(mStreamIn,ptr[i]);
+		}
+		return std::move(ptr);
+	}
+
 	Writer::Writer(std::ostream &streamOut) : mStreamOut(streamOut)
 	{
 	}

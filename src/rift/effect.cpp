@@ -1,6 +1,8 @@
 #include <effect.hpp>
 #include <sstream>
 #include <algorithm>
+#include <regex>
+#include <vector>
 
 //=============================================================================
 Effect::~Effect()

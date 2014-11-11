@@ -6,18 +6,8 @@ enum MDAT_LayoutType
 	GL3_Layout_Packed = 1
 };
 
-// full layout
-struct MDAT_VertexLayoutFull
-{
-	glm::vec3 position;
-	glm::vec3 normal;
-	glm::vec3 tangent;
-	glm::vec3 bitangent;
-	glm::vec2 texcoord;
-};
-
 // packed layout (less precise but more compact)
-struct MDAT_VertexLayoutPacked
+struct MDAT_Vertex
 {
 	glm::vec3 position;
 	glm::uint32 normal; // packSnorm3x10_1x2
