@@ -102,7 +102,7 @@ namespace BinaryTag
 		TagType type, 
 		unsigned int payloadSize)
 	{
-		int nlen = std::strlen(name);
+		auto nlen = std::strlen(name);
 		assert(nlen < kMaxTagNameSize);
 		write_u8(mStreamOut, static_cast<uint8_t>(nlen));
 		mStreamOut.write(name, nlen);
@@ -140,7 +140,7 @@ namespace BinaryTag
 
 	void Writer::writeString(const char *name, const char *string)
 	{
-		int mlen = std::strlen(string);
+		auto mlen = std::strlen(string);
 		writeTagHeader(name, TagType::String, mlen);
 		mStreamOut.write(string, mlen);
 	}

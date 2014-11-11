@@ -49,7 +49,7 @@ void Image::loadFromFile(const char *filePath)
 {
 	// extract extension
 	std::string sp(filePath);
-	int dot = sp.find_last_of(".");
+	auto dot = sp.find_last_of(".");
 	if (dot == std::string::npos) {
 		WARNING << "Image::loadFromFile: no extension, trying DDS\n";
 		std::ifstream fileIn(filePath, std::ios::in | std::ios::binary);

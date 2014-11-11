@@ -11,6 +11,7 @@ include(FindGLFW)
 include(FindYAMLCPP)
 include(FindAnttweakBar)
 include(cotire)
+find_package(assimp REQUIRED)
 
 set(RIFT_HOME ${CMAKE_SOURCE_DIR})
 set(RIFT_EXECUTABLE rift)
@@ -123,7 +124,14 @@ TARGET_LINK_LIBRARIES(
     ${ANTTWEAKBAR_LIBRARY}
 )
 
-target_link_libraries(${RIFT_EXECUTABLE} debug ${YAMLCPP_LIBRARY_DEBUG} optimized ${YAMLCPP_LIBRARY_RELEASE})
+target_link_libraries(
+    ${RIFT_EXECUTABLE} 
+    debug 
+    ${YAMLCPP_LIBRARY_DEBUG}  
+    ${ASSIMP_LIBRARY_RELEASE} 
+    optimized 
+    ${YAMLCPP_LIBRARY_RELEASE} 
+    ${ASSIMP_LIBRARY_RELEASE} )
 
 # Linux (PC imag)
 ELSE()

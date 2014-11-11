@@ -4,7 +4,6 @@
 #include <stdexcept>
 #include <string>
 #include <renderer.hpp>
-#include <mesh.hpp>
 #include <entity.hpp>
 #include <sharedresources.hpp>
 
@@ -86,8 +85,6 @@ int Game::initContext()
 	// initialize the renderer
 	sRenderer = std::unique_ptr<Renderer>(new Renderer());
 	sRenderer->initialize();
-	// init things
-	Mesh::initSharedResources(*sRenderer);
 	// yep
 	// bullshit sense tingling
 	initSharedResources(*sRenderer);

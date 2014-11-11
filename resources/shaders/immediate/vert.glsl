@@ -12,6 +12,6 @@ layout(binding = 0, std140) uniform RenderData {
 } gRenderData;
 void main()
 {
-	gl_Position = gRenderData.viewProjMatrix * position;
+	gl_Position = gRenderData.viewProjMatrix * vec4(position.xyz,1);
 	fColor = color;
 }

@@ -1,6 +1,7 @@
 #include <hudtext.hpp>
+#include <cstring>
 
-HUDTextRenderer::HUDTextRenderer(Renderer &renderer): mRenderer(&renderer)
+HUDTextRenderer::HUDTextRenderer(Renderer &renderer) : mRenderer(&renderer), mMesh(renderer)
 {
 	init();
 }
@@ -12,23 +13,19 @@ HUDTextRenderer::~HUDTextRenderer()
 
 void HUDTextRenderer::init()
 {
-	mVB = mRenderer->createVertexBuffer(
-		4*sizeof(float), /*elemSize*/ 
-		kMaxNumGlyphs*4, /*numVertices*/
+	ElementFormat layout[] = { ElementFormat::Float4 };
+	mMesh.allocate(
+		PrimitiveType::Triangle, 
+		/*numElements*/ 1, 
+		/*elements*/layout, 
 		ResourceUsage::Dynamic, 
-		nullptr);
-	mIB = mRenderer->createIndexBuffer(
-		2*sizeof(uint16_t),
-		kMaxNumGlyphs*6, 
-		ResourceUsage::Dynamic, 
-		nullptr);
+		/*numVertices*/kMaxNumGlyphs * 4, 
+		/*vertexData*/nullptr, 
+		/*numIndices*/kMaxNumGlyphs * 6, 
+		/*indexData*/nullptr);
 	mShader = mRenderer->createShader(
 		loadShaderSource("resources/shaders/text/vert.glsl").c_str(),
 		loadShaderSource("resources/shaders/text/frag.glsl").c_str());
-	VertexElement layout[] = {
-		VertexElement(0, 0, 0, 4*sizeof(float), ElementFormat::Float4)
-	};
-	mLayout = mRenderer->createVertexLayout(1, layout);
 }
 
 void HUDTextRenderer::renderString(
@@ -39,7 +36,7 @@ void HUDTextRenderer::renderString(
 	glm::vec4 const &color,
 	glm::vec4 const &outlineColor)
 {
-	auto len = strlen(str);
+	auto len = std::strlen(str);
 	// TODO do not truncate
 	if (len > kMaxNumGlyphs) len = kMaxNumGlyphs;
 	struct {
@@ -54,11 +51,6 @@ void HUDTextRenderer::renderString(
 		if (!font->getGlyph(char32_t(str[i]), g)) {
 			WARNING << "No glyph for character " << str[i];
 		}
-		// Triangles
-		// A-B
-		// | |
-		// C-D
-		// ABD-ADC
 		int curx = x + g->xOffset;
 		int cury = y + g->yOffset;
 		int botx = curx + g->width;
@@ -87,8 +79,8 @@ void HUDTextRenderer::renderString(
 		ibuf[i*6+5] = i*4+2;
 		x += g->xAdvance;
 	}
-	mRenderer->updateBuffer(mVB,0,len*4*4*sizeof(float),vbuf);
-	mRenderer->updateBuffer(mIB,0,len*6*sizeof(uint16_t),ibuf);
+	mMesh.update(0,len*4,vbuf);
+	mMesh.updateIndices(0,len*6,ibuf);
 	mRenderer->setShader(mShader);
 	auto transform = glm::ortho(0.f,renderContext.pfsp.viewportSize.x,renderContext.pfsp.viewportSize.y,0.f) *
 		Transform().move(glm::vec3(viewPos,0.0f)).toMatrix();
@@ -103,10 +95,7 @@ void HUDTextRenderer::renderString(
 	mRenderer->setTexture(0, font->getTexture(0));
 	mRenderer->setNamedConstantFloat4("uFillColor",color);
 	mRenderer->setNamedConstantFloat4("uOutlineColor",outlineColor);
-	mRenderer->setVertexBuffer(0,mVB);
-	mRenderer->setIndexBuffer(mIB);
-	mRenderer->setVertexLayout(mLayout);
-	mRenderer->drawIndexed(PrimitiveType::Triangle,0,len*4,0,len*6);
+	mMesh.drawPart(0,len*6);
 	glDepthMask(GL_TRUE);
 }
 

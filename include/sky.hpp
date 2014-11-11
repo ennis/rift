@@ -3,6 +3,7 @@
 
 #include <renderer.hpp>
 #include <renderable.hpp>
+#include <meshbuffer.hpp>
 
 class Sky
 {
@@ -18,10 +19,7 @@ protected:
 	float mTimeOfDay;
 	// unique_ptr OR resource_ptr
 	Shader *mSkyShader;
-	// unique_ptr
-	VertexBuffer *mSkyboxVB;
-	// unique_ptr
-	VertexLayout *mSkyboxVBLayout;
+	MeshBuffer mSkybox;
 };
 
 #endif

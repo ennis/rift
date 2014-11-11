@@ -5,9 +5,7 @@
 #include <freecameracontrol.hpp>
 #include <yaml-cpp/yaml.h>
 #include <entity.hpp>
-#include <meshrenderable.hpp>
 #include <renderer.hpp>
-#include <mesh.hpp>
 #include <AntTweakBar.h>
 #include <sky.hpp>
 #include <dds.hpp>
@@ -19,6 +17,7 @@
 #include <hudtext.hpp>
 #include <serialization.hpp>
 #include <immediatecontext.hpp>
+#include <animatedmesh.hpp>
 
 //============================================================================
 class RiftGame : public Game
@@ -41,9 +40,9 @@ private:
 	std::unique_ptr<EffectCompiler> effectCompiler;
 	std::unique_ptr<HUDTextRenderer> hudTextRenderer;
 	std::unique_ptr<ImmediateContextFactory> immediateContextFactory;
+	std::unique_ptr<AnimatedMesh> animTest;
 	ImmediateContext *immediateContext;
 	Font fnt;
-	Entity *buddha;
 	Entity *cameraEntity;
 	Entity *light;
 	Entity *sprite;
@@ -96,19 +95,6 @@ void RiftGame::init()
 	hudTextRenderer = std::unique_ptr<HUDTextRenderer>(new HUDTextRenderer(rd));
 	immediateContextFactory = std::unique_ptr<ImmediateContextFactory>(new ImmediateContextFactory(rd));
 
-	// create the buddha
-	{
-		buddha = Entity::create();
-		// attach a mesh loaded from a file
-		//auto meshRenderable = sceneManager->createMeshInstance(buddha, "resources/models/rock2.mesh");
-		auto mesh = Mesh::loadFromFile(rd, "resources/models/rock2.mesh");
-		buddha->addComponent<MeshRenderable>(rd)->setMesh(mesh);
-		// set the material
-		//meshRenderable->setMaterial(...);
-		// move it to the center and scale it down
-		buddha->getTransform().move(glm::vec3(200, 0, 200)).scale(0.1f);
-	}
-
 	// create the camera object
 	{
 		// create the camera entity (maybe not necessary...)
@@ -127,13 +113,11 @@ void RiftGame::init()
 		light->getTransform().move(glm::vec3(10, 10, 10));
 	}
 
-
 	frameData = rd.createConstantBuffer(sizeof(PerFrameShaderParameters), ResourceUsage::Dynamic, nullptr);
 
 	// TEST TEST
 	sky = new Sky();
 	sky->setTimeOfDay(21.0f);
-
 
 	// terrain
 	{
@@ -158,7 +142,7 @@ void RiftGame::init()
 	meshPS = effectCompiler->createPipelineState(meshEffect.get());
 
 	// font loading
-	fnt.loadFromFile(rd, "resources/img/fonts/arno_pro.fnt");
+	fnt.loadFromFile(rd, "resources/img/fonts/arial.fnt");
 
 	// test serialization
 	std::ofstream fileOut("test.bin", std::ios::binary | std::ios::out);
@@ -176,6 +160,10 @@ void RiftGame::init()
 
 	// test immediate context
 	immediateContext = immediateContextFactory->create(200, PrimitiveType::Triangle);
+
+	// test loading of animated mesh
+	animTest = std::unique_ptr<AnimatedMesh>(new AnimatedMesh(*immediateContextFactory, rd));
+	animTest->loadFromFile("resources/models/animated/mokou.dae");
 }
 
 
@@ -218,13 +206,12 @@ void RiftGame::render(float dt)
 
 	// draw mesh
 	meshPS->setup();
-	buddha->getComponent<MeshRenderable>()->render(rc);
 
 	// draw sky!
 	//sky->render(rc);
 
 	// draw terrain!
-	terrain->render(rc);
+	//terrain->render(rc);
 
 	// draw stuff!
 	/*hudTextRenderer->renderString(
@@ -252,6 +239,8 @@ void RiftGame::render(float dt)
 		.addVertex(Vertex({ 1, 2, 2 }, { 1.0, 0.5, 0.0, 1.0 }))
 		.render(rc);
 
+	animTest->render(rc);
+
 	// render tweak bar
 	//TwDraw();
 }
@@ -276,7 +265,6 @@ void RiftGame::tearDown()
 	TwDeleteAllBars();
 	Entity::destroy(cameraEntity);
 	Entity::destroy(light);
-	Entity::destroy(buddha);
 	delete terrain;
 	delete sky;
 }

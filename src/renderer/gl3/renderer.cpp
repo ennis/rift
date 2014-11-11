@@ -6,6 +6,73 @@
 static Renderer *GRenderer;
 
 //=============================================================================
+struct ElementFormatInfo {
+	unsigned int bytes;
+};
+
+static const ElementFormatInfo sElementFormatInfo[(int)ElementFormat::Max]
+{
+	/*Uint32x4*/   {4*4},
+	/*Sint32x4*/   {4*4},
+	/*Float4*/     {4*4},
+	/*Uint32x3*/   {4*3},
+	/*Sint32x3*/   {4*3},
+	/*Float3*/	   {4*3},
+	/*Float2*/     {4*2},
+	/*Uint16x4*/   {2*4},
+	/*Sint16x4*/   {2*4},
+	/*Unorm16x4*/  {2*4},
+	/*Snorm16x4*/  {2*4},
+	/*Float16x4*/  {2*4},
+	/*Uint16x2*/   {2*2},
+	/*Sint16x2*/   {2*2},
+	/*Unorm16x2*/  {2*2},
+	/*Snorm16x2*/  {2*2},
+	/*Float16x2*/  {2*2},
+	/*Uint8x4*/	   {4},
+	/*Sint8x4*/    {4},
+	/*Unorm8x4*/   {4},
+	/*Snorm8x4*/   {4},
+	/*Uint8x3*/    {3},
+	/*Sint8x3*/    {3},
+	/*Unorm8x3*/   {3},
+	/*Snorm8x3*/   {3},
+	/*Uint8x2*/    {2},
+	/*Sint8x2*/    {2},
+	/*Unorm8x2*/   {2},
+	/*Snorm8x2*/   {2},
+	/*Unorm10x3_1x2*/ {4},
+	/*Snorm10x3_1x2*/ {4},
+	/*BC1*/        {0},	// TODO size of compressed formats
+	/*BC2*/        {0},
+	/*BC3*/        {0},
+	/*UnormBC4*/   {0},
+	/*SnormBC4*/   {0},
+	/*UnormBC5*/   {0},
+	/*SnormBC5*/   {0},
+	/*Uint32*/     {4},
+	/*Sint32*/     {4},
+	/*Uint16*/     {2},
+	/*Sint16*/     {2},
+	/*Unorm16*/    {2},
+	/*Snorm16*/    {2},
+	/*Uint8*/      {1},
+	/*Sint8*/      {1},
+	/*Unorm8*/     {1},
+	/*Snorm8*/     {1},
+	/*Depth32*/    {4},
+	/*Depth24*/    {3},
+	/*Depth16*/    {2},
+	/*Float16*/    {2},
+	/*Float*/      {4},
+};
+
+unsigned int getElementFormatSize(ElementFormat format)
+{
+	return sElementFormatInfo[(int)format].bytes;
+}
+
+//=============================================================================
 // Element formats 
 struct GLVertexElementFormat {
 	GLenum type;

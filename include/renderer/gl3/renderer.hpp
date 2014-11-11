@@ -129,7 +129,7 @@ struct RenderState
 };
 
 const char *getElementFormatName(ElementFormat format);
-
+unsigned int getElementFormatSize(ElementFormat format);
 
 // TODO simplified vertex layout creation without having to specify offset and strides
 // TODO create vertex buffer from vertex layout declaration

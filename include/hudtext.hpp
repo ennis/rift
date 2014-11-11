@@ -4,6 +4,7 @@
 #include <renderer.hpp>
 #include <font.hpp>
 #include <renderable.hpp>
+#include <meshbuffer.hpp>
 
 class HUDTextRenderer
 {
@@ -22,9 +23,7 @@ private:
 	void init();
 	Renderer *mRenderer;	// borrowed ref
 	Shader *mShader;
-	VertexBuffer *mVB;
-	IndexBuffer *mIB;
-	VertexLayout *mLayout;
+	MeshBuffer mMesh;
 };
 
 #endif
