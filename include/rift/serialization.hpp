@@ -140,7 +140,8 @@ namespace BinaryTag
 		void writeString(const char *name, const char *string);
 		template <typename Iter>
 		void writeUintArray(const char *name,Iter begin,Iter end) {
-			unsigned int numElements=end-begin;
+			// XXX integer overflow?
+			auto numElements=end-begin;
 			writeTagHeader(name,TagType::UintArray,numElements*4);
 			while (begin!=end) {
 				write_u32le(mStreamOut,*begin++);
@@ -148,7 +149,7 @@ namespace BinaryTag
 		}
 		template <typename Iter>
 		void writeIntArray(const char *name,Iter begin,Iter end) {
-			unsigned int numElements=end-begin;
+			auto numElements=end-begin;
 			writeTagHeader(name,TagType::IntArray,numElements*4);
 			while (begin!=end) {
 				write_i32le(mStreamOut,*begin++);

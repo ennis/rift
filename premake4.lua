@@ -1,7 +1,9 @@
 solution "rift"
 	location "build/"
+	objdir "build/obj"
+	targetdir "build/"
 	debugdir "."
-	defines { "_CRT_SECURE_NO_WARNINGS", "NOMINMAX", "GLM_FORCE_RADIANS"}
+	defines { "_CRT_SECURE_NO_WARNINGS", "_SCL_SECURE_NO_WARNINGS", "NOMINMAX", "GLM_FORCE_RADIANS"}
 	platforms { "x64" }
 	configurations {"Debug", "Release"}
 	configuration "Debug"
