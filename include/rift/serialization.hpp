@@ -76,6 +76,7 @@ enum class TagType : unsigned int
 	Uint,
 	IntArray, 
 	UintArray,
+	FloatArray,
 	String,
 	Float,
 	Blob,
@@ -155,11 +156,23 @@ namespace BinaryTag
 				write_i32le(mStreamOut,*begin++);
 			}
 		}
+		template <typename Iter>
+		void writeFloatArray(const char *name,Iter begin,Iter end) {
+			// TODO static_assert on decltype(*Iter())
+			auto numElements=end-begin;
+			writeTagHeader(name,TagType::FloatArray,numElements*4);
+			while (begin!=end) {
+				mStreamOut.write((char*)&(*begin++), 4);
+			}
+		}
 		void writeUintArray(const char *name,std::initializer_list<unsigned int> values) {
 			writeUintArray(name,values.begin(),values.end());
 		}
 		void writeIntArray(const char *name,std::initializer_list<int> values) {
 			writeIntArray(name,values.begin(),values.end());
+		}
+		void writeFloatArray(const char *name,std::initializer_list<float> values) {
+			writeFloatArray(name,values.begin(),values.end());
 		}
 
 		void beginCompound(const char *name);

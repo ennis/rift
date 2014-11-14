@@ -163,7 +163,7 @@ void RiftGame::init()
 
 	// test loading of animated mesh
 	animTest = std::unique_ptr<AnimatedMesh>(new AnimatedMesh(*immediateContextFactory, rd));
-	animTest->loadFromFile("resources/models/animated/mokou.dae");
+	animTest->loadFromFile("resources/models/animated/bob_lamp_update.md5mesh");
 }
 
 

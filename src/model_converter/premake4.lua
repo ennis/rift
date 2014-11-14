@@ -7,7 +7,7 @@ project "model_converter"
 		"../../include/rift/**.hpp",
 		"**.cpp"
 	}
-	includedirs { "../../include/**" }
+	includedirs { "../../include/**", "." }
 	use_gl()
 	use_assimp()
 	use_anttweakbar()

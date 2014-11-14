@@ -20,7 +20,7 @@ public:
 	{
 		//return static_cast<T*>(loadImpl(key, loader));
 		// try to insert a resource block
-		auto ins = resourceMap.insert(std::pair<std::string, CResourceBase*>(key, nullptr));
+		auto ins = resourceMap.insert(std::pair<std::string, Resource*>(key, nullptr));
 
 		auto &res = ins.first->second;
 
