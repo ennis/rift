@@ -120,14 +120,16 @@ void AnimatedMesh::loadFromFile(const char *filePath)
 		vertexbase+=mesh->mNumVertices;
 	}
 
-	ElementFormat layout[]={
-		ElementFormat::Float3,
-		ElementFormat::Float3,
-		ElementFormat::Float2,
-		ElementFormat::Uint8x4,
-		ElementFormat::Float4
+	Mesh::Attribute attribs[]={
+		{ 0, ElementFormat::Float3 },
+		{ 0, ElementFormat::Float3 },
+		{ 0, ElementFormat::Float2 },
+		{ 0, ElementFormat::Uint8x4 },
+		{ 0, ElementFormat::Float4 }
 	};
-	mMesh.allocate(PrimitiveType::Triangle,5,layout,ResourceUsage::Dynamic,nbvertex,vtx,nbindex,idx);
+	Mesh::Buffer buffers[] = { { ResourceUsage::Dynamic } };
+	const void *init[] = { vtx };
+	mMesh.allocate(PrimitiveType::Triangle,5,attribs,1,buffers,nbvertex,init,nbindex,ElementFormat::Uint16,ResourceUsage::Static,idx);
 	mNumVertices=nbvertex;
 	mVertices=vtx;
 
@@ -193,7 +195,7 @@ void AnimatedMesh::render(RenderContext const &renderContext)
 			mBones[v.boneIds[3]].finalTransform * mBones[v.boneIds[3]].invBindPose * v.boneWeights[3];
 		vout.position=glm::vec3(tf * glm::vec4(v.position,1.0f));
 	}
-	mMesh.update(0,mNumVertices,mVerticesSkinned);
+	mMesh.update(0,0,mNumVertices,mVerticesSkinned);
 	// render mesh
 	glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
 	mRenderer->setShader(mShader);

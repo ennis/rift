@@ -52,8 +52,10 @@ Sky::Sky() : mTimeOfDay(0.f), mSkybox(Game::renderer())
 		10.0f, -10.0f, 10.0f
 	};
 
-	ElementFormat layout[] = { ElementFormat::Float3 };
-	mSkybox.allocate(PrimitiveType::Triangle, 1, layout, ResourceUsage::Static, 36, skycubeVertices);
+	Mesh::Attribute attribs[] = { { 0, ElementFormat::Float3 } };
+	Mesh::Buffer buffers[] = { { ResourceUsage::Static } };
+	const void *init[] = { skycubeVertices };
+	mSkybox.allocate(PrimitiveType::Triangle, 1, attribs, 1, buffers, 36, init, 0, ElementFormat::Max, ResourceUsage::Static, nullptr);
 }
 
 Sky::~Sky()

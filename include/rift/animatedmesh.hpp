@@ -4,7 +4,7 @@
 #include <assimp/scene.h>
 #include <renderer.hpp>
 #include <immediatecontext.hpp>
-#include <meshbuffer.hpp>
+#include <mesh.hpp>
 #include <unordered_set>
 
 class AnimatedMesh
@@ -21,7 +21,7 @@ public:
 private:
 	Renderer *mRenderer;
 	ImmediateContext *immediateContext;
-	MeshBuffer mMesh;
+	Mesh mMesh;
 	Shader *mShader;
 	ConstantBuffer *mBonesCB;
 	struct Vertex {

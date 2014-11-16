@@ -13,16 +13,16 @@ HUDTextRenderer::~HUDTextRenderer()
 
 void HUDTextRenderer::init()
 {
-	ElementFormat layout[]={ElementFormat::Float4};
+	Mesh::Attribute attrib[] = { { 0, ElementFormat::Float4 } };
+	Mesh::Buffer buffers[] = { { ResourceUsage::Dynamic } };
+
 	mMesh.allocate(
-		PrimitiveType::Triangle,
-		/*numElements*/ 1,
-		/*elements*/layout,
-		ResourceUsage::Dynamic,
-		/*numVertices*/kMaxNumGlyphs*4,
-		/*vertexData*/nullptr,
-		/*numIndices*/kMaxNumGlyphs*6,
-		/*indexData*/nullptr);
+		PrimitiveType::Triangle, 
+		1, attrib, 
+		1, buffers, 
+		kMaxNumGlyphs * 4, nullptr, 
+		kMaxNumGlyphs * 6, ElementFormat::Uint16, ResourceUsage::Dynamic, nullptr);
+
 	mShader=mRenderer->createShader(
 		loadShaderSource("resources/shaders/text/vert.glsl").c_str(),
 		loadShaderSource("resources/shaders/text/frag.glsl").c_str());
@@ -79,7 +79,7 @@ void HUDTextRenderer::renderString(
 		ibuf[i*6+5]=i*4+2;
 		x+=g->xAdvance;
 	}
-	mMesh.update(0,len*4,vbuf);
+	mMesh.update(0,0,len*4,vbuf);
 	mMesh.updateIndices(0,len*6,ibuf);
 	mRenderer->setShader(mShader);
 	auto transform=glm::ortho(0.f,renderContext.pfsp.viewportSize.x,renderContext.pfsp.viewportSize.y,0.f) *

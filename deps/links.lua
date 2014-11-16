@@ -18,6 +18,6 @@ function use_anttweakbar()
 	links {"AntTweakBar64"}
 end
 
-function use_anttweakbar()
+function use_msgpack()
 	includedirs {thisDir.."include/msgpack"}
 end

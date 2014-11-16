@@ -18,6 +18,7 @@ Font::~Font()
 //=============================================================================
 void Font::loadFromFile(Renderer &renderer, const char *fontFilePath)
 {
+	using namespace rift::serialization;
 	// binary file produced by BMFont
 	std::ifstream fileIn(fontFilePath, std::ios::in | std::ios::binary);
 	assert(fileIn.is_open());

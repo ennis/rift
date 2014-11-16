@@ -1,4 +1,4 @@
-#include <model.hpp>
+#include "model.hpp"
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
@@ -30,14 +30,6 @@ namespace
 			map.insert(node);
 			addBranch(map,node->mParent);
 		}
-	}
-
-	void writeSubmesh(BinaryTag::Writer &streamOut, Importer::Model::Submesh const &submesh)
-	{
-	}
-
-	void writeBone(BinaryTag::Writer &streamOut, Importer::Model::Bone const &bone)
-	{
 	}
 
 	void buildSkeleton(
@@ -76,21 +68,21 @@ namespace
 	}
 }
 
-// pack matrix
-namespace msgpack {
-	MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
-		template <typename Stream>
-		packer<Stream>& operator<<(packer<Stream>& o, glm::mat4 const& v) {
-			o.pack_array(16);
+
+namespace rift {
+namespace serialization {
+	// glm::mat4 packer
+	template <>
+	struct pack_traits < glm::mat4 > {
+		static void pack(Packer &p, glm::mat4 const &v) {
 			for (unsigned int i = 0; i < 4; ++i) {
 				for (unsigned int j = 0; j < 4; ++j) {
-					o.pack_float(v[i][j]);
+					p.pack(v[i][j]);
 				}
 			}
-			return o;
 		}
-	} // MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS)
-} // namespace msgpack
+	};
+}}
 
 namespace Importer {
 
@@ -197,68 +189,23 @@ void Model::import(const char *filePath)
 
 void Model::export(std::ostream &streamOut)
 {
-	//BinaryTag::Writer w(streamOut);
-	//w.beginCompound("mesh");
-	//w.beginCompound("submeshes");
-	//	for (auto &&submesh : submeshes) {
-	//		w.beginCompound("");
-	//		w.writeUint("startIndex", submesh.startIndex);
-	//		w.writeUint("startVertex", submesh.startVertex);
-	//		w.writeUint("numIndices", submesh.numIndices);
-	//		w.writeUint("numVertices", submesh.numVertices);
-	//		w.endCompound();
-	//	}
-	//w.endCompound();
-	//w.beginCompound("bones");
-	//	for (auto &&bone : bones) {
-	//		w.beginCompound("");
-	//		w.writeString("name", bone.name);
-	//		w.writeFloatArray("invBindPose", &bone.invBindPose[0], &bone.invBindPose[0] + 16);
-	//		w.writeFloatArray("transform", &bone.transform[0], &bone.transform[0] + 16);
-	//		w.writeInt("parent", bone.parent);
-	//		w.endCompound();
-	//	}
-	//w.endCompound();
-	//w.beginCompound("vertices");
-	//	w.writeUint("numVertices", vertices.size());
-	//	w.writeUintArray("layout", {
-	//		/*position   */(unsigned int)ElementFormat::Float3,
-	//		/*normal     */(unsigned int)ElementFormat::Unorm10x3_1x2,
-	//		/*tangent    */(unsigned int)ElementFormat::Unorm10x3_1x2,
-	//		/*bitangent  */(unsigned int)ElementFormat::Unorm10x3_1x2,
-	//		/*texcoord   */(unsigned int)ElementFormat::Unorm16x2,
-	//		/*boneids    */(unsigned int)ElementFormat::Uint8x4,
-	//		/*boneweights*/(unsigned int)ElementFormat::Unorm16x4
-	//	});
-	//	w.writeBlob("data", vertices.data(), sizeof(Importer::Model::Vertex) * vertices.size());
-	//w.endCompound();
-	//w.beginCompound("indices");
-	//	w.writeUint("numIndices", indices.size());
-	//	w.writeUint("type", (unsigned int)ElementFormat::Uint32);
-	//	w.writeBlob("data", indices.data(), sizeof(uint32_t) * indices.size());
-	//w.endCompound();
-	//w.endCompound();
+	using namespace rift::serialization;
 	std::cout << "Exporting...\n";
-	auto packer = msgpack::packer<std::ostream>(streamOut);
-	
-	packer.pack_array(submeshes.size());
-	for (auto &&submesh : submeshes) {
-		msgpack::pack(streamOut, submesh.startIndex);
-		msgpack::pack(streamOut, submesh.startVertex);
-		msgpack::pack(streamOut, submesh.numIndices);
-		msgpack::pack(streamOut, submesh.numVertices);
-	}
-	packer.pack_array(bones.size());
-	for (auto &&bone : bones) {
-		msgpack::pack(streamOut, bone.name);
-		msgpack::pack(streamOut, bone.invBindPose);
-		msgpack::pack(streamOut, bone.transform);
-		msgpack::pack(streamOut, bone.parent);
-	}
-	packer.pack_uint32(vertices.size());
-	packer.pack_uint32(indices.size());
-	packer.pack_bin_body((char*)vertices.data(), vertices.size()*sizeof(Model::Vertex));
-	packer.pack_bin_body((char*)indices.data(), indices.size()*sizeof(uint32_t));
+	Packer packer(streamOut);
+	packer.pack(submeshes, [](Packer &p, const Submesh &sm) {
+		p.pack(sm.startVertex);
+		p.pack(sm.startIndex);
+		p.pack(sm.numVertices);
+		p.pack(sm.numIndices);
+	});
+	packer.pack(bones, [](Packer &p, const Bone &b) {
+		p.pack(b.name);
+		p.pack(b.transform);
+		p.pack(b.invBindPose);
+		p.pack(b.parent);
+	});
+	packer.pack_bin(vertices.data(), vertices.size()*sizeof(Model::Vertex));
+	packer.pack_bin(indices.data(), indices.size()*sizeof(uint32_t));
 }
 
 }

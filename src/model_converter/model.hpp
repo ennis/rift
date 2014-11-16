@@ -6,6 +6,7 @@ namespace Importer
 	class Model
 	{
 	public:
+		// TODO sync with librift model class
 		struct Vertex {
 			glm::vec3 position;
 			glm::vec3 normal;
