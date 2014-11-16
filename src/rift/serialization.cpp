@@ -176,4 +176,10 @@ namespace BinaryTag
 	{
 		writeTagHeader("", TagType::End, 0);
 	}
+
+	void Writer::writeBlob(const char *name, const void *data, unsigned int size)
+	{
+		writeTagHeader(name, TagType::Blob, size);
+		mStreamOut.write((char*)data, size);
+	}
 }

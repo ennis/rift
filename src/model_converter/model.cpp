@@ -7,6 +7,8 @@
 #include <unordered_set>
 #include <renderer.hpp>
 #include <cassert>
+#include <msgpack\msgpack.hpp>
+#include <msgpack\msgpack_fwd.hpp>
 
 namespace 
 {
@@ -32,48 +34,10 @@ namespace
 
 	void writeSubmesh(BinaryTag::Writer &streamOut, Importer::Model::Submesh const &submesh)
 	{
-		streamOut.beginCompound("");
-			streamOut.writeUint("startIndex", submesh.startIndex);
-			streamOut.writeUint("startVertex", submesh.startVertex);
-			streamOut.writeUint("numIndices", submesh.numIndices);
-			streamOut.writeUint("numVertices", submesh.numVertices);
-		streamOut.endCompound();
 	}
 
 	void writeBone(BinaryTag::Writer &streamOut, Importer::Model::Bone const &bone)
 	{
-		streamOut.beginCompound("");
-			streamOut.writeString(bone.name);
-			streamOut.writeFloatArray("invBindPose", &bone.invBindPose[0], &bone.invBindPose[16]);
-			streamOut.writeFloatArray("transform", &bone.transform[0], &bone.transform[16]);
-			streamOut.writeInt("parent", bone.parent);
-		streamOut.endCompound();
-	}
-
-	void writeVertices(BinaryTag::Writer &streamOut, std::vector<Importer::Model::Vertex> const &vertices)
-	{
-		streamOut.beginCompound("vertices");
-		streamOut.writeUint("numVertices", vertices.size());
-		streamOut.writeUintArray("layout", {
-			/*position   */(unsigned int)ElementFormat::Float3,
-			/*normal     */(unsigned int)ElementFormat::Unorm10x3_1x2,
-			/*tangent    */(unsigned int)ElementFormat::Unorm10x3_1x2,
-			/*bitangent  */(unsigned int)ElementFormat::Unorm10x3_1x2,
-			/*texcoord   */(unsigned int)ElementFormat::Unorm16x2,
-			/*boneids    */(unsigned int)ElementFormat::Uint8x4,
-			/*boneweights*/(unsigned int)ElementFormat::Unorm16x4
-		});
-		streamOut.writeBlob("data", vertices.data(), sizeof(Importer::Model::Vertex) * vertices.size());
-		streamOut.endCompound();
-	}
-
-	void writeIndices(BinaryTag::Writer &streamOut, std::vector<uint32_t> const &indices)
-	{
-		streamOut.beginCompound("indices");
-		streamOut.writeUint("numIndices", indices.size());
-		streamOut.writeUint("type", (unsigned int)ElementFormat::Uint32);	// TODO other types?
-		streamOut.writeBlob("data", indices.data(), sizeof(uint32_t) * indices.size());
-		streamOut.endCompound();
 	}
 
 	void buildSkeleton(
@@ -100,10 +64,40 @@ namespace
 			buildSkeleton(boneset,bones,boneId,cur->mChildren[ic]);
 		}
 	}
+
+	int findBone(std::vector<Importer::Model::Bone> bones, const char *name)
+	{
+		for (unsigned int ib = 0; ib<bones.size(); ++ib) {
+			if (!strncmp(name, bones[ib].name, 32)) {
+				return ib;
+			}
+		}
+		return -1;
+	}
 }
 
-namespace Importer
+// pack matrix
+namespace msgpack {
+	MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
+		template <typename Stream>
+		packer<Stream>& operator<<(packer<Stream>& o, glm::mat4 const& v) {
+			o.pack_array(16);
+			for (unsigned int i = 0; i < 4; ++i) {
+				for (unsigned int j = 0; j < 4; ++j) {
+					o.pack_float(v[i][j]);
+				}
+			}
+			return o;
+		}
+	} // MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS)
+} // namespace msgpack
+
+namespace Importer {
+
+Model::Model(const char *filePath)
 {
+	import(filePath);
+}
 
 void Model::import(const char *filePath)
 {
@@ -165,6 +159,7 @@ void Model::import(const char *filePath)
 		vertexbase+=mesh->mNumVertices;
 		indexbase+=mesh->mNumFaces*3;
 	}
+
 	// wow
 	// such clusterfuck
 	// very bullshit
@@ -175,14 +170,14 @@ void Model::import(const char *filePath)
 		auto mesh=scene->mMeshes[i];
 		for (unsigned int ib=0; ib<mesh->mNumBones; ++ib) {
 			auto bone=mesh->mBones[ib];
-			auto boneid=findBone(bone->mName.C_Str());
+			auto boneid=findBone(bones, bone->mName.C_Str());
 			auto &bone2=bones[boneid];
 			auto &m=bone->mOffsetMatrix;
-			bone2.invBindPose=glm::transpose(glm::mat4(
-				m.a1,m.a2,m.a3,m.a4,
-				m.b1,m.b2,m.b3,m.b4,
-				m.c1,m.c2,m.c3,m.c4,
-				m.d1,m.d2,m.d3,m.d4));
+			bone2.invBindPose = glm::mat4(
+				m.a1, m.b1, m.c1, m.d1,
+				m.a2, m.b2, m.c2, m.d2,
+				m.a3, m.b3, m.c3, m.d3,
+				m.a4, m.b4, m.c4, m.d4);
 			for (unsigned int iv=0; iv<bone->mNumWeights; ++iv) {
 				auto w=bone->mWeights[iv];
 				int iw;
@@ -198,6 +193,72 @@ void Model::import(const char *filePath)
 		}
 		vertexbase+=mesh->mNumVertices;
 	}
+}
+
+void Model::export(std::ostream &streamOut)
+{
+	//BinaryTag::Writer w(streamOut);
+	//w.beginCompound("mesh");
+	//w.beginCompound("submeshes");
+	//	for (auto &&submesh : submeshes) {
+	//		w.beginCompound("");
+	//		w.writeUint("startIndex", submesh.startIndex);
+	//		w.writeUint("startVertex", submesh.startVertex);
+	//		w.writeUint("numIndices", submesh.numIndices);
+	//		w.writeUint("numVertices", submesh.numVertices);
+	//		w.endCompound();
+	//	}
+	//w.endCompound();
+	//w.beginCompound("bones");
+	//	for (auto &&bone : bones) {
+	//		w.beginCompound("");
+	//		w.writeString("name", bone.name);
+	//		w.writeFloatArray("invBindPose", &bone.invBindPose[0], &bone.invBindPose[0] + 16);
+	//		w.writeFloatArray("transform", &bone.transform[0], &bone.transform[0] + 16);
+	//		w.writeInt("parent", bone.parent);
+	//		w.endCompound();
+	//	}
+	//w.endCompound();
+	//w.beginCompound("vertices");
+	//	w.writeUint("numVertices", vertices.size());
+	//	w.writeUintArray("layout", {
+	//		/*position   */(unsigned int)ElementFormat::Float3,
+	//		/*normal     */(unsigned int)ElementFormat::Unorm10x3_1x2,
+	//		/*tangent    */(unsigned int)ElementFormat::Unorm10x3_1x2,
+	//		/*bitangent  */(unsigned int)ElementFormat::Unorm10x3_1x2,
+	//		/*texcoord   */(unsigned int)ElementFormat::Unorm16x2,
+	//		/*boneids    */(unsigned int)ElementFormat::Uint8x4,
+	//		/*boneweights*/(unsigned int)ElementFormat::Unorm16x4
+	//	});
+	//	w.writeBlob("data", vertices.data(), sizeof(Importer::Model::Vertex) * vertices.size());
+	//w.endCompound();
+	//w.beginCompound("indices");
+	//	w.writeUint("numIndices", indices.size());
+	//	w.writeUint("type", (unsigned int)ElementFormat::Uint32);
+	//	w.writeBlob("data", indices.data(), sizeof(uint32_t) * indices.size());
+	//w.endCompound();
+	//w.endCompound();
+	std::cout << "Exporting...\n";
+	auto packer = msgpack::packer<std::ostream>(streamOut);
+	
+	packer.pack_array(submeshes.size());
+	for (auto &&submesh : submeshes) {
+		msgpack::pack(streamOut, submesh.startIndex);
+		msgpack::pack(streamOut, submesh.startVertex);
+		msgpack::pack(streamOut, submesh.numIndices);
+		msgpack::pack(streamOut, submesh.numVertices);
+	}
+	packer.pack_array(bones.size());
+	for (auto &&bone : bones) {
+		msgpack::pack(streamOut, bone.name);
+		msgpack::pack(streamOut, bone.invBindPose);
+		msgpack::pack(streamOut, bone.transform);
+		msgpack::pack(streamOut, bone.parent);
+	}
+	packer.pack_uint32(vertices.size());
+	packer.pack_uint32(indices.size());
+	packer.pack_bin_body((char*)vertices.data(), vertices.size()*sizeof(Model::Vertex));
+	packer.pack_bin_body((char*)indices.data(), indices.size()*sizeof(uint32_t));
 }
 
 }

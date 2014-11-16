@@ -188,9 +188,9 @@ void AnimatedMesh::render(RenderContext const &renderContext)
 		// bwaaaaah
 		auto tf=
 			mBones[v.boneIds[0]].finalTransform * mBones[v.boneIds[0]].invBindPose * v.boneWeights[0]+
-			mBones[v.boneIds[1]].finalTransform * mBones[v.boneIds[0]].invBindPose * v.boneWeights[1]+
-			mBones[v.boneIds[2]].finalTransform * mBones[v.boneIds[0]].invBindPose * v.boneWeights[2]+
-			mBones[v.boneIds[3]].finalTransform * mBones[v.boneIds[0]].invBindPose * v.boneWeights[3];
+			mBones[v.boneIds[1]].finalTransform * mBones[v.boneIds[1]].invBindPose * v.boneWeights[1]+
+			mBones[v.boneIds[2]].finalTransform * mBones[v.boneIds[2]].invBindPose * v.boneWeights[2]+
+			mBones[v.boneIds[3]].finalTransform * mBones[v.boneIds[3]].invBindPose * v.boneWeights[3];
 		vout.position=glm::vec3(tf * glm::vec4(v.position,1.0f));
 	}
 	mMesh.update(0,mNumVertices,mVerticesSkinned);

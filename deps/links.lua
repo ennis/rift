@@ -17,3 +17,7 @@ function use_anttweakbar()
 	includedirs {thisDir.."include/anttweakbar"}
 	links {"AntTweakBar64"}
 end
+
+function use_anttweakbar()
+	includedirs {thisDir.."include/msgpack"}
+end

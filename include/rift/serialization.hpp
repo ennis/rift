@@ -86,6 +86,8 @@ enum class TagType : unsigned int
 	Max
 };
 
+// Array <tagname> <payload size> | <schema> <data>
+
 namespace BinaryTag 
 {
 	static const unsigned int kMaxTagNameSize = 64;
@@ -174,6 +176,7 @@ namespace BinaryTag
 		void writeFloatArray(const char *name,std::initializer_list<float> values) {
 			writeFloatArray(name,values.begin(),values.end());
 		}
+		void writeBlob(const char *name, const void *data, unsigned int size);
 
 		void beginCompound(const char *name);
 		void endCompound();
