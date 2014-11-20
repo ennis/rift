@@ -17,7 +17,8 @@
 #include <hudtext.hpp>
 #include <serialization.hpp>
 #include <immediatecontext.hpp>
-#include <animatedmesh.hpp>
+//#include <animatedmesh.hpp>
+#include <model.hpp>
 
 //============================================================================
 class RiftGame : public Game
@@ -40,7 +41,8 @@ private:
 	std::unique_ptr<EffectCompiler> effectCompiler;
 	std::unique_ptr<HUDTextRenderer> hudTextRenderer;
 	std::unique_ptr<ImmediateContextFactory> immediateContextFactory;
-	std::unique_ptr<AnimatedMesh> animTest;
+	std::unique_ptr<Model> model;
+	//std::unique_ptr<AnimatedMesh> animTest;
 	ImmediateContext *immediateContext;
 	Font fnt;
 	Entity *cameraEntity;
@@ -148,8 +150,9 @@ void RiftGame::init()
 	immediateContext = immediateContextFactory->create(200, PrimitiveType::Triangle);
 
 	// test loading of animated mesh
-	animTest = std::unique_ptr<AnimatedMesh>(new AnimatedMesh(*immediateContextFactory, rd));
-	animTest->loadFromFile("resources/models/animated/mokou.dae");
+	//animTest = std::unique_ptr<AnimatedMesh>(new AnimatedMesh(*immediateContextFactory, rd));
+	//animTest->loadFromFile("resources/models/animated/mokou.dae");
+	model = std::unique_ptr<Model>(new Model(rd, "resources/models/animated/mokou.dae.mesh"));
 }
 
 
@@ -197,7 +200,7 @@ void RiftGame::render(float dt)
 	//sky->render(rc);
 
 	// draw terrain!
-	//terrain->render(rc);
+	terrain->render(rc);
 
 	// draw stuff!
 	/*hudTextRenderer->renderString(
@@ -225,7 +228,7 @@ void RiftGame::render(float dt)
 		.addVertex(Vertex({ 1, 2, 2 }, { 1.0, 0.5, 0.0, 1.0 }))
 		.render(rc);
 
-	animTest->render(rc);
+	//animTest->render(rc);
 
 	// render tweak bar
 	//TwDraw();

@@ -36,7 +36,10 @@ public:
 
 private:
 	static const char *getSeverityString(LogSeverity severity);
+
+#ifdef CONFIG_LOG_TO_FILE
 	std::ofstream outFileStream;
+#endif
 };
 
 class LogMessage
@@ -74,6 +77,7 @@ private:
 #endif
 
 #undef ERROR
+#undef WARNING
 #define LOG LogMessage(LS_Debug, __func__, __FILE__, __LINE__)
 #define ERROR LogMessage(LS_Error, __func__, __FILE__, __LINE__)
 #define WARNING LogMessage(LS_Warning, __func__, __FILE__, __LINE__)

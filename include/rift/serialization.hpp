@@ -136,6 +136,10 @@ public:
 	Unpacker &unpack(unsigned int &v) { read_u32le(mStreamIn, v); return *this; }
 	Unpacker &unpack(float &v)  { mStreamIn.read((char*)&v, sizeof(float)); return *this; }
 	Unpacker &unpack(double &v) { mStreamIn.read((char*)&v, sizeof(double)); return *this; }
+
+	template <typename T>
+	Unpacker &skip() { T t; return unpack(t); }
+
 	template <std::size_t size>
 	Unpacker &unpack(char (&v)[size]) {
 		unsigned int rsize;
@@ -182,8 +186,16 @@ public:
 		pack_traits<T>::unpack(*this, v);
 		return *this;
 	}
-	Unpacker &unpack_bin(std::unique_ptr<uint8_t[]> &data) {
+	template <typename Fn>
+	Unpacker &skip_array(Fn f) {
 		unsigned int size;
+		unpack(size);
+		for (unsigned int i = 0; i < size; ++i) {
+			f(*this);
+		}
+		return *this;
+	}
+	Unpacker &unpack_bin(std::unique_ptr<uint8_t[]> &data, unsigned int &size) {
 		unpack(size);
 		auto p = new uint8_t[size];
 		mStreamIn.read((char*)p, size);

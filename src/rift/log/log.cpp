@@ -7,7 +7,9 @@
 
 Logger::~Logger()
 {
+#ifdef CONFIG_LOG_TO_FILE
 	outFileStream.close();
+#endif
 }
 
 //
@@ -19,7 +21,10 @@ void Logger::init(const char *logFile)
 	auto now = std::chrono::system_clock::now();
 	fileName << logFile << '.' << now.time_since_epoch().count() << ".txt";
 	// TODO append?
+
+#ifdef CONFIG_LOG_TO_FILE
 	outFileStream.open(fileName.str(), std::ios_base::out);
+#endif
 }
 
 //
@@ -32,8 +37,11 @@ void Logger::sendMessage(LogMessage const &message)
 	fmt_msg << message.message.str().c_str() << '\n';
 
 	auto str = fmt_msg.str();
+
+#ifdef CONFIG_LOG_TO_FILE
 	outFileStream << str;
 	outFileStream.flush();
+#endif
 
 	// also send it to the standard output
 	std::clog << str;

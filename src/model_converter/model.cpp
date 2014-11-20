@@ -7,8 +7,6 @@
 #include <unordered_set>
 #include <renderer.hpp>
 #include <cassert>
-#include <msgpack\msgpack.hpp>
-#include <msgpack\msgpack_fwd.hpp>
 
 namespace 
 {
