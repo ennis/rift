@@ -17,8 +17,8 @@
 #include <hudtext.hpp>
 #include <serialization.hpp>
 #include <immediatecontext.hpp>
-//#include <animatedmesh.hpp>
 #include <model.hpp>
+#include <skinnedmodelrenderer.hpp>
 
 //============================================================================
 class RiftGame : public Game
@@ -42,6 +42,7 @@ private:
 	std::unique_ptr<HUDTextRenderer> hudTextRenderer;
 	std::unique_ptr<ImmediateContextFactory> immediateContextFactory;
 	std::unique_ptr<Model> model;
+	std::unique_ptr<SkinnedModelRenderer> animTest;
 	//std::unique_ptr<AnimatedMesh> animTest;
 	ImmediateContext *immediateContext;
 	Font fnt;
@@ -153,6 +154,7 @@ void RiftGame::init()
 	//animTest = std::unique_ptr<AnimatedMesh>(new AnimatedMesh(*immediateContextFactory, rd));
 	//animTest->loadFromFile("resources/models/animated/mokou.dae");
 	model = std::unique_ptr<Model>(new Model(rd, "resources/models/animated/mokou.dae.mesh"));
+	animTest = std::unique_ptr<SkinnedModelRenderer>(new SkinnedModelRenderer(rd, *immediateContextFactory, *model));
 }
 
 
@@ -228,7 +230,8 @@ void RiftGame::render(float dt)
 		.addVertex(Vertex({ 1, 2, 2 }, { 1.0, 0.5, 0.0, 1.0 }))
 		.render(rc);
 
-	//animTest->render(rc);
+	animTest->applyPose(std::vector<Transform>());
+	animTest->draw(rc);
 
 	// render tweak bar
 	//TwDraw();

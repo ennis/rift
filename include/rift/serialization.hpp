@@ -78,6 +78,9 @@ class Packer
 {
 public:
 	Packer(std::ostream &streamOut) : mStreamOut(streamOut) {}
+	Packer &pack(char c) { mStreamOut.put(c); return *this; }
+	Packer &pack16(short v) { write_i16le(mStreamOut, v); return *this; }
+	Packer &pack16(unsigned short v) { write_u16le(mStreamOut, v); return *this; }
 	Packer &pack(int v) { write_i32le(mStreamOut, v); return *this; }
 	Packer &pack(unsigned int v) { write_u32le(mStreamOut, v); return *this; }
 	Packer &pack(float v) { mStreamOut.write((char*)&v, sizeof(float)); return *this; }
@@ -93,22 +96,30 @@ public:
 	}
 	Packer &pack(const char *str, unsigned int size) { write_u32le(mStreamOut, size); mStreamOut.write(str, size); return *this; }
 	Packer &pack(std::string const &str) { pack(str.c_str(), str.size()); return *this; }
-	Packer &packArray(unsigned int size) { write_u32le(mStreamOut, size); return *this; }
-	template <typename T>
-	Packer &pack(std::vector<T> const &vec) {
-		packArray(vec.size());
-		for (auto &&v : vec) {
-			pack(v);
+	Packer &pack_array_size(unsigned int size) { write_u32le(mStreamOut, size); return *this; }
+	template <typename Iter>
+	Packer &pack_n(Iter begin, Iter end) {
+		while (begin != end) {
+			pack(*begin++);
 		}
 		return *this;
 	}
-	template <typename T, typename Fn>
-	Packer &pack(std::vector<T> const &v, Fn f) {
-		write_u32le(mStreamOut, v.size());
-		for (const auto &e : v) {
-			f(*this, e);
+	template <typename Iter, typename Fn>
+	Packer &pack_n(Iter begin, Iter end, Fn f) {
+		while (begin != end) {
+			f(*this, *begin++);
 		}
 		return *this;
+	}
+	template <typename T>
+	Packer &pack(std::vector<T> const &vec) {
+		pack_array_size(vec.size());
+		return pack_n(v.cbegin(), v.cend());
+	}
+	template <typename T, typename Fn>
+	Packer &pack(std::vector<T> const &v, Fn f) {
+		pack_array_size(v.size());
+		return pack_n(v.cbegin(), v.cend(), f);
 	}
 	template <typename T>
 	Packer &pack(T const &v) {
@@ -117,7 +128,7 @@ public:
 	}
 
 	Packer &pack_bin(void const *ptr, unsigned int size) {
-		write_u32le(mStreamOut, size);
+		pack_array_size(size);
 		mStreamOut.write((const char*)ptr, size);
 		return *this;
 	}
@@ -132,6 +143,8 @@ public:
 	Unpacker(std::istream &streamIn) : mStreamIn(streamIn) {}
 
 	Unpacker &unpack_array(unsigned int &v) { read_u32le(mStreamIn, v); return *this; }
+	Unpacker &unpack16(short &v) { read_i16le(mStreamIn, v); return *this; }
+	Unpacker &unpack16(unsigned short &v) { read_u16le(mStreamIn, v); return *this; }
 	Unpacker &unpack(int &v) { read_i32le(mStreamIn, v); return *this; }
 	Unpacker &unpack(unsigned int &v) { read_u32le(mStreamIn, v); return *this; }
 	Unpacker &unpack(float &v)  { mStreamIn.read((char*)&v, sizeof(float)); return *this; }
@@ -153,6 +166,15 @@ public:
 		mStreamIn.read(v, size);
 		return *this;
 	}
+	template <std::size_t size>
+		Unpacker &unpack_n(char(&v)[size]) {
+		unpack_n(v, size);
+		return *this;
+	}
+	Unpacker &unpack_n(char *v, unsigned int size) {
+		mStreamIn.read(v, size);
+		return *this;
+	}
 	Unpacker &unpack(std::string &str) {
 		unsigned int size;
 		read_u32le(mStreamIn, size);
@@ -165,22 +187,35 @@ public:
 	Unpacker &unpack(std::vector<T> &v) {
 		unsigned int size;
 		unpack(size);
-		v.resize(size);
-		for (unsigned int i = 0; i < size; ++i) {
-			unpack(v[i]);
-		}
+		unpack_n(size, v);
 		return *this;
 	}
 	template <typename T, typename Fn>
 	Unpacker &unpack(std::vector<T> &v, Fn f) {
 		unsigned int size;
 		unpack(size);
-		v.reserve(size);
-		for (unsigned int i = 0; i < size; ++i) {
+		unpack_n(size, v, f);
+		return *this;
+	}
+	template <typename T>
+	Unpacker &unpack_n(unsigned int n, std::vector<T> &v)
+	{
+		v.resize(n);
+		for (unsigned int i = 0; i < n; ++i) {
+			unpack(v[i]);
+		}
+		return *this;
+	}
+	template <typename T, typename Fn>
+	Unpacker &unpack_n(unsigned int n, std::vector<T> &v, Fn f)
+	{
+		v.reserve(n);
+		for (unsigned int i = 0; i < n; ++i) {
 			v.emplace_back(f(*this));
 		}
 		return *this;
 	}
+
 	template <typename T>
 	Unpacker &unpack(T &v) {
 		pack_traits<T>::unpack(*this, v);

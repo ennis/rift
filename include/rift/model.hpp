@@ -4,6 +4,12 @@
 #include <renderer.hpp>
 #include <mesh.hpp>
 
+namespace ModelLoadHint
+{
+	static const unsigned int Unpack = (1 << 0);
+	static const unsigned int Static = (1 << 1);
+};
+
 // static models
 class Model
 {
@@ -32,6 +38,8 @@ public:
 		glm::mat4 transform;
 		glm::mat4 invBindPose;
 		glm::mat4 finalTransform;
+		// TODO SmallVector
+		std::vector<int> children;
 	};
 
 	struct GPUBone {
@@ -49,16 +57,7 @@ public:
 	Model(Renderer &renderer, const char *filePath);
 	~Model();
 	
-	void loadFromFile(const char *filePath);
-
-	uint8_t *getVertexData() const {
-		// TODO type-safe
-		return mVertexData.get();
-	}
-	uint8_t *getIndexData() const {
-		// TODO type-safe
-		return mIndexData.get();
-	}
+	void loadFromFile(const char *filePath, unsigned int hints = 0);
 
 	unsigned int numVertices() const {
 		return mNumVertices;
@@ -66,20 +65,50 @@ public:
 	unsigned int numIndices() const {
 		return mNumIndices;
 	}
+	std::vector<Bone> const &getBones() const {
+		return mBones;
+	}
+	std::vector<glm::vec3> const &getPositions() const {
+		return mPositions;
+	}
+	std::vector<glm::vec3> const &getNormals() const {
+		return mNormals;
+	}
+	std::vector<glm::vec3> const &getTangents() const {
+		return mTangents;
+	}
+	std::vector<glm::vec3> const &getBitangents() const {
+		return mBitangents;
+	}
+	std::vector<glm::vec2> const &getTexcoords(unsigned int id = 0) const {
+		return mTexcoords;
+	}
+	std::vector<glm::u8vec4> const &getBoneIndices() const {
+		return mBoneIDs;
+	}
+	std::vector<glm::vec4> const &getBoneWeights() const {
+		return mBoneWeights;
+	}
+	std::vector<uint16_t> const &getIndices() const {
+		return mIndices;
+	}
 	
 private:
 	Renderer &mRenderer;
 	std::vector<Submesh> mSubmeshes;
 	//std::vector<Model::Vertex> mVertices;
-	std::vector<uint32_t> mIndices;
+	std::vector<uint16_t> mIndices;
 	std::vector<Bone> mBones;
 	std::unique_ptr<Mesh> mMesh;
-	unsigned int mVertexDataSize;
-	unsigned int mIndexDataSize;
-	std::unique_ptr<uint8_t[]> mVertexData;
-	std::unique_ptr<uint8_t[]> mIndexData;
 	unsigned int mNumVertices;
 	unsigned int mNumIndices;
+	std::vector<glm::vec3> mPositions;
+	std::vector<glm::vec3> mNormals;
+	std::vector<glm::vec3> mTangents;
+	std::vector<glm::vec3> mBitangents;
+	std::vector<glm::vec2> mTexcoords;
+	std::vector<glm::u8vec4> mBoneIDs;
+	std::vector<glm::vec4> mBoneWeights;
 };
 
  

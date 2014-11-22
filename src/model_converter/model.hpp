@@ -13,7 +13,7 @@ namespace Importer
 			glm::vec3 tangent;
 			glm::vec3 bitangent;
 			glm::vec2 texcoord;
-			glm::i8vec4 boneIds;
+			glm::u8vec4 boneIds;
 			glm::vec4 boneWeights;
 		};
 
@@ -37,7 +37,13 @@ namespace Importer
 
 	private:
 		void import(const char *filePath);
-		std::vector<Vertex> vertices;
+		std::vector<glm::vec3> positions;
+		std::vector<glm::vec3> normals;
+		std::vector<glm::vec3> tangents;
+		std::vector<glm::vec3> bitangents;
+		std::vector<glm::vec2> texcoords;
+		std::vector<glm::u8vec4> boneIds;
+		std::vector<glm::vec4> boneWeights;
 		std::vector<uint32_t> indices;
 		std::vector<Bone> bones;
 		std::vector<Submesh> submeshes;

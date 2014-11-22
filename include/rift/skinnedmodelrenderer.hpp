@@ -2,24 +2,29 @@
 #define SKINNEDMODELRENDERER_HPP
 
 #include <model.hpp>
+#include <transform.hpp>
 #include <vector>
+#include <immediatecontext.hpp>
 
-class SkinnedMeshRenderer
+class SkinnedModelRenderer
 {
 public:
-	SkinnedMeshRenderer(Renderer &renderer, Model &model) : 
-	mRenderer(renderer),
-	mModel(model)
-	{}
+	SkinnedModelRenderer(Renderer &renderer, ImmediateContextFactory &icf, Model &model);
 	
 	void applyPose(std::vector<Transform> &pose);
-	void draw();
+	void draw(RenderContext const &context);
 
 private:
+	ImmediateContext *debugDraw;
 	// final vertices after skinning
 	std::vector<glm::vec3> mFinalVertices;
+	// final bone transforms
+	std::vector<glm::mat4> mFinalTransforms;
 	Renderer &mRenderer;
 	Model &mModel;
+	// final mesh buffer
+	Mesh mMesh;
+	Shader *mShader;
 };
 
  

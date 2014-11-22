@@ -29,13 +29,46 @@ namespace serialization {
 		}
 	};
 
+	// glm::vecX unpacker
+	template <>
+	struct pack_traits < glm::vec2 > {
+		static void unpack(Unpacker &u, glm::vec2 &v) {
+			u.unpack(v[0]);
+			u.unpack(v[1]);
+		}
+	};
+
+	template <>
+	struct pack_traits < glm::vec3 > {
+		static void unpack(Unpacker &u, glm::vec3 &v) {
+			u.unpack(v[0]);
+			u.unpack(v[1]);
+			u.unpack(v[2]);
+		}
+	};
+
+	template <>
+	struct pack_traits < glm::vec4 > {
+		static void unpack(Unpacker &u, glm::vec4 &v) {
+			u.unpack(v[0]);
+			u.unpack(v[1]);
+			u.unpack(v[2]);
+			u.unpack(v[3]);
+		}
+	};
+
+	template <>
+	struct pack_traits < glm::u8vec4 > {
+		static void unpack(Unpacker &u, glm::u8vec4 &v) {
+			char ch[4];
+			u.unpack_n(ch);
+			v = glm::u8vec4(ch[0], ch[1], ch[2], ch[3]);
+		}
+	};
+
 }}
 
-// TODO load model hints
-// ModelHint::ShadowPosition
-// ModelHint::ShadowBuffer
-// ModelHint::Mutable
-void Model::loadFromFile(const char *filePath)
+void Model::loadFromFile(const char *filePath, unsigned int hints)
 {
 	using namespace rift::serialization;
 
@@ -60,7 +93,46 @@ void Model::loadFromFile(const char *filePath)
 		u.unpack(b.parent);
 		return b;
 	});
-	// vertex data
-	unpacker.unpack_bin(mVertexData, mVertexDataSize);
-	unpacker.unpack_bin(mIndexData, mIndexDataSize);
+	unpacker.unpack(mNumVertices);
+	unpacker.unpack(mNumIndices);
+	unsigned int format;
+	unpacker.unpack(format);
+
+	// unpack data
+	// type 0/1 - non-interleaved attributes
+	if (format == 0 || format == 1)
+	{
+		unpacker.unpack_n(mNumVertices, mPositions);
+		unpacker.unpack_n(mNumVertices, mNormals);
+		unpacker.unpack_n(mNumVertices, mTangents);
+		unpacker.unpack_n(mNumVertices, mBitangents);
+		unpacker.unpack_n(mNumVertices, mTexcoords);
+		if (format == 1) {
+			unpacker.unpack_n(mNumVertices, mBoneIDs);
+			unpacker.unpack_n(mNumVertices, mBoneWeights);
+		}
+		for (unsigned int i = 0; i < mNumIndices; ++i) {
+			unsigned short ix;
+			unpacker.unpack16(ix);
+			mIndices.push_back(ix);
+		}
+	}
+	else if (format == 2) {
+		// type 2 - packed attributes - static mesh
+		// TODO
+	}
+	else if (format == 3) {
+		// type 3 - packed attributes - skinned mesh
+		// TODO
+	}
+
+	// build bone tree
+	auto nb = mBones.size();
+	for (unsigned int i = 0; i < nb; ++i) {
+		int p = mBones[i].parent;
+		if (p != -1) {
+			assert(p < nb);
+			mBones[p].children.push_back(i);
+		}
+	}
 }

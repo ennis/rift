@@ -80,6 +80,42 @@ namespace serialization {
 			}
 		}
 	};
+
+	template <>
+	struct pack_traits < glm::vec2 > {
+		static void pack(Packer &p, glm::vec2 const &v) {
+			p.pack(v[0]);
+			p.pack(v[1]);
+		}
+	};
+
+	template <>
+	struct pack_traits < glm::vec3 > {
+		static void pack(Packer &p, glm::vec3 const &v) {
+			p.pack(v[0]);
+			p.pack(v[1]);
+			p.pack(v[2]);
+		}
+	};
+
+	template <>
+	struct pack_traits < glm::vec4 > {
+		static void pack(Packer &p, glm::vec4 const &v) {
+			p.pack(v[0]);
+			p.pack(v[1]);
+			p.pack(v[2]);
+			p.pack(v[3]);
+		}
+	}; 
+	
+	template <>
+	struct pack_traits < glm::u8vec4 > {
+		static void pack(Packer &p, glm::u8vec4 const &v) {
+			char ch[4] = { v[0], v[1], v[2], v[3] };
+			p.pack_n(ch, ch+4);
+		}
+	};
+
 }}
 
 namespace Importer {
@@ -108,8 +144,15 @@ void Model::import(const char *filePath)
 		nbindex+=scene->mMeshes[i]->mNumFaces*3;
 		nbbones+=scene->mMeshes[i]->mNumBones;
 	}
-	vertices.resize(nbvertex);
-	indices.resize(nbindex);
+	positions.reserve(nbvertex);
+	normals.reserve(nbvertex);
+	tangents.reserve(nbvertex);
+	bitangents.reserve(nbvertex);
+	texcoords.reserve(nbvertex);
+	boneIds.resize(nbvertex);
+	boneWeights.resize(nbvertex);
+	indices.reserve(nbindex);
+
 	unsigned int boneid=0,vertexid=0,vertexbase=0,indexbase=0;
 	// set of all nodes associated with a bone and their parents
 	std::unordered_set<aiNode*> boneset;
@@ -124,21 +167,30 @@ void Model::import(const char *filePath)
 		for (unsigned int iv=0; iv<mesh->mNumVertices; ++iv) {
 			auto &v=mesh->mVertices[iv];
 			auto &n=mesh->mNormals[iv];
-			auto t=mesh->mTextureCoords[0];
-			vertices[vertexid].position=glm::vec3(v.x,v.y,v.z);
-			//vertices[vertexid].normal = glm::vec3(n.x, n.y, n.z);
-			if (mesh->HasTextureCoords(0))
-				vertices[vertexid].texcoord=glm::vec2(t[iv].x,t[iv].y);
-			else
-				vertices[vertexid].texcoord=glm::vec2(0,0);
+			auto t = mesh->mTextureCoords[0];
+			auto &tg = mesh->mTangents[iv];
+			auto &btg = mesh->mBitangents[iv];
+			positions.emplace_back(v.x,v.y,v.z);
+			normals.emplace_back(n.x,n.y,n.z);
+			if (mesh->HasTextureCoords(0)) {
+				texcoords.emplace_back(t[iv].x, t[iv].y);
+				tangents.emplace_back(tg.x, tg.y, tg.z);
+				bitangents.emplace_back(btg.x, btg.y, btg.z);
+			}
+			else {
+				texcoords.emplace_back(glm::vec2(0, 0));
+				tangents.emplace_back(0, 0, 0);
+				bitangents.emplace_back(0, 0, 0);
+			}
+
 			++vertexid;
 		}
 		for (unsigned int ii=0; ii<mesh->mNumFaces; ++ii) {
 			auto &face=mesh->mFaces[ii];
 			assert(face.mNumIndices==3);
-			indices[indexbase+ii*3]=vertexbase+face.mIndices[0];
-			indices[indexbase+ii*3+1]=vertexbase+face.mIndices[1];
-			indices[indexbase+ii*3+2]=vertexbase+face.mIndices[2];
+			indices.emplace_back(vertexbase + face.mIndices[0]);
+			indices.emplace_back(vertexbase + face.mIndices[1]);
+			indices.emplace_back(vertexbase + face.mIndices[2]);
 		}
 		for (unsigned int ib=0; ib<mesh->mNumBones; ++ib) {
 			// mark the nodes that are associated to a bone
@@ -172,9 +224,9 @@ void Model::import(const char *filePath)
 				auto w=bone->mWeights[iv];
 				int iw;
 				for (iw=0; iw<4; ++iw) {
-					if (vertices[vertexbase+w.mVertexId].boneWeights[iw]==0.0f) {
-						vertices[vertexbase+w.mVertexId].boneIds[iw]=boneid;
-						vertices[vertexbase+w.mVertexId].boneWeights[iw]=w.mWeight;
+					if (boneWeights[vertexbase + w.mVertexId][iw] == 0.0f) {
+						boneIds[vertexbase + w.mVertexId][iw] = boneid;
+						boneWeights[vertexbase + w.mVertexId][iw] = w.mWeight;
 						break;
 					}
 				}
@@ -189,6 +241,8 @@ void Model::export(std::ostream &streamOut)
 {
 	using namespace rift::serialization;
 	std::cout << "Exporting...\n";
+	unsigned int nv = positions.size(), ni = indices.size();
+	assert(texcoords.size() == nv && normals.size() == nv && bitangents.size() == nv && tangents.size() == nv);
 	Packer packer(streamOut);
 	packer.pack(submeshes, [](Packer &p, const Submesh &sm) {
 		p.pack(sm.startVertex);
@@ -202,8 +256,21 @@ void Model::export(std::ostream &streamOut)
 		p.pack(b.invBindPose);
 		p.pack(b.parent);
 	});
-	packer.pack_bin(vertices.data(), vertices.size()*sizeof(Model::Vertex));
-	packer.pack_bin(indices.data(), indices.size()*sizeof(uint32_t));
+	packer.pack(nv);
+	packer.pack(ni);
+	packer.pack(bones.size() ? 1 : 0);	// format
+	packer.pack_n(positions.cbegin(), positions.cend());
+	packer.pack_n(normals.cbegin(), normals.cend());
+	packer.pack_n(tangents.cbegin(), tangents.cend());
+	packer.pack_n(bitangents.cbegin(), bitangents.cend());
+	packer.pack_n(texcoords.cbegin(), texcoords.cend());
+	if (bones.size()) {
+		packer.pack_n(boneIds.cbegin(), boneIds.cend());
+		packer.pack_n(boneWeights.cbegin(), boneWeights.cend());
+	}
+	for (auto index : indices) {
+		packer.pack16((unsigned short)index);
+	}
 }
 
 }
