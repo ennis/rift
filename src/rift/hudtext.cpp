@@ -95,7 +95,7 @@ void HUDTextRenderer::renderString(
 	mRenderer->setTexture(0,font->getTexture(0));
 	mRenderer->setNamedConstantFloat4("uFillColor",color);
 	mRenderer->setNamedConstantFloat4("uOutlineColor",outlineColor);
-	mMesh.drawPart(0,len*6);
+	mMesh.drawPart(0,0,len*6);
 	glDepthMask(GL_TRUE);
 }
 

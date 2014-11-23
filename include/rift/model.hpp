@@ -92,6 +92,9 @@ public:
 	std::vector<uint16_t> const &getIndices() const {
 		return mIndices;
 	}
+	std::vector<Model::Submesh> const &getSubmeshes() const {
+		return mSubmeshes;
+	}
 	
 private:
 	Renderer &mRenderer;

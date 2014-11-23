@@ -242,7 +242,7 @@ void RiftGame::update(float dt)
 	mLastTime += dt;
 	mTotalTime += dt;
 
-	// mise � jour du compteur FPS toutes les secondes
+	// mise à jour du compteur FPS toutes les secondes
 	if (mLastTime > 1.f) {
 		mLastTime = 0.f;
 		mFPS = 1.f / dt;

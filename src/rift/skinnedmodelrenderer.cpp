@@ -9,7 +9,7 @@ namespace {
 		int boneIndex)
 	{
 		auto bone = bones[boneIndex];
-		transforms[boneIndex] = currentTransform;
+		transforms[boneIndex] = currentTransform * bone.invBindPose;
 		for (auto childBoneIndex : bone.children) {
 			auto child_tf = currentTransform * bones[childBoneIndex].transform;
 			calculateTransformsRec(bones, transforms, child_tf, childBoneIndex);
@@ -19,14 +19,15 @@ namespace {
 	void drawSkeletonRec(
 		ImmediateContext &context,
 		std::vector<Model::Bone> const &bones,
-		std::vector<glm::mat4> const &transforms,
+		glm::mat4 transform,
 		int boneIndex)
 	{
 		auto bone = bones[boneIndex];
 		for (auto childBoneIndex : bone.children) {
-			context.addVertex(::Vertex(glm::vec3(transforms[boneIndex]*glm::vec4(0, 0, 0, 1)), glm::vec4(0, 1, 0, 1)));
-			context.addVertex(::Vertex(glm::vec3(transforms[childBoneIndex] * glm::vec4(0, 0, 0, 1)), glm::vec4(0, 1, 0, 1)));
-			drawSkeletonRec(context, bones, transforms, childBoneIndex);
+			auto child_tf = transform * bones[childBoneIndex].transform;
+			context.addVertex(::Vertex(glm::vec3(transform*glm::vec4(0, 0, 0, 1)), glm::vec4(0, 1, 0, 1)));
+			context.addVertex(::Vertex(glm::vec3(child_tf * glm::vec4(0, 0, 0, 1)), glm::vec4(0, 1, 0, 1)));
+			drawSkeletonRec(context, bones, child_tf, childBoneIndex);
 		}
 	}
 
@@ -48,10 +49,10 @@ namespace {
 			if (indices[0] == -1) continue;	// ???
 			// bwaaaaah
 			auto tf =
-				transforms[indices[0]] * bones[indices[0]].invBindPose * weights[0] +
-				transforms[indices[1]] * bones[indices[1]].invBindPose * weights[1] +
-				transforms[indices[2]] * bones[indices[2]].invBindPose * weights[2] +
-				transforms[indices[3]] * bones[indices[3]].invBindPose * weights[3];
+				transforms[indices[0]] * weights[0] +
+				transforms[indices[1]] * weights[1] +
+				transforms[indices[2]] * weights[2] +
+				transforms[indices[3]] * weights[3];
 			vout = glm::vec3(tf * glm::vec4(v, 1.0f));
 		}
 	}
@@ -84,7 +85,7 @@ void SkinnedModelRenderer::applyPose(std::vector<Transform> &pose)
 void SkinnedModelRenderer::draw(RenderContext const &context)
 {
 	debugDraw->clear(); 
-	drawSkeletonRec(*debugDraw, mModel.getBones(), mFinalTransforms, 0);
+	drawSkeletonRec(*debugDraw, mModel.getBones(), glm::mat4(1.0), 0);
 	debugDraw->render(context);
 	skinning(
 		mModel.getPositions(), 
@@ -97,6 +98,8 @@ void SkinnedModelRenderer::draw(RenderContext const &context)
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	mRenderer.setShader(mShader);
 	mRenderer.setConstantBuffer(0, context.perFrameShaderParameters);
-	mMesh.draw();
+	for (auto &&sm : mModel.getSubmeshes()) {
+		mMesh.drawPart(sm.startVertex, sm.startIndex, sm.numIndices);
+	}
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }

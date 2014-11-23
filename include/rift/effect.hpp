@@ -5,6 +5,8 @@
 #include <shadersource.hpp>
 #include <map>
 
+class EffectCompiler;
+
 //=============================================================================
 class Effect
 {

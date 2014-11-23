@@ -188,9 +188,9 @@ void Model::import(const char *filePath)
 		for (unsigned int ii=0; ii<mesh->mNumFaces; ++ii) {
 			auto &face=mesh->mFaces[ii];
 			assert(face.mNumIndices==3);
-			indices.emplace_back(vertexbase + face.mIndices[0]);
-			indices.emplace_back(vertexbase + face.mIndices[1]);
-			indices.emplace_back(vertexbase + face.mIndices[2]);
+			indices.emplace_back(face.mIndices[0]);
+			indices.emplace_back(face.mIndices[1]);
+			indices.emplace_back(face.mIndices[2]);
 		}
 		for (unsigned int ib=0; ib<mesh->mNumBones; ++ib) {
 			// mark the nodes that are associated to a bone

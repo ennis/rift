@@ -130,27 +130,42 @@ VertexLayout *Mesh::getVertexLayout()
 
 void Mesh::draw()
 {
-	drawPart(0, (mNumIndices == 0) ? mNumVertices : mNumIndices);
+	if (mNumIndices == 0) {
+		drawPart(0, mNumVertices);
+	}
+	else {
+		drawPart(0, 0, mNumIndices);
+	}
 }
 
-void Mesh::drawPart(
-	unsigned int startIndex,	// or startVertex if no indexBuffer 
-	unsigned int numVertices)
+void Mesh::prepareDraw()
 {
 	mRenderer->setVertexLayout(mVertexLayout);
 	for (unsigned int ib = 0; ib < mNumBuffers; ++ib) {
 		mRenderer->setVertexBuffer(ib, mVertexBuffers[ib]);
 	}
-	if (mNumIndices != 0) {
-		mRenderer->setIndexBuffer(mIndexBuffer);
-		mRenderer->drawIndexed(
-			mPrimitiveType, 
-			0,
-			mNumVertices, 
-			startIndex, 
-			numVertices);
-	}
-	else {
-		mRenderer->draw(mPrimitiveType, startIndex, numVertices);
-	}
+}
+
+void Mesh::drawPart(
+	unsigned int baseVertex,
+	unsigned int numVertices)
+{
+	prepareDraw();
+	mRenderer->draw(mPrimitiveType, baseVertex, numVertices);
+}
+
+void Mesh::drawPart(
+	unsigned int baseVertex,
+	unsigned int startIndex,
+	unsigned int numIndices)
+{
+	assert(mNumIndices != 0);
+	prepareDraw();
+	mRenderer->setIndexBuffer(mIndexBuffer);
+	mRenderer->drawIndexed(
+		mPrimitiveType, 
+		baseVertex,
+		0, 
+		startIndex, 
+		numIndices);
 }

@@ -62,10 +62,23 @@ public:
 
 	void draw();
 	void drawPart(
-		unsigned int startIndex,	// or startVertex if no indexBuffer 
+		unsigned int baseVertex,
 		unsigned int numVertices);
+	void drawPart(
+		unsigned int baseVertex,
+		unsigned int startIndex, 
+		unsigned int numIndices);
+
+	unsigned int getNumVertices() const {
+		return mNumVertices;
+	}
+	unsigned int getNumIndices() const {
+		return mNumIndices;
+	}
 
 private:
+	void prepareDraw();
+
 	Renderer *mRenderer;	// borrowed ref
 	// TODO usage-agnostic buffer class
 	VertexBuffer *mVertexBuffers[16];	// owned
