@@ -33,7 +33,7 @@ namespace Importer
 		};
 
 		Model(const char *filePath);
-		void export(std::ostream &streamOut);
+		void exports(std::ostream &streamOut);
 
 	private:
 		void import(const char *filePath);

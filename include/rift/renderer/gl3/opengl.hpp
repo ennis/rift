@@ -7,9 +7,16 @@
 #include <Windows.h>
 #endif
 
+#ifdef __APPLE__
+#include <GL/glew.h>
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#else
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
+#endif
+
 #include <GLFW/glfw3.h>
 
 #endif

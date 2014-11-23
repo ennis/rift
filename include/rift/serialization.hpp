@@ -7,6 +7,7 @@
 #include <sstream>
 #include <vector>
 #include <cstring>
+#include <cassert>
 
 namespace rift {
 namespace serialization {
@@ -112,8 +113,8 @@ public:
 		return *this;
 	}
 	template <typename T>
-	Packer &pack(std::vector<T> const &vec) {
-		pack_array_size(vec.size());
+	Packer &pack(std::vector<T> const &v) {
+		pack_array_size(v.size());
 		return pack_n(v.cbegin(), v.cend());
 	}
 	template <typename T, typename Fn>

@@ -230,7 +230,8 @@ void RiftGame::render(float dt)
 		.addVertex(Vertex({ 1, 2, 2 }, { 1.0, 0.5, 0.0, 1.0 }))
 		.render(rc);
 
-	animTest->applyPose(std::vector<Transform>());
+    std::vector<Transform> transform;
+	animTest->applyPose(transform);
 	animTest->draw(rc);
 
 	// render tweak bar

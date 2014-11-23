@@ -170,12 +170,12 @@ void Model::import(const char *filePath)
 			auto t = mesh->mTextureCoords[0];
 			auto &tg = mesh->mTangents[iv];
 			auto &btg = mesh->mBitangents[iv];
-			positions.emplace_back(v.x,v.y,v.z);
-			normals.emplace_back(n.x,n.y,n.z);
+			positions.push_back(glm::vec3(v.x,v.y,v.z));
+			normals.push_back(glm::vec3(n.x,n.y,n.z));
 			if (mesh->HasTextureCoords(0)) {
-				texcoords.emplace_back(t[iv].x, t[iv].y);
-				tangents.emplace_back(tg.x, tg.y, tg.z);
-				bitangents.emplace_back(btg.x, btg.y, btg.z);
+				texcoords.push_back(glm::vec2(t[iv].x, t[iv].y));
+				tangents.push_back(glm::vec3(tg.x, tg.y, tg.z));
+				bitangents.push_back(glm::vec3(btg.x, btg.y, btg.z));
 			}
 			else {
 				texcoords.emplace_back(glm::vec2(0, 0));
@@ -237,7 +237,7 @@ void Model::import(const char *filePath)
 	}
 }
 
-void Model::export(std::ostream &streamOut)
+void Model::exports(std::ostream &streamOut)
 {
 	using namespace rift::serialization;
 	std::cout << "Exporting...\n";

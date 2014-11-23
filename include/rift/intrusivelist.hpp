@@ -141,7 +141,7 @@ public:
 
 	Iterator begin() 
 	{
-		return Iterator(mNext);
+        return Iterator(ListNode<T>::mNext);
 	}
 
 	Iterator end() 
