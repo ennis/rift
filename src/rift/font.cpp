@@ -120,7 +120,7 @@ void Font::loadFromFile(Renderer &renderer, const char *fontFilePath)
 		std::string sp(fontFilePath);
 		auto l = sp.find_last_of('/');
 		if (l != std::string::npos) {
-			sp.erase(sp.cbegin() + l + 1, sp.cend());
+			sp.erase(sp.begin() + l + 1, sp.end());
 		}
 		sp += textureFileNames[i];
 		LOG << "Loading " << sp.c_str();

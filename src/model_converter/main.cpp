@@ -7,5 +7,5 @@ int main(int argc, const char **argv)
 	auto fileName = argv[1];
 	Importer::Model model(fileName);
 	std::ofstream streamOut(std::string(fileName) + ".mesh", std::ios::out | std::ios::binary);
-	model.export(streamOut);
+	model.exportModel(streamOut);
 }

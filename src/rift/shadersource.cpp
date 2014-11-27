@@ -111,13 +111,13 @@ void ShaderSource::preprocessPrivate(
 						}
 						else {
 							// strip '<' and '>'
-							path.erase(path.cbegin());
+							path.erase(path.begin());
 							path.pop_back();
 							// try file path relative to source path first
 							std::string sp(mSourcePath);
 							auto l = sp.find_last_of('/');
 							if (l != std::string::npos) {
-								sp.erase(sp.cbegin() + l + 1, sp.cend());
+								sp.erase(sp.begin() + l + 1, sp.end());
 							}
 							sp += path;
 							LOG << "Trying " << sp.c_str();

@@ -48,13 +48,13 @@ public:
 	pixel_type &at(int x, int y)
 	{
 		// XXX not type-safe (verify size of pixel_type before)
-		return *((pixel_type*)mData + y * stride + x);
+		return *((pixel_type*)mData + y * mStride + x);
 	}
 	template <typename pixel_type>
 	pixel_type at(int x, int y) const
 	{
 		// XXX not type-safe (verify size of pixel_type before)
-		return *((const pixel_type*)mData + y * stride + x);
+		return *((const pixel_type*)mData + y * mStride + x);
 	}
 	glm::ivec2 size() const {
 		return mSize;
