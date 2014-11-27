@@ -30,13 +30,15 @@ namespace Importer
 			unsigned int startIndex;
 			unsigned int numVertices;
 			unsigned int numIndices;
+			int bone;
 		};
 
 		Model(const char *filePath);
-		void export(std::ostream &streamOut);
+		void exportModel(std::ostream &streamOut);
 
 	private:
 		void import(const char *filePath);
+		bool isSkinned;
 		std::vector<glm::vec3> positions;
 		std::vector<glm::vec3> normals;
 		std::vector<glm::vec3> tangents;

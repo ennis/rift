@@ -72,8 +72,8 @@ mMesh(renderer)
 	Mesh::Buffer buffers[] = { { ResourceUsage::Dynamic } };
 	mMesh.allocate(PrimitiveType::Triangle, 1, attribs, 1, buffers, nv, nullptr, model.numIndices(), ElementFormat::Uint16, ResourceUsage::Static, mModel.getIndices().data());
 	mShader = renderer.createShader(
-		loadShaderSource("resources/shaders/immediate/vert.glsl").c_str(),
-		loadShaderSource("resources/shaders/immediate/frag.glsl").c_str());
+		loadShaderSource("resources/shaders/model/vert.glsl").c_str(),
+		loadShaderSource("resources/shaders/model/frag.glsl").c_str());
 }
 
 void SkinnedModelRenderer::applyPose(std::vector<Transform> &pose)
@@ -85,21 +85,38 @@ void SkinnedModelRenderer::applyPose(std::vector<Transform> &pose)
 void SkinnedModelRenderer::draw(RenderContext const &context)
 {
 	debugDraw->clear(); 
-	drawSkeletonRec(*debugDraw, mModel.getBones(), glm::mat4(1.0), 0);
+	drawSkeletonRec(*debugDraw, mModel.getBones(), glm::mat4(1.0f), 0);
 	debugDraw->render(context);
-	skinning(
-		mModel.getPositions(), 
-		mModel.getBones(), 
-		mModel.getBoneIndices(), 
-		mModel.getBoneWeights(), 
-		mFinalVertices, 
-		mFinalTransforms);
-	mMesh.update(0, 0, mModel.getPositions().size(), mFinalVertices.data());
+	// render with skinning
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	mRenderer.setShader(mShader);
-	mRenderer.setConstantBuffer(0, context.perFrameShaderParameters);
-	for (auto &&sm : mModel.getSubmeshes()) {
-		mMesh.drawPart(sm.startVertex, sm.startIndex, sm.numIndices);
+	if (mModel.isSkinned())
+	{
+		skinning(
+			mModel.getPositions(),
+			mModel.getBones(),
+			mModel.getBoneIndices(),
+			mModel.getBoneWeights(),
+			mFinalVertices,
+			mFinalTransforms);
+		mMesh.update(0, 0, mModel.getPositions().size(), mFinalVertices.data());
+		mRenderer.setShader(mShader);
+		mRenderer.setConstantBuffer(0, context.perFrameShaderParameters);
+		mRenderer.setNamedConstantMatrix4("modelMatrix", glm::mat4(1.0f));
+		for (auto &&sm : mModel.getSubmeshes()) {
+			mMesh.drawPart(sm.startVertex, sm.startIndex, sm.numIndices);
+		}
+	}
+	else {
+		// no skinning
+		mMesh.update(0, 0, mModel.getPositions().size(), mModel.getPositions().data());
+		mRenderer.setShader(mShader);
+		mRenderer.setConstantBuffer(0, context.perFrameShaderParameters);
+		auto const &submeshes = mModel.getSubmeshes();
+		for (unsigned int i = 0; i < submeshes.size(); ++i) {
+			auto const &sm = submeshes[i];
+			mRenderer.setNamedConstantMatrix4("modelMatrix", mFinalTransforms[sm.bone]);
+			mMesh.drawPart(sm.startVertex, sm.startIndex, sm.numIndices);
+		}
 	}
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }

@@ -153,7 +153,7 @@ void RiftGame::init()
 	// test loading of animated mesh
 	//animTest = std::unique_ptr<AnimatedMesh>(new AnimatedMesh(*immediateContextFactory, rd));
 	//animTest->loadFromFile("resources/models/animated/mokou.dae");
-	model = std::unique_ptr<Model>(new Model(rd, "resources/models/animated/mokou.dae.mesh"));
+	model = std::unique_ptr<Model>(new Model(rd, "resources/models/danbo/danbo.dae.mesh"));
 	animTest = std::unique_ptr<SkinnedModelRenderer>(new SkinnedModelRenderer(rd, *immediateContextFactory, *model));
 }
 

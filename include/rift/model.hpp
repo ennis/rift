@@ -51,6 +51,7 @@ public:
 		unsigned int startIndex;
 		unsigned int numVertices;
 		unsigned int numIndices;
+		int bone;
 	};
 
 	Model(Renderer &renderer);
@@ -64,6 +65,9 @@ public:
 	}
 	unsigned int numIndices() const {
 		return mNumIndices;
+	}
+	bool isSkinned() const {
+		return !mBoneIDs.empty();
 	}
 	std::vector<Bone> const &getBones() const {
 		return mBones;

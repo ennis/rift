@@ -22,6 +22,20 @@ namespace
 		return nullptr;
 	}
 
+	aiNode *findNodeWithMesh(aiNode *root, unsigned int iMesh)
+	{
+		for (unsigned int im = 0; im < root->mNumMeshes; ++im) {
+			if (root->mMeshes[im] == iMesh) {
+				return root;
+			}
+		}
+		for (unsigned int ic = 0; ic<root->mNumChildren; ++ic) {
+			auto f = findNodeWithMesh(root->mChildren[ic], iMesh);
+			if (f) return f;
+		}
+		return nullptr;
+	}
+
 	void addBranch(std::unordered_set<aiNode*> &map,aiNode *node)
 	{
 		if (node!=nullptr) {
@@ -33,6 +47,7 @@ namespace
 	void buildSkeleton(
 		std::unordered_set<aiNode*> const &boneset, 
 		std::vector<Importer::Model::Bone> &bones, 
+		std::vector<Importer::Model::Submesh> &submeshes,
 		unsigned int par,
 		aiNode *cur)
 	{
@@ -50,8 +65,14 @@ namespace
 		b.parent=par;
 		std::strncpy(b.name,cur->mName.C_Str(),32);
 		bones.push_back(b);
+		// does the node has associated meshes?
+		for (unsigned int im = 0; im < cur->mNumMeshes; ++im) {
+			auto meshindex = cur->mMeshes[im];
+			submeshes[meshindex].bone = bones.size()-1;
+			LOG << cur->mName.C_Str() << "-> submesh " << meshindex;
+		}
 		for (unsigned int ic=0; ic<cur->mNumChildren; ++ic) {
-			buildSkeleton(boneset,bones,boneId,cur->mChildren[ic]);
+			buildSkeleton(boneset,bones,submeshes,boneId,cur->mChildren[ic]);
 		}
 	}
 
@@ -149,21 +170,30 @@ void Model::import(const char *filePath)
 	tangents.reserve(nbvertex);
 	bitangents.reserve(nbvertex);
 	texcoords.reserve(nbvertex);
-	boneIds.resize(nbvertex);
-	boneWeights.resize(nbvertex);
 	indices.reserve(nbindex);
 
-	unsigned int boneid=0,vertexid=0,vertexbase=0,indexbase=0;
-	// set of all nodes associated with a bone and their parents
+	unsigned int boneid = 0, vertexid = 0, vertexbase = 0, indexbase = 0;
+	isSkinned = false;
+	// set of all nodes associated with a bone/submesh and their parents
 	std::unordered_set<aiNode*> boneset;
 	for (unsigned int i=0; i<scene->mNumMeshes; ++i) {
 		auto mesh=scene->mMeshes[i];
+		auto node = findNodeWithMesh(scene->mRootNode, i);
+		if (node) addBranch(boneset, node);
 		submeshes.push_back(
 			Model::Submesh{
 				vertexbase,
 				indexbase,
 				mesh->mNumVertices,
-				mesh->mNumFaces*3});
+				mesh->mNumFaces*3,
+				-1});
+		LOG << "submesh SV:"
+			<< vertexbase
+			<< " SI:" << indexbase
+			<< " NV:" << mesh->mNumVertices
+			<< " NI:" << mesh->mNumFaces * 3;
+		// mark the nodes that are associated with the submesh
+		//addBranch(boneset, mesh->)
 		for (unsigned int iv=0; iv<mesh->mNumVertices; ++iv) {
 			auto &v=mesh->mVertices[iv];
 			auto &n=mesh->mNormals[iv];
@@ -178,11 +208,11 @@ void Model::import(const char *filePath)
 				bitangents.emplace_back(btg.x, btg.y, btg.z);
 			}
 			else {
+				LOG << "Mesh " << i << " has no texture coordinates";
 				texcoords.emplace_back(glm::vec2(0, 0));
 				tangents.emplace_back(0, 0, 0);
 				bitangents.emplace_back(0, 0, 0);
 			}
-
 			++vertexid;
 		}
 		for (unsigned int ii=0; ii<mesh->mNumFaces; ++ii) {
@@ -194,8 +224,10 @@ void Model::import(const char *filePath)
 		}
 		for (unsigned int ib=0; ib<mesh->mNumBones; ++ib) {
 			// mark the nodes that are associated to a bone
+			isSkinned = true;
 			auto bone=mesh->mBones[ib];
-			auto node=findNodeWithName(scene->mRootNode,bone->mName);
+			auto node = findNodeWithName(scene->mRootNode, bone->mName);
+			LOG << "findNodeWithName " << bone->mName.C_Str() << "->" << node;
 			addBranch(boneset,node);
 		}
 		vertexbase+=mesh->mNumVertices;
@@ -205,39 +237,48 @@ void Model::import(const char *filePath)
 	// wow
 	// such clusterfuck
 	// very bullshit
-	buildSkeleton(boneset,bones,-1,scene->mRootNode);
-	// second pass: assign bone IDs and weights
-	vertexbase=0;
-	for (unsigned int i=0; i<scene->mNumMeshes; ++i) {
-		auto mesh=scene->mMeshes[i];
-		for (unsigned int ib=0; ib<mesh->mNumBones; ++ib) {
-			auto bone=mesh->mBones[ib];
-			auto boneid=findBone(bones, bone->mName.C_Str());
-			auto &bone2=bones[boneid];
-			auto &m=bone->mOffsetMatrix;
-			bone2.invBindPose = glm::mat4(
-				m.a1, m.b1, m.c1, m.d1,
-				m.a2, m.b2, m.c2, m.d2,
-				m.a3, m.b3, m.c3, m.d3,
-				m.a4, m.b4, m.c4, m.d4);
-			for (unsigned int iv=0; iv<bone->mNumWeights; ++iv) {
-				auto w=bone->mWeights[iv];
-				int iw;
-				for (iw=0; iw<4; ++iw) {
-					if (boneWeights[vertexbase + w.mVertexId][iw] == 0.0f) {
-						boneIds[vertexbase + w.mVertexId][iw] = boneid;
-						boneWeights[vertexbase + w.mVertexId][iw] = w.mWeight;
-						break;
+	buildSkeleton(boneset,bones,submeshes,-1,scene->mRootNode);
+	// debug: show bones
+	for (auto const &b : boneset) {
+		LOG << b->mName.C_Str();
+	}
+
+	if (isSkinned) {
+		// second pass: assign bone IDs and weights
+		boneIds.resize(nbvertex);
+		boneWeights.resize(nbvertex);
+		vertexbase = 0;
+		for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
+			auto mesh = scene->mMeshes[i];
+			for (unsigned int ib = 0; ib < mesh->mNumBones; ++ib) {
+				auto bone = mesh->mBones[ib];
+				auto boneid = findBone(bones, bone->mName.C_Str());
+				auto &bone2 = bones[boneid];
+				auto &m = bone->mOffsetMatrix;
+				bone2.invBindPose = glm::mat4(
+					m.a1, m.b1, m.c1, m.d1,
+					m.a2, m.b2, m.c2, m.d2,
+					m.a3, m.b3, m.c3, m.d3,
+					m.a4, m.b4, m.c4, m.d4);
+				for (unsigned int iv = 0; iv < bone->mNumWeights; ++iv) {
+					auto w = bone->mWeights[iv];
+					int iw;
+					for (iw = 0; iw < 4; ++iw) {
+						if (boneWeights[vertexbase + w.mVertexId][iw] == 0.0f) {
+							boneIds[vertexbase + w.mVertexId][iw] = boneid;
+							boneWeights[vertexbase + w.mVertexId][iw] = w.mWeight;
+							break;
+						}
 					}
+					assert(iw != 4);
 				}
-				assert(iw!=4);
 			}
+			vertexbase += mesh->mNumVertices;
 		}
-		vertexbase+=mesh->mNumVertices;
 	}
 }
 
-void Model::export(std::ostream &streamOut)
+void Model::exportModel(std::ostream &streamOut)
 {
 	using namespace rift::serialization;
 	std::cout << "Exporting...\n";
@@ -249,6 +290,7 @@ void Model::export(std::ostream &streamOut)
 		p.pack(sm.startIndex);
 		p.pack(sm.numVertices);
 		p.pack(sm.numIndices);
+		p.pack(sm.bone);
 	});
 	packer.pack(bones, [](Packer &p, const Bone &b) {
 		p.pack(b.name);
@@ -258,13 +300,13 @@ void Model::export(std::ostream &streamOut)
 	});
 	packer.pack(nv);
 	packer.pack(ni);
-	packer.pack(bones.size() ? 1 : 0);	// format
+	packer.pack(isSkinned ? 1 : 0);	// format
 	packer.pack_n(positions.cbegin(), positions.cend());
 	packer.pack_n(normals.cbegin(), normals.cend());
 	packer.pack_n(tangents.cbegin(), tangents.cend());
 	packer.pack_n(bitangents.cbegin(), bitangents.cend());
 	packer.pack_n(texcoords.cbegin(), texcoords.cend());
-	if (bones.size()) {
+	if (isSkinned) {
 		packer.pack_n(boneIds.cbegin(), boneIds.cend());
 		packer.pack_n(boneWeights.cbegin(), boneWeights.cend());
 	}

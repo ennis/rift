@@ -81,6 +81,7 @@ void Model::loadFromFile(const char *filePath, unsigned int hints)
 		u.unpack(sm.startIndex);
 		u.unpack(sm.numVertices);
 		u.unpack(sm.numIndices);
+		u.unpack(sm.bone);
 		return sm;
 	});
 	// skip bones
