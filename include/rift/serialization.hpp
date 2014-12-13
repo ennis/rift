@@ -75,6 +75,7 @@ void write_i32le(std::ostream &streamOut, int32_t v);
 
 template <typename T> struct pack_traits;
 
+// compatible (?) with C# BinaryWriter
 class Packer
 {
 public:
@@ -86,6 +87,17 @@ public:
 	Packer &pack(unsigned int v) { write_u32le(mStreamOut, v); return *this; }
 	Packer &pack(float v) { mStreamOut.write((char*)&v, sizeof(float)); return *this; }
 	Packer &pack(double v) { mStreamOut.write((char*)&v, sizeof(double)); return *this; }
+	
+	Packer &pack_7bit(unsigned int v) 
+	{
+		while (v >= 128U) {
+			write_u8(mStreamOut, (uint8_t)(v | 128U));
+			v >>= 7;
+		}
+		write_u8(mStreamOut, (uint8_t)v);
+		return *this;
+	}
+
 	template <std::size_t size>
 	Packer &pack(const char (&v)[size]) {
 		pack(v, size);
@@ -95,7 +107,7 @@ public:
 		pack(str, std::strlen(str));
 		return *this;
 	}
-	Packer &pack(const char *str, unsigned int size) { write_u32le(mStreamOut, size); mStreamOut.write(str, size); return *this; }
+	Packer &pack(const char *str, unsigned int size) { pack_7bit(size); mStreamOut.write(str, size); return *this; }
 	Packer &pack(std::string const &str) { pack(str.c_str(), str.size()); return *this; }
 	Packer &pack_array_size(unsigned int size) { write_u32le(mStreamOut, size); return *this; }
 	template <typename Iter>
@@ -141,7 +153,10 @@ private:
 class Unpacker
 {
 public:
-	Unpacker(std::istream &streamIn) : mStreamIn(streamIn) {}
+	Unpacker(std::istream &streamIn) : mStreamIn(streamIn) 
+	{
+		mStreamIn.exceptions(std::ios::eofbit | std::ios::badbit);
+	}
 
 	Unpacker &unpack_array(unsigned int &v) { read_u32le(mStreamIn, v); return *this; }
 	Unpacker &unpack16(short &v) { read_i16le(mStreamIn, v); return *this; }
@@ -150,6 +165,27 @@ public:
 	Unpacker &unpack(unsigned int &v) { read_u32le(mStreamIn, v); return *this; }
 	Unpacker &unpack(float &v)  { mStreamIn.read((char*)&v, sizeof(float)); return *this; }
 	Unpacker &unpack(double &v) { mStreamIn.read((char*)&v, sizeof(double)); return *this; }
+
+	Unpacker &unpack_7bit(unsigned int &v)
+	{
+		// http://dpatrickcaldwell.blogspot.se/2011/09/7-bit-encoding-with-binarywriter-in-net.html  
+		int returnValue = 0;
+		int bitIndex = 0;
+		while (bitIndex != 35)
+		{
+			uint8_t currentByte;
+			read_u8(mStreamIn, currentByte);
+			returnValue |= ((int)currentByte & 127) << bitIndex;
+			bitIndex += 7;
+			if (((int)currentByte & 128) == 0) {
+				v = returnValue;
+				return *this;
+			}
+		}
+		// bad format
+		assert(false);
+		return *this;	// dummy
+	}
 
 	template <typename T>
 	Unpacker &skip() { T t; return unpack(t); }
@@ -178,7 +214,8 @@ public:
 	}
 	Unpacker &unpack(std::string &str) {
 		unsigned int size;
-		read_u32le(mStreamIn, size);
+		unpack_7bit(size);
+		assert(size < 65536);
 		auto ch = std::unique_ptr<char[]>(new char[size]);
 		mStreamIn.read(ch.get(), size);
 		str.assign(ch.get(), size);

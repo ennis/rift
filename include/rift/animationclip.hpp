@@ -35,8 +35,9 @@ public:
 			mPositionKeys(std::move(rhs.mPositionKeys)), 
 			mRotationKeys(std::move(rhs.mRotationKeys))
 		{
-
 		}
+
+		Channel(Channel const &rhs) = delete;
 
 		std::string const &getNodeName() {
 			return mNodeName;
@@ -60,6 +61,8 @@ public:
 		mChannels(std::move(rhs.mChannels))
 	{}
 
+	AnimationClip(AnimationClip const &rhs) = delete;
+
 	std::vector<AnimationClip::Channel> const &getChannels() const {
 		return mChannels;
 	}
@@ -67,5 +70,8 @@ public:
 	static AnimationClip loadFromFile(const char *fileName);
 
 private:
+	AnimationClip()
+	{}
+
 	std::vector<AnimationClip::Channel> mChannels;
 };

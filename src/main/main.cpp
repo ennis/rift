@@ -19,6 +19,7 @@
 #include <immediatecontext.hpp>
 #include <model.hpp>
 #include <skinnedmodelrenderer.hpp>
+#include <animationclip.hpp>
 
 //============================================================================
 class RiftGame : public Game
@@ -155,6 +156,9 @@ void RiftGame::init()
 	//animTest->loadFromFile("resources/models/animated/mokou.dae");
 	model = std::unique_ptr<Model>(new Model(rd, "resources/models/danbo/danbo.dae.mesh"));
 	animTest = std::unique_ptr<SkinnedModelRenderer>(new SkinnedModelRenderer(rd, *immediateContextFactory, *model));
+
+	// test loading of animation clips
+	AnimationClip clip = AnimationClip::loadFromFile("resources/models/danbo/danbo@animation.anim");
 }
 
 
