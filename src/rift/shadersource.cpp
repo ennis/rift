@@ -120,13 +120,11 @@ void ShaderSource::preprocessPrivate(
 								sp.erase(sp.begin() + l + 1, sp.end());
 							}
 							sp += path;
-							LOG << "Trying " << sp.c_str();
 							std::ifstream incFileIn(sp.c_str(), std::ios::binary);
 							if (incFileIn.fail()) {
 								// failed, look in supplied include directory
 								incFileIn.clear();
 								auto &&path2 = std::string(includeDir) + "/" + path;
-								LOG << "Trying " << path2.c_str();
 								incFileIn.open(path2.c_str(), std::ios::binary);
 								// cannot fail now
 								assert(!incFileIn.fail());

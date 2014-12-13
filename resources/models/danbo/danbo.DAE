@@ -1,707 +1,1563 @@
 <?xml version="1.0" encoding="utf-8"?>
 <COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
-  <asset><contributor><author></author><authoring_tool>FBX COLLADA exporter</authoring_tool><comments></comments></contributor><created>2014-11-23T14:00:00Z</created><keywords></keywords><modified>2014-11-23T14:00:00Z</modified><revision></revision><subject></subject><title></title><unit meter="0.025400" name="centimeter"></unit><up_axis>Y_UP</up_axis></asset>
+  <asset>
+    <contributor>
+      <author>Alexandre</author>
+      <authoring_tool>OpenCOLLADA for 3ds Max;  ;  </authoring_tool>
+      <source_data>file:///C:/Users/Alexandre/Developpement/rift/resources/models/danbo/danbo.max</source_data>
+    </contributor>
+    <created>2014-12-07T13:02:02</created>
+    <modified>2014-12-07T13:02:02</modified>
+    <unit name="inch" meter="0.0254"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="ColorEffectR204G204B204">
+      <profile_COMMON>
+        <technique sid="common">
+          <phong>
+            <ambient>
+              <color>0.8 0.8 0.8 1</color>
+            </ambient>
+            <diffuse>
+              <color>0.8 0.8 0.8 1</color>
+            </diffuse>
+            <specular>
+              <color>1 1 1 1</color>
+            </specular>
+            <shininess>
+              <float>10</float>
+            </shininess>
+            <reflective>
+              <color>0 0 0 1</color>
+            </reflective>
+            <transparent>
+              <color>1 1 1 1</color>
+            </transparent>
+            <transparency>
+              <float>1</float>
+            </transparency>
+          </phong>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_materials>
+    <material id="ColorEffectR204G204B204-material" name="ColorEffectR204G204B204-material">
+      <instance_effect url="#ColorEffectR204G204B204"/>
+    </material>
+  </library_materials>
   <library_geometries>
-    <geometry id="body-lib" name="bodyMesh">
+    <geometry id="geom-body" name="body">
       <mesh>
-        <source id="body-POSITION">
-          <float_array id="body-POSITION-array" count="54">
--18.135565 -29.264668 0.049683
-18.434715 -29.280291 0.072859
--18.222893 29.329451 0.000000
-18.222893 29.329451 0.000000
--18.222893 29.329451 26.807228
-18.222893 29.329451 26.807228
--25.392384 -43.897242 0.145720
--25.392387 -43.897238 26.768713
-18.347935 -29.281256 26.677979
--18.202488 -29.204155 26.668346
--18.224606 -44.868372 32.258999
-17.965986 -44.868372 32.258999
-24.629734 -43.967966 0.072861
-24.542950 -43.968939 26.677979
-18.434715 -29.280291 0.072859
-18.347935 -29.281256 26.677979
--18.135567 -43.271639 -5.716619
-18.434715 -43.287260 -5.693444
-</float_array>
+        <source id="geom-body-positions">
+          <float_array id="geom-body-positions-array" count="30">-18.13556 -29.26467 0.049683 18.43472 -29.28029 0.072859 -18.22289 29.32945 0 18.22289 29.32945 0 -18.22289 29.32945 26.80723 18.22289 29.32945 26.80723 18.34793 -29.28126 26.67798 -18.20249 -29.20415 26.66835 18.43472 -29.28029 0.072859 18.34793 -29.28126 26.67798</float_array>
           <technique_common>
-            <accessor source="#body-POSITION-array" count="18" stride="3">
+            <accessor source="#geom-body-positions-array" count="10" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <source id="body-Normal0">
-          <float_array id="body-Normal0-array" count="180">
-0.000409 -0.001102 -0.999999
-0.000000 -0.000848 -1.000000
-0.000225 -0.000987 -1.000000
-0.000225 -0.000987 -1.000000
-0.000633 -0.001241 -0.999999
-0.000409 -0.001102 -0.999999
--0.000173 -0.002265 0.999997
--0.000268 -0.002206 0.999997
--0.000095 -0.002313 0.999997
--0.000095 -0.002313 0.999997
-0.000000 -0.002373 0.999997
--0.000173 -0.002265 0.999997
-0.999994 0.002532 0.002371
-0.999993 0.003614 0.000000
-0.999994 0.003210 0.000885
-0.999994 0.003210 0.000885
-0.999992 0.002126 0.003262
-0.999994 0.002532 0.002371
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
--1.000000 -0.000659 -0.000682
--0.999996 -0.001493 -0.002511
--0.999998 -0.001180 -0.001826
--0.999998 -0.001180 -0.001826
--1.000000 -0.000349 0.000000
--1.000000 -0.000659 -0.000682
--0.593370 0.513402 0.619943
--0.895883 0.444279 -0.003262
--0.896707 0.442619 -0.002119
--0.896707 0.442619 -0.002119
--0.898225 0.439536 -0.000000
--0.593370 0.513402 0.619943
-0.000127 0.336832 0.941565
--0.593370 0.513402 0.619943
-0.000336 0.336398 0.941720
-0.000336 0.336398 0.941720
-0.000000 0.337097 0.941470
-0.000127 0.336832 0.941565
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-0.921390 0.388627 0.003019
-0.921390 0.388627 0.003019
-0.921390 0.388627 0.003019
-0.921390 0.388627 0.003020
-0.921390 0.388627 0.003020
-0.921390 0.388627 0.003020
-0.000749 0.380678 -0.924707
-0.000749 0.380678 -0.924707
-0.000749 0.380678 -0.924707
-0.000749 0.380678 -0.924707
-0.000749 0.380678 -0.924707
-0.000749 0.380678 -0.924707
-</float_array>
+        <source id="geom-body-normals">
+          <float_array id="geom-body-normals-array" count="108">4.09e-4 -0.001102 -0.999999 0 -8.48e-4 -1 2.25e-4 -9.87e-4 -1 2.25e-4 -9.87e-4 -1 6.33e-4 -0.001241 -0.999999 4.09e-4 -0.001102 -0.999999 -1.73e-4 -0.002265 0.999997 -2.68e-4 -0.002206 0.999997 -9.5e-5 -0.002313 0.999997 -9.5e-5 -0.002313 0.999997 0 -0.002373 0.999997 -1.73e-4 -0.002265 0.999997 0.999994 0.002532 0.002371 0.999993 0.003614 0 0.999994 0.00321 8.85e-4 0.999994 0.00321 8.85e-4 0.999992 0.002126 0.003262 0.999994 0.002532 0.002371 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 -1 -6.59e-4 -6.82e-4 -0.999996 -0.001493 -0.002511 -0.999998 -0.00118 -0.001826 -0.999998 -0.00118 -0.001826 -1 -3.49e-4 0 -1 -6.59e-4 -6.82e-4 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0</float_array>
           <technique_common>
-            <accessor source="#body-Normal0-array" count="60" stride="3">
+            <accessor source="#geom-body-normals-array" count="36" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <source id="body-UV0">
-          <float_array id="body-UV0-array" count="68">
-1.000000 0.000000
-0.000000 0.000000
-1.000000 1.000000
-0.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-13.311497 7.667419
--13.311497 7.667419
--13.311497 -8.815080
-13.311497 -8.815080
-18.287134 8.358435
--17.903458 8.358435
--17.903458 -8.358435
-18.287134 -8.358435
-0.000000 1.000000
-0.000000 0.000000
-0.000000 0.000000
-0.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-</float_array>
+        <source id="geom-body-map1">
+          <float_array id="geom-body-map1-array" count="66">1 0 0 0 0 0 1 1 0 0 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 0 1 0</float_array>
           <technique_common>
-            <accessor source="#body-UV0-array" count="34" stride="2">
+            <accessor source="#geom-body-map1-array" count="22" stride="3">
               <param name="S" type="float"/>
               <param name="T" type="float"/>
+              <param name="P" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <vertices id="body-VERTEX">
-          <input semantic="POSITION" source="#body-POSITION"/>
+        <vertices id="geom-body-vertices">
+          <input semantic="POSITION" source="#geom-body-positions"/>
         </vertices>
-        <triangles count="20"><input semantic="VERTEX" offset="0" source="#body-VERTEX"/><input semantic="NORMAL" offset="1" source="#body-Normal0"/><input semantic="TEXCOORD" offset="2" set="0" source="#body-UV0"/><p> 0 0 0 2 1 2 3 2 3 3 3 3 1 4 1 0 5 0 9 6 4 8 7 5 5 8 7 5 9 7 4 10 6 9 11 4 1 12 8 3 13 9 5 14 11 5 15 11 8 16 10 1 17 8 3 18 12 2 19 13 4 20 15 4 21 15 5 22 14 3 23 12 2 24 16 0 25 17 9 26 19 9 27 19 4 28 18 2 29 16 9 30 20 0 31 21 6 32 22 6 33 22 7 34 23 9 35 20 8 36 24 9 37 25 10 38 26 10 39 26 11 40 27 8 41 24 15 42 31 14 43 30 1 44 8 1 45 8 8 46 10 15 47 31 12 48 29 14 49 30 15 50 31 15 51 31 13 52 28 12 53 29 0 54 0 1 55 1 17 56 32 17 57 32 16 58 33 0 59 0</p></triangles>
+        <triangles material="ColorMaterial" count="12">
+          <input semantic="VERTEX" source="#geom-body-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#geom-body-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#geom-body-map1" offset="2" set="0"/>
+          <p>0 0 0 2 1 2 3 2 3 3 3 3 1 4 1 0 5 0 7 6 4 6 7 5 5 8 7 5 9 7 4 10 6 7 11 4 1 12 8 3 13 9 5 14 11 5 15 11 6 16 10 1 17 8 3 18 12 2 19 13 4 20 15 4 21 15 5 22 14 3 23 12 2 24 16 0 25 17 7 26 19 7 27 19 4 28 18 2 29 16 9 30 21 8 31 20 1 32 8 1 33 8 6 34 10 9 35 21</p>
+        </triangles>
       </mesh>
     </geometry>
-    <geometry id="arm_R-lib" name="arm_RMesh">
+    <geometry id="geom-arm_R" name="arm_R">
       <mesh>
-        <source id="arm_R-POSITION">
-          <float_array id="arm_R-POSITION-array" count="24">
--3.270041 -58.387417 -7.148332
-7.744457 -58.387417 -7.148332
--3.270041 -2.019043 -7.148332
-7.744457 -2.019043 -7.148332
--3.270041 -58.387417 7.159534
-7.744457 -58.387417 7.159534
--3.270041 -2.019043 7.159534
-7.744457 -2.019043 7.159534
-</float_array>
+        <source id="geom-arm_R-positions">
+          <float_array id="geom-arm_R-positions-array" count="24">-3.270041 -58.38742 -7.148332 7.744457 -58.38742 -7.148332 -3.270041 -2.019043 -7.148332 7.744457 -2.019043 -7.148332 -3.270041 -58.38742 7.159534 7.744457 -58.38742 7.159534 -3.270041 -2.019043 7.159534 7.744457 -2.019043 7.159534</float_array>
           <technique_common>
-            <accessor source="#arm_R-POSITION-array" count="8" stride="3">
+            <accessor source="#geom-arm_R-positions-array" count="8" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <source id="arm_R-Normal0">
-          <float_array id="arm_R-Normal0-array" count="108">
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
-</float_array>
+        <source id="geom-arm_R-normals">
+          <float_array id="geom-arm_R-normals-array" count="108">0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0</float_array>
           <technique_common>
-            <accessor source="#arm_R-Normal0-array" count="36" stride="3">
+            <accessor source="#geom-arm_R-normals-array" count="36" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <source id="arm_R-UV0">
-          <float_array id="arm_R-UV0-array" count="48">
-1.000000 0.000000
-0.000000 0.000000
-1.000000 1.000000
-0.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-</float_array>
+        <source id="geom-arm_R-map1">
+          <float_array id="geom-arm_R-map1-array" count="72">1 0 0 0 0 0 1 1 0 0 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0</float_array>
           <technique_common>
-            <accessor source="#arm_R-UV0-array" count="24" stride="2">
+            <accessor source="#geom-arm_R-map1-array" count="24" stride="3">
               <param name="S" type="float"/>
               <param name="T" type="float"/>
+              <param name="P" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <vertices id="arm_R-VERTEX">
-          <input semantic="POSITION" source="#arm_R-POSITION"/>
+        <vertices id="geom-arm_R-vertices">
+          <input semantic="POSITION" source="#geom-arm_R-positions"/>
         </vertices>
-        <triangles count="12"><input semantic="VERTEX" offset="0" source="#arm_R-VERTEX"/><input semantic="NORMAL" offset="1" source="#arm_R-Normal0"/><input semantic="TEXCOORD" offset="2" set="0" source="#arm_R-UV0"/><p> 3 0 3 1 1 1 0 2 0 0 3 0 2 4 2 3 5 3 6 6 6 4 7 4 7 8 7 7 9 7 4 10 4 5 11 5 5 12 11 4 13 10 0 14 8 5 15 11 0 16 8 1 17 9 7 18 15 5 19 14 1 20 12 7 21 15 1 22 12 3 23 13 6 24 19 7 25 18 3 26 16 6 27 19 3 28 16 2 29 17 4 30 23 6 31 22 2 32 20 4 33 23 2 34 20 0 35 21</p></triangles>
+        <triangles material="ColorMaterial" count="12">
+          <input semantic="VERTEX" source="#geom-arm_R-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#geom-arm_R-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#geom-arm_R-map1" offset="2" set="0"/>
+          <p>3 0 3 1 1 1 0 2 0 0 3 0 2 4 2 3 5 3 6 6 6 4 7 4 7 8 7 7 9 7 4 10 4 5 11 5 5 12 11 4 13 10 0 14 8 5 15 11 0 16 8 1 17 9 7 18 15 5 19 14 1 20 12 7 21 15 1 22 12 3 23 13 6 24 19 7 25 18 3 26 16 6 27 19 3 28 16 2 29 17 4 30 23 6 31 22 2 32 20 4 33 23 2 34 20 0 35 21</p>
+        </triangles>
       </mesh>
     </geometry>
-    <geometry id="arm_L-lib" name="arm_LMesh">
+    <geometry id="geom-arm_L" name="arm_L">
       <mesh>
-        <source id="arm_L-POSITION">
-          <float_array id="arm_L-POSITION-array" count="24">
--7.031735 -59.534944 -7.349218
-3.880661 -59.534944 -7.349218
--7.031735 -2.639174 -7.349218
-3.880661 -2.639174 -7.349218
--7.031735 -59.534944 6.958648
-3.880661 -59.534944 6.958648
--7.031735 -2.639174 6.958648
-3.880661 -2.639174 6.958648
-</float_array>
+        <source id="geom-arm_L-positions">
+          <float_array id="geom-arm_L-positions-array" count="24">-7.031735 -59.53494 -7.349218 3.880661 -59.53494 -7.349218 -7.031735 -2.639174 -7.349218 3.880661 -2.639174 -7.349218 -7.031735 -59.53494 6.958648 3.880661 -59.53494 6.958648 -7.031735 -2.639174 6.958648 3.880661 -2.639174 6.958648</float_array>
           <technique_common>
-            <accessor source="#arm_L-POSITION-array" count="8" stride="3">
+            <accessor source="#geom-arm_L-positions-array" count="8" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <source id="arm_L-Normal0">
-          <float_array id="arm_L-Normal0-array" count="108">
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
-</float_array>
+        <source id="geom-arm_L-normals">
+          <float_array id="geom-arm_L-normals-array" count="108">0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0</float_array>
           <technique_common>
-            <accessor source="#arm_L-Normal0-array" count="36" stride="3">
+            <accessor source="#geom-arm_L-normals-array" count="36" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <source id="arm_L-UV0">
-          <float_array id="arm_L-UV0-array" count="48">
-1.000000 0.000000
-0.000000 0.000000
-1.000000 1.000000
-0.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-</float_array>
+        <source id="geom-arm_L-map1">
+          <float_array id="geom-arm_L-map1-array" count="72">1 0 0 0 0 0 1 1 0 0 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0</float_array>
           <technique_common>
-            <accessor source="#arm_L-UV0-array" count="24" stride="2">
+            <accessor source="#geom-arm_L-map1-array" count="24" stride="3">
               <param name="S" type="float"/>
               <param name="T" type="float"/>
+              <param name="P" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <vertices id="arm_L-VERTEX">
-          <input semantic="POSITION" source="#arm_L-POSITION"/>
+        <vertices id="geom-arm_L-vertices">
+          <input semantic="POSITION" source="#geom-arm_L-positions"/>
         </vertices>
-        <triangles count="12"><input semantic="VERTEX" offset="0" source="#arm_L-VERTEX"/><input semantic="NORMAL" offset="1" source="#arm_L-Normal0"/><input semantic="TEXCOORD" offset="2" set="0" source="#arm_L-UV0"/><p> 3 0 3 1 1 1 0 2 0 0 3 0 2 4 2 3 5 3 6 6 6 4 7 4 7 8 7 7 9 7 4 10 4 5 11 5 5 12 11 4 13 10 0 14 8 5 15 11 0 16 8 1 17 9 7 18 15 5 19 14 1 20 12 7 21 15 1 22 12 3 23 13 6 24 19 7 25 18 3 26 16 6 27 19 3 28 16 2 29 17 4 30 23 6 31 22 2 32 20 4 33 23 2 34 20 0 35 21</p></triangles>
+        <triangles material="ColorMaterial" count="12">
+          <input semantic="VERTEX" source="#geom-arm_L-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#geom-arm_L-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#geom-arm_L-map1" offset="2" set="0"/>
+          <p>3 0 3 1 1 1 0 2 0 0 3 0 2 4 2 3 5 3 6 6 6 4 7 4 7 8 7 7 9 7 4 10 4 5 11 5 5 12 11 4 13 10 0 14 8 5 15 11 0 16 8 1 17 9 7 18 15 5 19 14 1 20 12 7 21 15 1 22 12 3 23 13 6 24 19 7 25 18 3 26 16 6 27 19 3 28 16 2 29 17 4 30 23 6 31 22 2 32 20 4 33 23 2 34 20 0 35 21</p>
+        </triangles>
       </mesh>
     </geometry>
-    <geometry id="head-lib" name="headMesh">
+    <geometry id="geom-head" name="head">
       <mesh>
-        <source id="head-POSITION">
-          <float_array id="head-POSITION-array" count="24">
--38.855415 0.694790 -27.036133
-38.855415 0.694790 -27.036133
--38.855415 54.008034 -27.036133
-38.855415 54.008034 -27.036133
--38.855415 0.694790 28.287338
-38.855415 0.694790 28.287338
--38.855415 54.008034 28.287338
-38.855415 54.008034 28.287338
-</float_array>
+        <source id="geom-head-positions">
+          <float_array id="geom-head-positions-array" count="24">-38.85542 0.69479 -27.03613 38.85542 0.69479 -27.03613 -38.85542 54.00803 -27.03613 38.85542 54.00803 -27.03613 -38.85542 0.69479 28.28734 38.85542 0.69479 28.28734 -38.85542 54.00803 28.28734 38.85542 54.00803 28.28734</float_array>
           <technique_common>
-            <accessor source="#head-POSITION-array" count="8" stride="3">
+            <accessor source="#geom-head-positions-array" count="8" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <source id="head-Normal0">
-          <float_array id="head-Normal0-array" count="108">
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
-</float_array>
+        <source id="geom-head-normals">
+          <float_array id="geom-head-normals-array" count="108">0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0</float_array>
           <technique_common>
-            <accessor source="#head-Normal0-array" count="36" stride="3">
+            <accessor source="#geom-head-normals-array" count="36" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <source id="head-UV0">
-          <float_array id="head-UV0-array" count="48">
-1.000000 0.000000
-0.000000 0.000000
-1.000000 1.000000
-0.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-</float_array>
+        <source id="geom-head-map1">
+          <float_array id="geom-head-map1-array" count="72">1 0 0 0 0 0 1 1 0 0 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0</float_array>
           <technique_common>
-            <accessor source="#head-UV0-array" count="24" stride="2">
+            <accessor source="#geom-head-map1-array" count="24" stride="3">
               <param name="S" type="float"/>
               <param name="T" type="float"/>
+              <param name="P" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <vertices id="head-VERTEX">
-          <input semantic="POSITION" source="#head-POSITION"/>
+        <vertices id="geom-head-vertices">
+          <input semantic="POSITION" source="#geom-head-positions"/>
         </vertices>
-        <triangles count="12"><input semantic="VERTEX" offset="0" source="#head-VERTEX"/><input semantic="NORMAL" offset="1" source="#head-Normal0"/><input semantic="TEXCOORD" offset="2" set="0" source="#head-UV0"/><p> 1 0 1 0 1 0 3 2 3 0 3 0 2 4 2 3 5 3 7 6 7 6 7 6 4 8 4 7 9 7 4 10 4 5 11 5 5 12 11 4 13 10 0 14 8 5 15 11 0 16 8 1 17 9 7 18 15 5 19 14 1 20 12 7 21 15 1 22 12 3 23 13 6 24 19 7 25 18 3 26 16 6 27 19 3 28 16 2 29 17 4 30 23 6 31 22 2 32 20 4 33 23 2 34 20 0 35 21</p></triangles>
+        <triangles material="ColorMaterial" count="12">
+          <input semantic="VERTEX" source="#geom-head-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#geom-head-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#geom-head-map1" offset="2" set="0"/>
+          <p>1 0 1 0 1 0 3 2 3 0 3 0 2 4 2 3 5 3 7 6 7 6 7 6 4 8 4 7 9 7 4 10 4 5 11 5 5 12 11 4 13 10 0 14 8 5 15 11 0 16 8 1 17 9 7 18 15 5 19 14 1 20 12 7 21 15 1 22 12 3 23 13 6 24 19 7 25 18 3 26 16 6 27 19 3 28 16 2 29 17 4 30 23 6 31 22 2 32 20 4 33 23 2 34 20 0 35 21</p>
+        </triangles>
       </mesh>
     </geometry>
-    <geometry id="leg_L-lib" name="leg_LMesh">
+    <geometry id="geom-leg_R" name="leg_R">
       <mesh>
-        <source id="leg_L-POSITION">
-          <float_array id="leg_L-POSITION-array" count="24">
--8.679573 -33.316071 -4.871191
-8.106343 -33.316071 -4.871191
--8.679573 -0.058975 -4.871191
-8.106343 -0.058975 -4.871191
--8.679573 -33.316071 5.200358
-8.106343 -33.316071 5.200358
--8.679573 -0.058975 5.200358
-8.106343 -0.058975 5.200358
-</float_array>
+        <source id="geom-leg_R-positions">
+          <float_array id="geom-leg_R-positions-array" count="24">-8.431796 -33.25709 -4.858185 8.35412 -33.25709 -4.858185 -8.431796 4e-6 -4.858185 8.35412 4e-6 -4.858185 -8.431796 -33.25709 5.213364 8.35412 -33.25709 5.213364 -8.431796 4e-6 5.213364 8.35412 4e-6 5.213364</float_array>
           <technique_common>
-            <accessor source="#leg_L-POSITION-array" count="8" stride="3">
+            <accessor source="#geom-leg_R-positions-array" count="8" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <source id="leg_L-Normal0">
-          <float_array id="leg_L-Normal0-array" count="108">
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
-</float_array>
+        <source id="geom-leg_R-normals">
+          <float_array id="geom-leg_R-normals-array" count="108">0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0</float_array>
           <technique_common>
-            <accessor source="#leg_L-Normal0-array" count="36" stride="3">
+            <accessor source="#geom-leg_R-normals-array" count="36" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <source id="leg_L-UV0">
-          <float_array id="leg_L-UV0-array" count="48">
-1.000000 0.000000
-0.000000 0.000000
-1.000000 1.000000
-0.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-</float_array>
+        <source id="geom-leg_R-map1">
+          <float_array id="geom-leg_R-map1-array" count="72">1 0 0 0 0 0 1 1 0 0 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0</float_array>
           <technique_common>
-            <accessor source="#leg_L-UV0-array" count="24" stride="2">
+            <accessor source="#geom-leg_R-map1-array" count="24" stride="3">
               <param name="S" type="float"/>
               <param name="T" type="float"/>
+              <param name="P" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <vertices id="leg_L-VERTEX">
-          <input semantic="POSITION" source="#leg_L-POSITION"/>
+        <vertices id="geom-leg_R-vertices">
+          <input semantic="POSITION" source="#geom-leg_R-positions"/>
         </vertices>
-        <triangles count="12"><input semantic="VERTEX" offset="0" source="#leg_L-VERTEX"/><input semantic="NORMAL" offset="1" source="#leg_L-Normal0"/><input semantic="TEXCOORD" offset="2" set="0" source="#leg_L-UV0"/><p> 3 0 3 1 1 1 0 2 0 0 3 0 2 4 2 3 5 3 6 6 6 4 7 4 7 8 7 7 9 7 4 10 4 5 11 5 5 12 11 4 13 10 0 14 8 5 15 11 0 16 8 1 17 9 7 18 15 5 19 14 1 20 12 7 21 15 1 22 12 3 23 13 6 24 19 7 25 18 3 26 16 6 27 19 3 28 16 2 29 17 4 30 23 6 31 22 2 32 20 4 33 23 2 34 20 0 35 21</p></triangles>
+        <triangles material="ColorMaterial" count="12">
+          <input semantic="VERTEX" source="#geom-leg_R-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#geom-leg_R-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#geom-leg_R-map1" offset="2" set="0"/>
+          <p>3 0 3 1 1 1 0 2 0 0 3 0 2 4 2 3 5 3 6 6 6 4 7 4 7 8 7 7 9 7 4 10 4 5 11 5 5 12 11 4 13 10 0 14 8 5 15 11 0 16 8 1 17 9 7 18 15 5 19 14 1 20 12 7 21 15 1 22 12 3 23 13 6 24 19 7 25 18 3 26 16 6 27 19 3 28 16 2 29 17 4 30 23 6 31 22 2 32 20 4 33 23 2 34 20 0 35 21</p>
+        </triangles>
       </mesh>
     </geometry>
-    <geometry id="leg_R-lib" name="leg_RMesh">
+    <geometry id="geom-leg_L" name="leg_L">
       <mesh>
-        <source id="leg_R-POSITION">
-          <float_array id="leg_R-POSITION-array" count="24">
--8.431796 -33.257092 -4.858185
-8.354120 -33.257092 -4.858185
--8.431796 0.000004 -4.858185
-8.354120 0.000004 -4.858185
--8.431796 -33.257092 5.213364
-8.354120 -33.257092 5.213364
--8.431796 0.000004 5.213364
-8.354120 0.000004 5.213364
-</float_array>
+        <source id="geom-leg_L-positions">
+          <float_array id="geom-leg_L-positions-array" count="24">-8.679573 -33.31607 -4.871191 8.106343 -33.31607 -4.871191 -8.679573 -0.058975 -4.871191 8.106343 -0.058975 -4.871191 -8.679573 -33.31607 5.200358 8.106343 -33.31607 5.200358 -8.679573 -0.058975 5.200358 8.106343 -0.058975 5.200358</float_array>
           <technique_common>
-            <accessor source="#leg_R-POSITION-array" count="8" stride="3">
+            <accessor source="#geom-leg_L-positions-array" count="8" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <source id="leg_R-Normal0">
-          <float_array id="leg_R-Normal0-array" count="108">
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 -1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 0.000000 1.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-0.000000 -1.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-1.000000 0.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
-0.000000 1.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
--1.000000 0.000000 0.000000
-</float_array>
+        <source id="geom-leg_L-normals">
+          <float_array id="geom-leg_L-normals-array" count="108">0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0</float_array>
           <technique_common>
-            <accessor source="#leg_R-Normal0-array" count="36" stride="3">
+            <accessor source="#geom-leg_L-normals-array" count="36" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <source id="leg_R-UV0">
-          <float_array id="leg_R-UV0-array" count="48">
-1.000000 0.000000
-0.000000 0.000000
-1.000000 1.000000
-0.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-0.000000 0.000000
-1.000000 0.000000
-0.000000 1.000000
-1.000000 1.000000
-</float_array>
+        <source id="geom-leg_L-map1">
+          <float_array id="geom-leg_L-map1-array" count="72">1 0 0 0 0 0 1 1 0 0 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0 0 0 0 1 0 0 0 1 0 1 1 0</float_array>
           <technique_common>
-            <accessor source="#leg_R-UV0-array" count="24" stride="2">
+            <accessor source="#geom-leg_L-map1-array" count="24" stride="3">
               <param name="S" type="float"/>
               <param name="T" type="float"/>
+              <param name="P" type="float"/>
             </accessor>
           </technique_common>
         </source>
-        <vertices id="leg_R-VERTEX">
-          <input semantic="POSITION" source="#leg_R-POSITION"/>
+        <vertices id="geom-leg_L-vertices">
+          <input semantic="POSITION" source="#geom-leg_L-positions"/>
         </vertices>
-        <triangles count="12"><input semantic="VERTEX" offset="0" source="#leg_R-VERTEX"/><input semantic="NORMAL" offset="1" source="#leg_R-Normal0"/><input semantic="TEXCOORD" offset="2" set="0" source="#leg_R-UV0"/><p> 3 0 3 1 1 1 0 2 0 0 3 0 2 4 2 3 5 3 6 6 6 4 7 4 7 8 7 7 9 7 4 10 4 5 11 5 5 12 11 4 13 10 0 14 8 5 15 11 0 16 8 1 17 9 7 18 15 5 19 14 1 20 12 7 21 15 1 22 12 3 23 13 6 24 19 7 25 18 3 26 16 6 27 19 3 28 16 2 29 17 4 30 23 6 31 22 2 32 20 4 33 23 2 34 20 0 35 21</p></triangles>
+        <triangles material="ColorMaterial" count="12">
+          <input semantic="VERTEX" source="#geom-leg_L-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#geom-leg_L-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#geom-leg_L-map1" offset="2" set="0"/>
+          <p>3 0 3 1 1 1 0 2 0 0 3 0 2 4 2 3 5 3 6 6 6 4 7 4 7 8 7 7 9 7 4 10 4 5 11 5 5 12 11 4 13 10 0 14 8 5 15 11 0 16 8 1 17 9 7 18 15 5 19 14 1 20 12 7 21 15 1 22 12 3 23 13 6 24 19 7 25 18 3 26 16 6 27 19 3 28 16 2 29 17 4 30 23 6 31 22 2 32 20 4 33 23 2 34 20 0 35 21</p>
+        </triangles>
+      </mesh>
+    </geometry>
+    <geometry id="geom-Flap_Front" name="Flap_Front">
+      <mesh>
+        <source id="geom-Flap_Front-positions">
+          <float_array id="geom-Flap_Front-positions-array" count="12">-18.13557 -43.27164 -5.716619 18.43472 -43.28726 -5.693444 -18.13556 -29.26467 0.049683 18.43472 -29.28029 0.072859</float_array>
+          <technique_common>
+            <accessor source="#geom-Flap_Front-positions-array" count="4" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="geom-Flap_Front-normals">
+          <float_array id="geom-Flap_Front-normals-array" count="18">7.48651e-4 0.3806779 -0.9247074 7.48651e-4 0.3806778 -0.9247075 7.48651e-4 0.3806778 -0.9247074 7.48572e-4 0.3806778 -0.9247075 7.48572e-4 0.3806777 -0.9247075 7.48572e-4 0.3806777 -0.9247074</float_array>
+          <technique_common>
+            <accessor source="#geom-Flap_Front-normals-array" count="6" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="geom-Flap_Front-map1">
+          <float_array id="geom-Flap_Front-map1-array" count="12">0 0 0 1 0 0 1 0 0 0 0 0</float_array>
+          <technique_common>
+            <accessor source="#geom-Flap_Front-map1-array" count="4" stride="3">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+              <param name="P" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="geom-Flap_Front-vertices">
+          <input semantic="POSITION" source="#geom-Flap_Front-positions"/>
+        </vertices>
+        <triangles material="ColorMaterial" count="2">
+          <input semantic="VERTEX" source="#geom-Flap_Front-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#geom-Flap_Front-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#geom-Flap_Front-map1" offset="2" set="0"/>
+          <p>2 0 2 3 1 3 1 2 0 1 3 0 0 4 1 2 5 2</p>
+        </triangles>
+      </mesh>
+    </geometry>
+    <geometry id="geom-Flap_Right" name="Flap_Right">
+      <mesh>
+        <source id="geom-Flap_Right-positions">
+          <float_array id="geom-Flap_Right-positions-array" count="12">24.62973 -43.96796 0.072861 24.54295 -43.96894 26.67798 18.43472 -29.28029 0.072859 18.34793 -29.28126 26.67798</float_array>
+          <technique_common>
+            <accessor source="#geom-Flap_Right-positions-array" count="4" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="geom-Flap_Right-normals">
+          <float_array id="geom-Flap_Right-normals-array" count="18">0.9213902 0.3886272 0.003019487 0.9213901 0.3886272 0.003019487 0.9213902 0.3886272 0.003019487 0.9213903 0.3886267 0.003019787 0.9213903 0.3886268 0.003019787 0.9213904 0.3886268 0.003019788</float_array>
+          <technique_common>
+            <accessor source="#geom-Flap_Right-normals-array" count="6" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="geom-Flap_Right-map1">
+          <float_array id="geom-Flap_Right-map1-array" count="12">0 1 0 0 0 0 0 0 0 0 1 0</float_array>
+          <technique_common>
+            <accessor source="#geom-Flap_Right-map1-array" count="4" stride="3">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+              <param name="P" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="geom-Flap_Right-vertices">
+          <input semantic="POSITION" source="#geom-Flap_Right-positions"/>
+        </vertices>
+        <triangles material="ColorMaterial" count="2">
+          <input semantic="VERTEX" source="#geom-Flap_Right-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#geom-Flap_Right-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#geom-Flap_Right-map1" offset="2" set="0"/>
+          <p>0 0 1 2 1 2 3 2 3 3 3 3 1 4 0 0 5 1</p>
+        </triangles>
+      </mesh>
+    </geometry>
+    <geometry id="geom-Flap_Left" name="Flap_Left">
+      <mesh>
+        <source id="geom-Flap_Left-positions">
+          <float_array id="geom-Flap_Left-positions-array" count="12">-25.39238 -43.89724 0.14572 -25.39239 -43.89724 26.76871 -18.13556 -29.26467 0.049683 -18.20249 -29.20415 26.66835</float_array>
+          <technique_common>
+            <accessor source="#geom-Flap_Left-positions-array" count="4" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="geom-Flap_Left-normals">
+          <float_array id="geom-Flap_Left-normals-array" count="18">-0.8958825 0.4442789 -0.003262362 -0.8958827 0.4442789 -0.003262362 -0.8958825 0.4442788 -0.003262362 -0.8982248 0.4395364 -1.91682e-7 -0.8982248 0.4395365 -1.91682e-7 -0.8982248 0.4395364 -1.91682e-7</float_array>
+          <technique_common>
+            <accessor source="#geom-Flap_Left-normals-array" count="6" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="geom-Flap_Left-map1">
+          <float_array id="geom-Flap_Left-map1-array" count="12">-13.3115 -8.81508 0 13.3115 -8.81508 0 -13.3115 7.667419 0 13.3115 7.667419 0</float_array>
+          <technique_common>
+            <accessor source="#geom-Flap_Left-map1-array" count="4" stride="3">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+              <param name="P" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="geom-Flap_Left-vertices">
+          <input semantic="POSITION" source="#geom-Flap_Left-positions"/>
+        </vertices>
+        <triangles material="ColorMaterial" count="2">
+          <input semantic="VERTEX" source="#geom-Flap_Left-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#geom-Flap_Left-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#geom-Flap_Left-map1" offset="2" set="0"/>
+          <p>3 0 3 2 1 2 0 2 0 0 3 0 1 4 1 3 5 3</p>
+        </triangles>
+      </mesh>
+    </geometry>
+    <geometry id="geom-Flap_Back" name="Flap_Back">
+      <mesh>
+        <source id="geom-Flap_Back-positions">
+          <float_array id="geom-Flap_Back-positions-array" count="12">-18.22461 -44.86837 32.259 17.96599 -44.86837 32.259 18.34793 -29.28126 26.67798 -18.20249 -29.20415 26.66835</float_array>
+          <technique_common>
+            <accessor source="#geom-Flap_Back-positions-array" count="4" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="geom-Flap_Back-normals">
+          <float_array id="geom-Flap_Back-normals-array" count="18">4.60866e-4 0.3361378 0.9418126 4.60866e-4 0.3361379 0.9418126 4.60866e-4 0.3361379 0.9418126 0 0.3370966 0.9414701 0 0.3370966 0.9414701 0 0.3370966 0.9414701</float_array>
+          <technique_common>
+            <accessor source="#geom-Flap_Back-normals-array" count="6" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="geom-Flap_Back-map1">
+          <float_array id="geom-Flap_Back-map1-array" count="12">-17.90346 -8.358435 0 18.28713 -8.358435 0 18.28713 8.358435 0 -17.90346 8.358435 0</float_array>
+          <technique_common>
+            <accessor source="#geom-Flap_Back-map1-array" count="4" stride="3">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+              <param name="P" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="geom-Flap_Back-vertices">
+          <input semantic="POSITION" source="#geom-Flap_Back-positions"/>
+        </vertices>
+        <triangles material="ColorMaterial" count="2">
+          <input semantic="VERTEX" source="#geom-Flap_Back-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#geom-Flap_Back-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#geom-Flap_Back-map1" offset="2" set="0"/>
+          <p>2 0 2 3 1 3 0 2 0 0 3 0 1 4 1 2 5 2</p>
+        </triangles>
       </mesh>
     </geometry>
   </library_geometries>
+  <library_lights>
+    <light id="EnvironmentAmbientLight" name="EnvironmentAmbientLight">
+      <technique_common>
+        <ambient>
+          <color>0 0 0</color>
+        </ambient>
+      </technique_common>
+    </light>
+  </library_lights>
   <library_visual_scenes>
-    <visual_scene id="danbo" name="danbo">
-      <node name="body" id="body" sid="body"><matrix sid="matrix">1.176135 0.000001 0.000000 -2.939201 -0.000001 1.000000 -0.000000 -16.651268 -0.000000 0.000000 1.000000 -12.941593 0.000000 0.000000 0.000000 1.000000</matrix><instance_geometry url="#body-lib"/><extra><technique profile="FCOLLADA"><visibility>1.000000</visibility></technique></extra><node name="arm_R" id="arm_R" sid="arm_R"><matrix sid="matrix">0.850126 0.526580 -0.000000 -21.083437 -0.526580 0.850126 -0.000000 27.657047 -0.000000 0.000000 1.000000 14.478427 0.000000 0.000000 0.000000 1.000000</matrix><instance_geometry url="#arm_R-lib"/><extra><technique profile="FCOLLADA"><visibility>1.000000</visibility></technique></extra></node><node name="arm_L" id="arm_L" sid="arm_L"><matrix sid="matrix">0.914993 -0.403470 0.000000 22.675838 0.403470 0.914993 -0.000000 28.623650 -0.000000 0.000000 1.000000 12.563862 0.000000 0.000000 0.000000 1.000000</matrix><instance_geometry url="#arm_L-lib"/><extra><technique profile="FCOLLADA"><visibility>1.000000</visibility></technique></extra></node><node name="head" id="head" sid="head"><matrix sid="matrix">0.850242 -0.000001 -0.000000 0.118420 0.000001 1.000000 0.000000 28.800869 0.000000 -0.000000 1.000001 12.869296 0.000000 0.000000 0.000000 1.000000</matrix><instance_geometry url="#head-lib"/><extra><technique profile="FCOLLADA"><visibility>1.000000</visibility></technique></extra></node><node name="leg_L" id="leg_L" sid="leg_L"><matrix sid="matrix">1.001557 -0.000001 0.000000 9.763428 0.000000 1.282156 -0.034588 -23.724535 -0.000000 0.020210 2.194251 13.560508 0.000000 0.000000 0.000000 1.000000</matrix><instance_geometry url="#leg_L-lib"/><extra><technique profile="FCOLLADA"><visibility>1.000000</visibility></technique></extra></node><node name="leg_R" id="leg_R" sid="leg_R"><matrix sid="matrix">1.001557 -0.000001 0.000000 -9.575111 0.000000 1.282315 -0.000000 -23.800180 -0.000000 0.000000 2.194523 13.531960 0.000000 0.000000 0.000000 1.000000</matrix><instance_geometry url="#leg_R-lib"/><extra><technique profile="FCOLLADA"><visibility>1.000000</visibility></technique></extra></node></node>
-      <extra><technique profile="MAX3D"><frame_rate>30.000000</frame_rate></technique><technique profile="FCOLLADA"><start_time>0.000000</start_time><end_time>3.333333</end_time></technique></extra>
+    <visual_scene id="MaxScene">
+      <node name="EnvironmentAmbientLight">
+        <instance_light url="#EnvironmentAmbientLight"/>
+      </node>
+      <node id="node-body" name="body">
+        <translate>11.11018 12.94159 -16.65127</translate>
+        <rotate>-1 -4.26873e-7 4.25121e-7 -89.76445</rotate>
+        <scale>1.176135 1.0158 0.9844455</scale>
+        <instance_geometry url="#geom-body">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="ColorMaterial" target="#ColorEffectR204G204B204-material"/>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+        <node id="node-arm_R" name="arm_R">
+          <translate>-21.08344 27.65705 14.47843</translate>
+          <rotate sid="rotationZ">0 0 1 -31.77465</rotate>
+          <rotate sid="rotationY">0 1 0 0</rotate>
+          <rotate sid="rotationX">1 0 0 0</rotate>
+          <instance_geometry url="#geom-arm_R">
+            <bind_material>
+              <technique_common>
+                <instance_material symbol="ColorMaterial" target="#ColorEffectR204G204B204-material"/>
+              </technique_common>
+            </bind_material>
+          </instance_geometry>
+          <extra>
+            <technique profile="OpenCOLLADA">
+              <cast_shadows>1</cast_shadows>
+              <primary_visibility>1</primary_visibility>
+              <receive_shadows>1</receive_shadows>
+              <secondary_visibility>1</secondary_visibility>
+            </technique>
+          </extra>
+        </node>
+        <node id="node-arm_L" name="arm_L">
+          <translate>22.67583 28.62365 12.56386</translate>
+          <rotate sid="rotationZ">0 0 1 23.79528</rotate>
+          <rotate sid="rotationY">0 1 0 0</rotate>
+          <rotate sid="rotationX">1 0 0 0</rotate>
+          <instance_geometry url="#geom-arm_L">
+            <bind_material>
+              <technique_common>
+                <instance_material symbol="ColorMaterial" target="#ColorEffectR204G204B204-material"/>
+              </technique_common>
+            </bind_material>
+          </instance_geometry>
+          <extra>
+            <technique profile="OpenCOLLADA">
+              <cast_shadows>1</cast_shadows>
+              <primary_visibility>1</primary_visibility>
+              <receive_shadows>1</receive_shadows>
+              <secondary_visibility>1</secondary_visibility>
+            </technique>
+          </extra>
+        </node>
+        <node id="node-head" name="head">
+          <translate>0.1184196 28.80087 12.8693</translate>
+          <rotate>0 0 1 6.73876e-5</rotate>
+          <rotate sid="rotationY">0 1 0 0</rotate>
+          <rotate>1 0 0 0</rotate>
+          <scale>0.850242 1 1.000001</scale>
+          <instance_geometry url="#geom-head">
+            <bind_material>
+              <technique_common>
+                <instance_material symbol="ColorMaterial" target="#ColorEffectR204G204B204-material"/>
+              </technique_common>
+            </bind_material>
+          </instance_geometry>
+          <extra>
+            <technique profile="OpenCOLLADA">
+              <cast_shadows>1</cast_shadows>
+              <primary_visibility>1</primary_visibility>
+              <receive_shadows>1</receive_shadows>
+              <secondary_visibility>1</secondary_visibility>
+            </technique>
+          </extra>
+        </node>
+        <node id="node-leg_R" name="leg_R">
+          <translate>-8.834783 -23.80018 13.53196</translate>
+          <rotate>0 0 1 0</rotate>
+          <rotate>0 1 0 0</rotate>
+          <rotate sid="rotationX">1 0 0 -1.59419</rotate>
+          <scale>1.001557 1.282315 2.194523</scale>
+          <instance_geometry url="#geom-leg_R">
+            <bind_material>
+              <technique_common>
+                <instance_material symbol="ColorMaterial" target="#ColorEffectR204G204B204-material"/>
+              </technique_common>
+            </bind_material>
+          </instance_geometry>
+          <extra>
+            <technique profile="OpenCOLLADA">
+              <cast_shadows>1</cast_shadows>
+              <primary_visibility>1</primary_visibility>
+              <receive_shadows>1</receive_shadows>
+              <secondary_visibility>1</secondary_visibility>
+            </technique>
+          </extra>
+        </node>
+        <node id="node-leg_L" name="leg_L">
+          <translate sid="translation">9.763427 -23.41019 13.67557</translate>
+          <rotate sid="rotationZ">0 0 1 0</rotate>
+          <rotate sid="rotationY">0 1 0 0</rotate>
+          <rotate sid="rotationX">1 0 0 1.814775</rotate>
+          <scale sid="scale">1.001557 1.262407 2.229131</scale>
+          <instance_geometry url="#geom-leg_L">
+            <bind_material>
+              <technique_common>
+                <instance_material symbol="ColorMaterial" target="#ColorEffectR204G204B204-material"/>
+              </technique_common>
+            </bind_material>
+          </instance_geometry>
+          <extra>
+            <technique profile="OpenCOLLADA">
+              <cast_shadows>1</cast_shadows>
+              <primary_visibility>1</primary_visibility>
+              <receive_shadows>1</receive_shadows>
+              <secondary_visibility>1</secondary_visibility>
+            </technique>
+          </extra>
+        </node>
+        <extra>
+          <technique profile="OpenCOLLADA">
+            <cast_shadows>1</cast_shadows>
+            <primary_visibility>1</primary_visibility>
+            <receive_shadows>1</receive_shadows>
+            <secondary_visibility>1</secondary_visibility>
+          </technique>
+        </extra>
+      </node>
+      <node id="node-Flap_Front" name="Flap_Front">
+        <translate>11.11018 12.94159 -16.65127</translate>
+        <rotate>-1 -4.26873e-7 4.25121e-7 -89.76445</rotate>
+        <scale>1.176135 1.0158 0.9844454</scale>
+        <instance_geometry url="#geom-Flap_Front">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="ColorMaterial" target="#ColorEffectR204G204B204-material"/>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+        <extra>
+          <technique profile="OpenCOLLADA">
+            <cast_shadows>1</cast_shadows>
+            <primary_visibility>1</primary_visibility>
+            <receive_shadows>1</receive_shadows>
+            <secondary_visibility>1</secondary_visibility>
+          </technique>
+        </extra>
+      </node>
+      <node id="node-Flap_Right" name="Flap_Right">
+        <translate>11.11018 12.94159 -16.65127</translate>
+        <rotate>-1 -4.26873e-7 4.25121e-7 -89.76445</rotate>
+        <scale>1.176135 1.0158 0.9844454</scale>
+        <instance_geometry url="#geom-Flap_Right">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="ColorMaterial" target="#ColorEffectR204G204B204-material"/>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+        <extra>
+          <technique profile="OpenCOLLADA">
+            <cast_shadows>1</cast_shadows>
+            <primary_visibility>1</primary_visibility>
+            <receive_shadows>1</receive_shadows>
+            <secondary_visibility>1</secondary_visibility>
+          </technique>
+        </extra>
+      </node>
+      <node id="node-Flap_Left" name="Flap_Left">
+        <translate>11.11018 12.94159 -16.65127</translate>
+        <rotate>-1 -4.26873e-7 4.25121e-7 -89.76445</rotate>
+        <scale>1.176135 1.0158 0.9844454</scale>
+        <instance_geometry url="#geom-Flap_Left">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="ColorMaterial" target="#ColorEffectR204G204B204-material"/>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+        <extra>
+          <technique profile="OpenCOLLADA">
+            <cast_shadows>1</cast_shadows>
+            <primary_visibility>1</primary_visibility>
+            <receive_shadows>1</receive_shadows>
+            <secondary_visibility>1</secondary_visibility>
+          </technique>
+        </extra>
+      </node>
+      <node id="node-Flap_Back" name="Flap_Back">
+        <translate>11.11018 12.94159 -16.65127</translate>
+        <rotate>-1 -4.26873e-7 4.25121e-7 -89.76445</rotate>
+        <scale>1.176135 1.0158 0.9844454</scale>
+        <instance_geometry url="#geom-Flap_Back">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="ColorMaterial" target="#ColorEffectR204G204B204-material"/>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+        <extra>
+          <technique profile="OpenCOLLADA">
+            <cast_shadows>1</cast_shadows>
+            <primary_visibility>1</primary_visibility>
+            <receive_shadows>1</receive_shadows>
+            <secondary_visibility>1</secondary_visibility>
+          </technique>
+        </extra>
+      </node>
     </visual_scene>
   </library_visual_scenes>
+  <library_animations>
+    <animation>
+      <source id="node-arm_R_rotationZ.ANGLE-input">
+        <float_array id="node-arm_R_rotationZ.ANGLE-input-array" count="4">0 0.5 1.5 2</float_array>
+        <technique_common>
+          <accessor source="#node-arm_R_rotationZ.ANGLE-input-array" count="4" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_R_rotationZ.ANGLE-output">
+        <float_array id="node-arm_R_rotationZ.ANGLE-output-array" count="4">-31.77465 -18.44432 -20.96838 -31.77453</float_array>
+        <technique_common>
+          <accessor source="#node-arm_R_rotationZ.ANGLE-output-array" count="4" stride="1">
+            <param name="ANGLE" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_R_rotationZ.ANGLE-intangent">
+        <float_array id="node-arm_R_rotationZ.ANGLE-intangent-array" count="8">-0.3333333 -31.77461 0.3335 -18.44432 1.167 -18.44685 1.833333 -28.17248</float_array>
+        <technique_common>
+          <accessor source="#node-arm_R_rotationZ.ANGLE-intangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_R_rotationZ.ANGLE-outtangent">
+        <float_array id="node-arm_R_rotationZ.ANGLE-outtangent-array" count="8">0.1666667 -27.33121 0.833 -18.44432 1.6665 -22.22915 2.333333 -31.77457</float_array>
+        <technique_common>
+          <accessor source="#node-arm_R_rotationZ.ANGLE-outtangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_R_rotationZ.ANGLE-interpolation">
+        <Name_array id="node-arm_R_rotationZ.ANGLE-interpolation-array" count="4">BEZIER BEZIER BEZIER LINEAR</Name_array>
+        <technique_common>
+          <accessor source="#node-arm_R_rotationZ.ANGLE-interpolation-array" count="4" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_R_rotationY.ANGLE-input">
+        <float_array id="node-arm_R_rotationY.ANGLE-input-array" count="4">0 0.5 1.5 2</float_array>
+        <technique_common>
+          <accessor source="#node-arm_R_rotationY.ANGLE-input-array" count="4" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_R_rotationY.ANGLE-output">
+        <float_array id="node-arm_R_rotationY.ANGLE-output-array" count="4">0 26.34221 -24.43724 -0.08958475</float_array>
+        <technique_common>
+          <accessor source="#node-arm_R_rotationY.ANGLE-output-array" count="4" stride="1">
+            <param name="ANGLE" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_R_rotationY.ANGLE-intangent">
+        <float_array id="node-arm_R_rotationY.ANGLE-intangent-array" count="8">-0.3333333 -0.02986159 0.3335 26.34221 1.167 -24.43724 1.833333 -8.20547</float_array>
+        <technique_common>
+          <accessor source="#node-arm_R_rotationY.ANGLE-intangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_R_rotationY.ANGLE-outtangent">
+        <float_array id="node-arm_R_rotationY.ANGLE-outtangent-array" count="8">0.1666667 8.780736 0.833 26.34221 1.6665 -24.43724 2.333333 -0.05972317</float_array>
+        <technique_common>
+          <accessor source="#node-arm_R_rotationY.ANGLE-outtangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_R_rotationY.ANGLE-interpolation">
+        <Name_array id="node-arm_R_rotationY.ANGLE-interpolation-array" count="4">BEZIER BEZIER BEZIER LINEAR</Name_array>
+        <technique_common>
+          <accessor source="#node-arm_R_rotationY.ANGLE-interpolation-array" count="4" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_R_rotationX.ANGLE-input">
+        <float_array id="node-arm_R_rotationX.ANGLE-input-array" count="4">0 0.5 1.5 2</float_array>
+        <technique_common>
+          <accessor source="#node-arm_R_rotationX.ANGLE-input-array" count="4" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_R_rotationX.ANGLE-output">
+        <float_array id="node-arm_R_rotationX.ANGLE-output-array" count="4">0 53.07086 -47.18917 -0.1446088</float_array>
+        <technique_common>
+          <accessor source="#node-arm_R_rotationX.ANGLE-output-array" count="4" stride="1">
+            <param name="ANGLE" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_R_rotationX.ANGLE-intangent">
+        <float_array id="node-arm_R_rotationX.ANGLE-intangent-array" count="8">-0.3333333 -0.04820292 0.3335 53.07086 1.167 -47.18917 1.833333 -15.82613</float_array>
+        <technique_common>
+          <accessor source="#node-arm_R_rotationX.ANGLE-intangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_R_rotationX.ANGLE-outtangent">
+        <float_array id="node-arm_R_rotationX.ANGLE-outtangent-array" count="8">0.1666667 17.69029 0.833 53.07086 1.6665 -47.18917 2.333333 -0.09640583</float_array>
+        <technique_common>
+          <accessor source="#node-arm_R_rotationX.ANGLE-outtangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_R_rotationX.ANGLE-interpolation">
+        <Name_array id="node-arm_R_rotationX.ANGLE-interpolation-array" count="4">BEZIER BEZIER BEZIER LINEAR</Name_array>
+        <technique_common>
+          <accessor source="#node-arm_R_rotationX.ANGLE-interpolation-array" count="4" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_L_rotationZ.ANGLE-input">
+        <float_array id="node-arm_L_rotationZ.ANGLE-input-array" count="4">0 0.5 1.5 2</float_array>
+        <technique_common>
+          <accessor source="#node-arm_L_rotationZ.ANGLE-input-array" count="4" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_L_rotationZ.ANGLE-output">
+        <float_array id="node-arm_L_rotationZ.ANGLE-output-array" count="4">23.79528 16.44586 16.49823 23.79416</float_array>
+        <technique_common>
+          <accessor source="#node-arm_L_rotationZ.ANGLE-output-array" count="4" stride="1">
+            <param name="ANGLE" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_L_rotationZ.ANGLE-intangent">
+        <float_array id="node-arm_L_rotationZ.ANGLE-intangent-array" count="8">-0.3333333 23.79491 0.3335 16.44586 1.167 16.44591 1.833333 21.36218</float_array>
+        <technique_common>
+          <accessor source="#node-arm_L_rotationZ.ANGLE-intangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_L_rotationZ.ANGLE-outtangent">
+        <float_array id="node-arm_L_rotationZ.ANGLE-outtangent-array" count="8">0.1666667 21.34547 0.833 16.44586 1.6665 16.52439 2.333333 23.79453</float_array>
+        <technique_common>
+          <accessor source="#node-arm_L_rotationZ.ANGLE-outtangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_L_rotationZ.ANGLE-interpolation">
+        <Name_array id="node-arm_L_rotationZ.ANGLE-interpolation-array" count="4">BEZIER BEZIER BEZIER LINEAR</Name_array>
+        <technique_common>
+          <accessor source="#node-arm_L_rotationZ.ANGLE-interpolation-array" count="4" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_L_rotationY.ANGLE-input">
+        <float_array id="node-arm_L_rotationY.ANGLE-input-array" count="4">0 0.5 1.5 2</float_array>
+        <technique_common>
+          <accessor source="#node-arm_L_rotationY.ANGLE-input-array" count="4" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_L_rotationY.ANGLE-output">
+        <float_array id="node-arm_L_rotationY.ANGLE-output-array" count="4">0 17.44133 -17.39198 0.2397123</float_array>
+        <technique_common>
+          <accessor source="#node-arm_L_rotationY.ANGLE-output-array" count="4" stride="1">
+            <param name="ANGLE" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_L_rotationY.ANGLE-intangent">
+        <float_array id="node-arm_L_rotationY.ANGLE-intangent-array" count="8">-0.3333333 0.0799041 0.3335 17.44133 1.167 -17.39198 1.833333 -5.637519</float_array>
+        <technique_common>
+          <accessor source="#node-arm_L_rotationY.ANGLE-intangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_L_rotationY.ANGLE-outtangent">
+        <float_array id="node-arm_L_rotationY.ANGLE-outtangent-array" count="8">0.1666667 5.813776 0.833 17.44133 1.6665 -17.39198 2.333333 0.1598082</float_array>
+        <technique_common>
+          <accessor source="#node-arm_L_rotationY.ANGLE-outtangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_L_rotationY.ANGLE-interpolation">
+        <Name_array id="node-arm_L_rotationY.ANGLE-interpolation-array" count="4">BEZIER BEZIER BEZIER LINEAR</Name_array>
+        <technique_common>
+          <accessor source="#node-arm_L_rotationY.ANGLE-interpolation-array" count="4" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_L_rotationX.ANGLE-input">
+        <float_array id="node-arm_L_rotationX.ANGLE-input-array" count="4">0 0.5 1.5 2</float_array>
+        <technique_common>
+          <accessor source="#node-arm_L_rotationX.ANGLE-input-array" count="4" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_L_rotationX.ANGLE-output">
+        <float_array id="node-arm_L_rotationX.ANGLE-output-array" count="4">0 -45.43764 45.26268 -0.5436557</float_array>
+        <technique_common>
+          <accessor source="#node-arm_L_rotationX.ANGLE-output-array" count="4" stride="1">
+            <param name="ANGLE" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_L_rotationX.ANGLE-intangent">
+        <float_array id="node-arm_L_rotationX.ANGLE-intangent-array" count="8">-0.3333333 -0.1812186 0.3335 -45.43764 1.167 45.26268 1.833333 14.72512</float_array>
+        <technique_common>
+          <accessor source="#node-arm_L_rotationX.ANGLE-intangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_L_rotationX.ANGLE-outtangent">
+        <float_array id="node-arm_L_rotationX.ANGLE-outtangent-array" count="8">0.1666667 -15.14588 0.833 -45.43764 1.6665 45.26268 2.333333 -0.3624371</float_array>
+        <technique_common>
+          <accessor source="#node-arm_L_rotationX.ANGLE-outtangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-arm_L_rotationX.ANGLE-interpolation">
+        <Name_array id="node-arm_L_rotationX.ANGLE-interpolation-array" count="4">BEZIER BEZIER BEZIER LINEAR</Name_array>
+        <technique_common>
+          <accessor source="#node-arm_L_rotationX.ANGLE-interpolation-array" count="4" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-head_rotationY.ANGLE-input">
+        <float_array id="node-head_rotationY.ANGLE-input-array" count="4">0 0.5 1.5 2</float_array>
+        <technique_common>
+          <accessor source="#node-head_rotationY.ANGLE-input-array" count="4" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-head_rotationY.ANGLE-output">
+        <float_array id="node-head_rotationY.ANGLE-output-array" count="4">0 3.333333 -3.394444 0</float_array>
+        <technique_common>
+          <accessor source="#node-head_rotationY.ANGLE-output-array" count="4" stride="1">
+            <param name="ANGLE" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-head_rotationY.ANGLE-intangent">
+        <float_array id="node-head_rotationY.ANGLE-intangent-array" count="8">-0.3333 0 0.3335 3.333333 1.167 -3.394444 1.8335 0</float_array>
+        <technique_common>
+          <accessor source="#node-head_rotationY.ANGLE-intangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-head_rotationY.ANGLE-outtangent">
+        <float_array id="node-head_rotationY.ANGLE-outtangent-array" count="8">0.16665 0 0.833 3.333333 1.6665 -3.394444 2.333 0</float_array>
+        <technique_common>
+          <accessor source="#node-head_rotationY.ANGLE-outtangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-head_rotationY.ANGLE-interpolation">
+        <Name_array id="node-head_rotationY.ANGLE-interpolation-array" count="4">BEZIER BEZIER BEZIER BEZIER</Name_array>
+        <technique_common>
+          <accessor source="#node-head_rotationY.ANGLE-interpolation-array" count="4" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_R_rotationX.ANGLE-input">
+        <float_array id="node-leg_R_rotationX.ANGLE-input-array" count="4">0 0.5 1.5 2</float_array>
+        <technique_common>
+          <accessor source="#node-leg_R_rotationX.ANGLE-input-array" count="4" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_R_rotationX.ANGLE-output">
+        <float_array id="node-leg_R_rotationX.ANGLE-output-array" count="4">-1.59419 -23.0754 13.24094 -0.2317842</float_array>
+        <technique_common>
+          <accessor source="#node-leg_R_rotationX.ANGLE-output-array" count="4" stride="1">
+            <param name="ANGLE" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_R_rotationX.ANGLE-intangent">
+        <float_array id="node-leg_R_rotationX.ANGLE-intangent-array" count="8">-0.3333333 -1.140055 0.3335 -23.0754 1.167 13.24094 1.833333 4.259125</float_array>
+        <technique_common>
+          <accessor source="#node-leg_R_rotationX.ANGLE-intangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_R_rotationX.ANGLE-outtangent">
+        <float_array id="node-leg_R_rotationX.ANGLE-outtangent-array" count="8">0.1666667 -8.754593 0.833 -23.0754 1.6665 13.24094 2.333333 -0.6859194</float_array>
+        <technique_common>
+          <accessor source="#node-leg_R_rotationX.ANGLE-outtangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_R_rotationX.ANGLE-interpolation">
+        <Name_array id="node-leg_R_rotationX.ANGLE-interpolation-array" count="4">BEZIER BEZIER BEZIER LINEAR</Name_array>
+        <technique_common>
+          <accessor source="#node-leg_R_rotationX.ANGLE-interpolation-array" count="4" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_translation.X-input">
+        <float_array id="node-leg_L_translation.X-input-array" count="2">-0.1 0</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_translation.X-input-array" count="2" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_translation.X-output">
+        <float_array id="node-leg_L_translation.X-output-array" count="2">9.763428 9.763428</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_translation.X-output-array" count="2" stride="1">
+            <param name="X" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_translation.X-intangent">
+        <float_array id="node-leg_L_translation.X-intangent-array" count="4">-0.433 9.763428 -0.0333 9.763428</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_translation.X-intangent-array" count="2" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_translation.X-outtangent">
+        <float_array id="node-leg_L_translation.X-outtangent-array" count="4">-0.0667 9.763428 0.333 9.763428</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_translation.X-outtangent-array" count="2" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_translation.X-interpolation">
+        <Name_array id="node-leg_L_translation.X-interpolation-array" count="2">BEZIER BEZIER</Name_array>
+        <technique_common>
+          <accessor source="#node-leg_L_translation.X-interpolation-array" count="2" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_translation.Y-input">
+        <float_array id="node-leg_L_translation.Y-input-array" count="2">-0.1 0</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_translation.Y-input-array" count="2" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_translation.Y-output">
+        <float_array id="node-leg_L_translation.Y-output-array" count="2">-23.41019 -23.41019</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_translation.Y-output-array" count="2" stride="1">
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_translation.Y-intangent">
+        <float_array id="node-leg_L_translation.Y-intangent-array" count="4">-0.433 -23.41019 -0.0333 -23.41019</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_translation.Y-intangent-array" count="2" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_translation.Y-outtangent">
+        <float_array id="node-leg_L_translation.Y-outtangent-array" count="4">-0.0667 -23.41019 0.333 -23.41019</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_translation.Y-outtangent-array" count="2" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_translation.Y-interpolation">
+        <Name_array id="node-leg_L_translation.Y-interpolation-array" count="2">BEZIER BEZIER</Name_array>
+        <technique_common>
+          <accessor source="#node-leg_L_translation.Y-interpolation-array" count="2" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_translation.Z-input">
+        <float_array id="node-leg_L_translation.Z-input-array" count="2">-0.1 0</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_translation.Z-input-array" count="2" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_translation.Z-output">
+        <float_array id="node-leg_L_translation.Z-output-array" count="2">13.67557 13.67557</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_translation.Z-output-array" count="2" stride="1">
+            <param name="Z" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_translation.Z-intangent">
+        <float_array id="node-leg_L_translation.Z-intangent-array" count="4">-0.433 13.67557 -0.0333 13.67557</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_translation.Z-intangent-array" count="2" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_translation.Z-outtangent">
+        <float_array id="node-leg_L_translation.Z-outtangent-array" count="4">-0.0667 13.67557 0.333 13.67557</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_translation.Z-outtangent-array" count="2" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_translation.Z-interpolation">
+        <Name_array id="node-leg_L_translation.Z-interpolation-array" count="2">BEZIER BEZIER</Name_array>
+        <technique_common>
+          <accessor source="#node-leg_L_translation.Z-interpolation-array" count="2" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_rotationZ.ANGLE-input">
+        <float_array id="node-leg_L_rotationZ.ANGLE-input-array" count="5">-0.1 0 0.5 1.5 2</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_rotationZ.ANGLE-input-array" count="5" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_rotationZ.ANGLE-output">
+        <float_array id="node-leg_L_rotationZ.ANGLE-output-array" count="5">0 0 0 0 0</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_rotationZ.ANGLE-output-array" count="5" stride="1">
+            <param name="ANGLE" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_rotationZ.ANGLE-intangent">
+        <float_array id="node-leg_L_rotationZ.ANGLE-intangent-array" count="10">-0.4333 0 -0.0333 0 0.3335 0 1.167 0 1.8335 0</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_rotationZ.ANGLE-intangent-array" count="5" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_rotationZ.ANGLE-outtangent">
+        <float_array id="node-leg_L_rotationZ.ANGLE-outtangent-array" count="10">-0.06667 0 0.1665 0 0.833 0 1.6665 0 2.333 0</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_rotationZ.ANGLE-outtangent-array" count="5" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_rotationZ.ANGLE-interpolation">
+        <Name_array id="node-leg_L_rotationZ.ANGLE-interpolation-array" count="5">BEZIER BEZIER BEZIER BEZIER BEZIER</Name_array>
+        <technique_common>
+          <accessor source="#node-leg_L_rotationZ.ANGLE-interpolation-array" count="5" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_rotationY.ANGLE-input">
+        <float_array id="node-leg_L_rotationY.ANGLE-input-array" count="5">-0.1 0 0.5 1.5 2</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_rotationY.ANGLE-input-array" count="5" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_rotationY.ANGLE-output">
+        <float_array id="node-leg_L_rotationY.ANGLE-output-array" count="5">0 0 0 0 0</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_rotationY.ANGLE-output-array" count="5" stride="1">
+            <param name="ANGLE" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_rotationY.ANGLE-intangent">
+        <float_array id="node-leg_L_rotationY.ANGLE-intangent-array" count="10">-0.4333 0 -0.0333 0 0.3335 0 1.167 0 1.8335 0</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_rotationY.ANGLE-intangent-array" count="5" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_rotationY.ANGLE-outtangent">
+        <float_array id="node-leg_L_rotationY.ANGLE-outtangent-array" count="10">-0.06667 0 0.1665 0 0.833 0 1.6665 0 2.333 0</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_rotationY.ANGLE-outtangent-array" count="5" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_rotationY.ANGLE-interpolation">
+        <Name_array id="node-leg_L_rotationY.ANGLE-interpolation-array" count="5">BEZIER BEZIER BEZIER BEZIER BEZIER</Name_array>
+        <technique_common>
+          <accessor source="#node-leg_L_rotationY.ANGLE-interpolation-array" count="5" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_rotationX.ANGLE-input">
+        <float_array id="node-leg_L_rotationX.ANGLE-input-array" count="4">0 0.5 1.5 2</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_rotationX.ANGLE-input-array" count="4" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_rotationX.ANGLE-output">
+        <float_array id="node-leg_L_rotationX.ANGLE-output-array" count="4">1.814774 23.29598 -13.02036 0.4523634</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_rotationX.ANGLE-output-array" count="4" stride="1">
+            <param name="ANGLE" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_rotationX.ANGLE-intangent">
+        <float_array id="node-leg_L_rotationX.ANGLE-intangent-array" count="8">-0.3333333 1.360637 0.3335 23.29598 1.167 -13.02036 1.833333 -4.038545</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_rotationX.ANGLE-intangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_rotationX.ANGLE-outtangent">
+        <float_array id="node-leg_L_rotationX.ANGLE-outtangent-array" count="8">0.1666667 8.975176 0.833 23.29598 1.6665 -13.02036 2.333333 0.9065003</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_rotationX.ANGLE-outtangent-array" count="4" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_rotationX.ANGLE-interpolation">
+        <Name_array id="node-leg_L_rotationX.ANGLE-interpolation-array" count="4">BEZIER BEZIER BEZIER LINEAR</Name_array>
+        <technique_common>
+          <accessor source="#node-leg_L_rotationX.ANGLE-interpolation-array" count="4" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_scale.X-input">
+        <float_array id="node-leg_L_scale.X-input-array" count="2">-0.1 0</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_scale.X-input-array" count="2" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_scale.X-output">
+        <float_array id="node-leg_L_scale.X-output-array" count="2">1.001557 1.001557</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_scale.X-output-array" count="2" stride="1">
+            <param name="X" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_scale.X-intangent">
+        <float_array id="node-leg_L_scale.X-intangent-array" count="4">-0.433 1.001557 -0.0333 1.001557</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_scale.X-intangent-array" count="2" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_scale.X-outtangent">
+        <float_array id="node-leg_L_scale.X-outtangent-array" count="4">-0.0667 1.001557 0.333 1.001557</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_scale.X-outtangent-array" count="2" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_scale.X-interpolation">
+        <Name_array id="node-leg_L_scale.X-interpolation-array" count="2">BEZIER BEZIER</Name_array>
+        <technique_common>
+          <accessor source="#node-leg_L_scale.X-interpolation-array" count="2" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_scale.Y-input">
+        <float_array id="node-leg_L_scale.Y-input-array" count="2">-0.1 0</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_scale.Y-input-array" count="2" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_scale.Y-output">
+        <float_array id="node-leg_L_scale.Y-output-array" count="2">1.262407 1.262407</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_scale.Y-output-array" count="2" stride="1">
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_scale.Y-intangent">
+        <float_array id="node-leg_L_scale.Y-intangent-array" count="4">-0.433 1.262407 -0.0333 1.262407</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_scale.Y-intangent-array" count="2" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_scale.Y-outtangent">
+        <float_array id="node-leg_L_scale.Y-outtangent-array" count="4">-0.0667 1.262407 0.333 1.262407</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_scale.Y-outtangent-array" count="2" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_scale.Y-interpolation">
+        <Name_array id="node-leg_L_scale.Y-interpolation-array" count="2">BEZIER BEZIER</Name_array>
+        <technique_common>
+          <accessor source="#node-leg_L_scale.Y-interpolation-array" count="2" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_scale.Z-input">
+        <float_array id="node-leg_L_scale.Z-input-array" count="2">-0.1 0</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_scale.Z-input-array" count="2" stride="1">
+            <param name="TIME" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_scale.Z-output">
+        <float_array id="node-leg_L_scale.Z-output-array" count="2">2.229131 2.229131</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_scale.Z-output-array" count="2" stride="1">
+            <param name="Z" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_scale.Z-intangent">
+        <float_array id="node-leg_L_scale.Z-intangent-array" count="4">-0.433 2.229131 -0.0333 2.229131</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_scale.Z-intangent-array" count="2" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_scale.Z-outtangent">
+        <float_array id="node-leg_L_scale.Z-outtangent-array" count="4">-0.0667 2.229131 0.333 2.229131</float_array>
+        <technique_common>
+          <accessor source="#node-leg_L_scale.Z-outtangent-array" count="2" stride="2">
+            <param name="X" type="float"/>
+            <param name="Y" type="float"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <source id="node-leg_L_scale.Z-interpolation">
+        <Name_array id="node-leg_L_scale.Z-interpolation-array" count="2">BEZIER BEZIER</Name_array>
+        <technique_common>
+          <accessor source="#node-leg_L_scale.Z-interpolation-array" count="2" stride="1">
+            <param name="INTERPOLATION" type="name"/>
+          </accessor>
+        </technique_common>
+      </source>
+      <sampler id="node-arm_R_rotationZ.ANGLE-sampler">
+        <input semantic="INPUT" source="#node-arm_R_rotationZ.ANGLE-input"/>
+        <input semantic="OUTPUT" source="#node-arm_R_rotationZ.ANGLE-output"/>
+        <input semantic="IN_TANGENT" source="#node-arm_R_rotationZ.ANGLE-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-arm_R_rotationZ.ANGLE-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-arm_R_rotationZ.ANGLE-interpolation"/>
+      </sampler>
+      <sampler id="node-arm_R_rotationY.ANGLE-sampler">
+        <input semantic="INPUT" source="#node-arm_R_rotationY.ANGLE-input"/>
+        <input semantic="OUTPUT" source="#node-arm_R_rotationY.ANGLE-output"/>
+        <input semantic="IN_TANGENT" source="#node-arm_R_rotationY.ANGLE-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-arm_R_rotationY.ANGLE-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-arm_R_rotationY.ANGLE-interpolation"/>
+      </sampler>
+      <sampler id="node-arm_R_rotationX.ANGLE-sampler">
+        <input semantic="INPUT" source="#node-arm_R_rotationX.ANGLE-input"/>
+        <input semantic="OUTPUT" source="#node-arm_R_rotationX.ANGLE-output"/>
+        <input semantic="IN_TANGENT" source="#node-arm_R_rotationX.ANGLE-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-arm_R_rotationX.ANGLE-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-arm_R_rotationX.ANGLE-interpolation"/>
+      </sampler>
+      <sampler id="node-arm_L_rotationZ.ANGLE-sampler">
+        <input semantic="INPUT" source="#node-arm_L_rotationZ.ANGLE-input"/>
+        <input semantic="OUTPUT" source="#node-arm_L_rotationZ.ANGLE-output"/>
+        <input semantic="IN_TANGENT" source="#node-arm_L_rotationZ.ANGLE-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-arm_L_rotationZ.ANGLE-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-arm_L_rotationZ.ANGLE-interpolation"/>
+      </sampler>
+      <sampler id="node-arm_L_rotationY.ANGLE-sampler">
+        <input semantic="INPUT" source="#node-arm_L_rotationY.ANGLE-input"/>
+        <input semantic="OUTPUT" source="#node-arm_L_rotationY.ANGLE-output"/>
+        <input semantic="IN_TANGENT" source="#node-arm_L_rotationY.ANGLE-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-arm_L_rotationY.ANGLE-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-arm_L_rotationY.ANGLE-interpolation"/>
+      </sampler>
+      <sampler id="node-arm_L_rotationX.ANGLE-sampler">
+        <input semantic="INPUT" source="#node-arm_L_rotationX.ANGLE-input"/>
+        <input semantic="OUTPUT" source="#node-arm_L_rotationX.ANGLE-output"/>
+        <input semantic="IN_TANGENT" source="#node-arm_L_rotationX.ANGLE-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-arm_L_rotationX.ANGLE-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-arm_L_rotationX.ANGLE-interpolation"/>
+      </sampler>
+      <sampler id="node-head_rotationY.ANGLE-sampler">
+        <input semantic="INPUT" source="#node-head_rotationY.ANGLE-input"/>
+        <input semantic="OUTPUT" source="#node-head_rotationY.ANGLE-output"/>
+        <input semantic="IN_TANGENT" source="#node-head_rotationY.ANGLE-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-head_rotationY.ANGLE-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-head_rotationY.ANGLE-interpolation"/>
+      </sampler>
+      <sampler id="node-leg_R_rotationX.ANGLE-sampler">
+        <input semantic="INPUT" source="#node-leg_R_rotationX.ANGLE-input"/>
+        <input semantic="OUTPUT" source="#node-leg_R_rotationX.ANGLE-output"/>
+        <input semantic="IN_TANGENT" source="#node-leg_R_rotationX.ANGLE-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-leg_R_rotationX.ANGLE-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-leg_R_rotationX.ANGLE-interpolation"/>
+      </sampler>
+      <sampler id="node-leg_L_translation.X-sampler">
+        <input semantic="INPUT" source="#node-leg_L_translation.X-input"/>
+        <input semantic="OUTPUT" source="#node-leg_L_translation.X-output"/>
+        <input semantic="IN_TANGENT" source="#node-leg_L_translation.X-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-leg_L_translation.X-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-leg_L_translation.X-interpolation"/>
+      </sampler>
+      <sampler id="node-leg_L_translation.Y-sampler">
+        <input semantic="INPUT" source="#node-leg_L_translation.Y-input"/>
+        <input semantic="OUTPUT" source="#node-leg_L_translation.Y-output"/>
+        <input semantic="IN_TANGENT" source="#node-leg_L_translation.Y-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-leg_L_translation.Y-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-leg_L_translation.Y-interpolation"/>
+      </sampler>
+      <sampler id="node-leg_L_translation.Z-sampler">
+        <input semantic="INPUT" source="#node-leg_L_translation.Z-input"/>
+        <input semantic="OUTPUT" source="#node-leg_L_translation.Z-output"/>
+        <input semantic="IN_TANGENT" source="#node-leg_L_translation.Z-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-leg_L_translation.Z-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-leg_L_translation.Z-interpolation"/>
+      </sampler>
+      <sampler id="node-leg_L_rotationZ.ANGLE-sampler">
+        <input semantic="INPUT" source="#node-leg_L_rotationZ.ANGLE-input"/>
+        <input semantic="OUTPUT" source="#node-leg_L_rotationZ.ANGLE-output"/>
+        <input semantic="IN_TANGENT" source="#node-leg_L_rotationZ.ANGLE-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-leg_L_rotationZ.ANGLE-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-leg_L_rotationZ.ANGLE-interpolation"/>
+      </sampler>
+      <sampler id="node-leg_L_rotationY.ANGLE-sampler">
+        <input semantic="INPUT" source="#node-leg_L_rotationY.ANGLE-input"/>
+        <input semantic="OUTPUT" source="#node-leg_L_rotationY.ANGLE-output"/>
+        <input semantic="IN_TANGENT" source="#node-leg_L_rotationY.ANGLE-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-leg_L_rotationY.ANGLE-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-leg_L_rotationY.ANGLE-interpolation"/>
+      </sampler>
+      <sampler id="node-leg_L_rotationX.ANGLE-sampler">
+        <input semantic="INPUT" source="#node-leg_L_rotationX.ANGLE-input"/>
+        <input semantic="OUTPUT" source="#node-leg_L_rotationX.ANGLE-output"/>
+        <input semantic="IN_TANGENT" source="#node-leg_L_rotationX.ANGLE-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-leg_L_rotationX.ANGLE-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-leg_L_rotationX.ANGLE-interpolation"/>
+      </sampler>
+      <sampler id="node-leg_L_scale.X-sampler">
+        <input semantic="INPUT" source="#node-leg_L_scale.X-input"/>
+        <input semantic="OUTPUT" source="#node-leg_L_scale.X-output"/>
+        <input semantic="IN_TANGENT" source="#node-leg_L_scale.X-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-leg_L_scale.X-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-leg_L_scale.X-interpolation"/>
+      </sampler>
+      <sampler id="node-leg_L_scale.Y-sampler">
+        <input semantic="INPUT" source="#node-leg_L_scale.Y-input"/>
+        <input semantic="OUTPUT" source="#node-leg_L_scale.Y-output"/>
+        <input semantic="IN_TANGENT" source="#node-leg_L_scale.Y-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-leg_L_scale.Y-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-leg_L_scale.Y-interpolation"/>
+      </sampler>
+      <sampler id="node-leg_L_scale.Z-sampler">
+        <input semantic="INPUT" source="#node-leg_L_scale.Z-input"/>
+        <input semantic="OUTPUT" source="#node-leg_L_scale.Z-output"/>
+        <input semantic="IN_TANGENT" source="#node-leg_L_scale.Z-intangent"/>
+        <input semantic="OUT_TANGENT" source="#node-leg_L_scale.Z-outtangent"/>
+        <input semantic="INTERPOLATION" source="#node-leg_L_scale.Z-interpolation"/>
+      </sampler>
+      <channel source="#node-arm_R_rotationZ.ANGLE-sampler" target="node-arm_R/rotationZ.ANGLE"/>
+      <channel source="#node-arm_R_rotationY.ANGLE-sampler" target="node-arm_R/rotationY.ANGLE"/>
+      <channel source="#node-arm_R_rotationX.ANGLE-sampler" target="node-arm_R/rotationX.ANGLE"/>
+      <channel source="#node-arm_L_rotationZ.ANGLE-sampler" target="node-arm_L/rotationZ.ANGLE"/>
+      <channel source="#node-arm_L_rotationY.ANGLE-sampler" target="node-arm_L/rotationY.ANGLE"/>
+      <channel source="#node-arm_L_rotationX.ANGLE-sampler" target="node-arm_L/rotationX.ANGLE"/>
+      <channel source="#node-head_rotationY.ANGLE-sampler" target="node-head/rotationY.ANGLE"/>
+      <channel source="#node-leg_R_rotationX.ANGLE-sampler" target="node-leg_R/rotationX.ANGLE"/>
+      <channel source="#node-leg_L_translation.X-sampler" target="node-leg_L/translation.X"/>
+      <channel source="#node-leg_L_translation.Y-sampler" target="node-leg_L/translation.Y"/>
+      <channel source="#node-leg_L_translation.Z-sampler" target="node-leg_L/translation.Z"/>
+      <channel source="#node-leg_L_rotationZ.ANGLE-sampler" target="node-leg_L/rotationZ.ANGLE"/>
+      <channel source="#node-leg_L_rotationY.ANGLE-sampler" target="node-leg_L/rotationY.ANGLE"/>
+      <channel source="#node-leg_L_rotationX.ANGLE-sampler" target="node-leg_L/rotationX.ANGLE"/>
+      <channel source="#node-leg_L_scale.X-sampler" target="node-leg_L/scale.X"/>
+      <channel source="#node-leg_L_scale.Y-sampler" target="node-leg_L/scale.Y"/>
+      <channel source="#node-leg_L_scale.Z-sampler" target="node-leg_L/scale.Z"/>
+    </animation>
+  </library_animations>
   <scene>
-    <instance_visual_scene url="#danbo"></instance_visual_scene>
+    <instance_visual_scene url="#MaxScene"/>
   </scene>
 </COLLADA>
