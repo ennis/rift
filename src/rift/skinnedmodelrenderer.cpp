@@ -1,18 +1,23 @@
 #include <skinnedmodelrenderer.hpp>
 #include <immediatecontext.hpp>
+#include <pose.hpp>
 
 namespace {
 	void calculateTransformsRec(
-		std::vector<Model::Bone> const &bones,
+		const std::vector<Model::Bone> &bones,
+		const Pose &pose,
 		std::vector<glm::mat4> &transforms,
 		glm::mat4 currentTransform,
 		int boneIndex)
 	{
 		auto bone = bones[boneIndex];
-		transforms[boneIndex] = currentTransform * bone.invBindPose;
+		Transform t;
+		t.rotation = pose.getRotations()[boneIndex];
+		t.position = pose.getPositions()[boneIndex];
+		transforms[boneIndex] = currentTransform * t.toMatrix();
 		for (auto childBoneIndex : bone.children) {
 			auto child_tf = currentTransform * bones[childBoneIndex].transform;
-			calculateTransformsRec(bones, transforms, child_tf, childBoneIndex);
+			calculateTransformsRec(bones, pose, transforms, child_tf, childBoneIndex);
 		}
 	}
 
@@ -76,10 +81,11 @@ mMesh(renderer)
 		loadShaderSource("resources/shaders/model/frag.glsl").c_str());
 }
 
-void SkinnedModelRenderer::applyPose(std::vector<Transform> &pose)
+void SkinnedModelRenderer::applyPose(const Pose &pose)
 {
 	auto const &bones = mModel.getBones();
-	calculateTransformsRec(bones, mFinalTransforms, glm::mat4(1.0f), 0);
+	assert(pose.getNumBones() == bones.size());
+	calculateTransformsRec(bones, pose, mFinalTransforms, glm::mat4(1.0f), 0);
 }
 
 void SkinnedModelRenderer::draw(RenderContext const &context)

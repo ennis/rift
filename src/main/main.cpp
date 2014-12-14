@@ -44,6 +44,7 @@ private:
 	std::unique_ptr<ImmediateContextFactory> immediateContextFactory;
 	std::unique_ptr<Model> model;
 	std::unique_ptr<SkinnedModelRenderer> animTest;
+	Pose testPose;
 	//std::unique_ptr<AnimatedMesh> animTest;
 	ImmediateContext *immediateContext;
 	Font fnt;
@@ -159,6 +160,7 @@ void RiftGame::init()
 
 	// test loading of animation clips
 	AnimationClip clip = AnimationClip::loadFromFile("resources/models/danbo/danbo@animation.anim");
+	testPose = clip.computePose(0.1f);
 }
 
 
@@ -234,8 +236,7 @@ void RiftGame::render(float dt)
 		.addVertex(Vertex({ 1, 2, 2 }, { 1.0, 0.5, 0.0, 1.0 }))
 		.render(rc);
 
-    std::vector<Transform> transform;
-	animTest->applyPose(transform);
+	animTest->applyPose(testPose);
 	animTest->draw(rc);
 
 	// render tweak bar

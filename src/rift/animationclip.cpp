@@ -58,6 +58,28 @@ namespace
 			std::move(positionKeys), 
 			std::move(rotationKeys));
 	}
+
+	template <typename T>
+	int findNearestKey(const std::vector<T> &keys, float time)
+	{
+		unsigned int l = 0;
+		auto u = keys.size();
+		unsigned int p = l + (u - l) / 2;
+		// dichotomy
+		while (p != l) {
+			if (time < keys[p].time) {
+				u = p;
+			}
+			else if (time > keys[p].time) {
+				l = p;
+			}
+			else {
+				return p;
+			}
+			p = l + (u - l) / 2;
+		}
+		return p;
+	}
 }
 
 AnimationClip AnimationClip::loadFromFile(const char *fileName)
@@ -78,4 +100,17 @@ AnimationClip AnimationClip::loadFromFile(const char *fileName)
 	}
 
 	return clip;
+}
+
+Pose AnimationClip::computePose(float time)
+{
+	std::vector<glm::vec3> positions;
+	std::vector<glm::quat> rotations;
+
+	for (const auto &ch : mChannels) {
+		positions.push_back(ch.getPositionKeys()[findNearestKey(ch.getPositionKeys(), time)].pos);
+		rotations.push_back(ch.getRotationKeys()[findNearestKey(ch.getRotationKeys(), time)].rotation);
+	}
+
+	return Pose(std::move(positions), std::move(rotations));
 }

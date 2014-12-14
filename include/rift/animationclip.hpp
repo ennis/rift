@@ -2,6 +2,8 @@
 #include <common.hpp>
 #include <vector>
 #include <string>
+#include <pose.hpp>
+
 
 class AnimationClip
 {
@@ -39,15 +41,15 @@ public:
 
 		Channel(Channel const &rhs) = delete;
 
-		std::string const &getNodeName() {
+		std::string const &getNodeName() const {
 			return mNodeName;
 		}
 
-		std::vector<PositionKey> const &getPositionKeys() {
+		std::vector<PositionKey> const &getPositionKeys() const {
 			return mPositionKeys;
 		}
 
-		std::vector<RotationKey> const &getRotationKeys() {
+		std::vector<RotationKey> const &getRotationKeys() const {
 			return mRotationKeys;
 		}
 
@@ -66,6 +68,8 @@ public:
 	std::vector<AnimationClip::Channel> const &getChannels() const {
 		return mChannels;
 	}
+
+	Pose computePose( float time);
 
 	static AnimationClip loadFromFile(const char *fileName);
 

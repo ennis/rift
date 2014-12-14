@@ -5,13 +5,14 @@
 #include <transform.hpp>
 #include <vector>
 #include <immediatecontext.hpp>
+#include <pose.hpp>
 
 class SkinnedModelRenderer
 {
 public:
 	SkinnedModelRenderer(Renderer &renderer, ImmediateContextFactory &icf, Model &model);
 	
-	void applyPose(std::vector<Transform> &pose);
+	void applyPose(const Pose &pose);
 	void draw(RenderContext const &context);
 
 private:
