@@ -16,7 +16,7 @@ ImmediateContext &ImmediateContext::clear()
 
 void ImmediateContext::render(RenderContext const &rc)
 {
-	const auto nv = mVertices.size();
+	const unsigned int nv = static_cast<unsigned int>(mVertices.size());
 	mRenderer->updateBuffer(mVB, 0, nv * sizeof(Vertex), mVertices.data());
 	mRenderer->setShader(mShader);
 	mRenderer->setVertexBuffer(0, mVB);

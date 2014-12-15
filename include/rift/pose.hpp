@@ -37,7 +37,7 @@ public:
 	}
 
 	unsigned int getNumBones() const {
-		return mPositions.size();
+		return static_cast<unsigned int>(mPositions.size());
 	}
 
 private:

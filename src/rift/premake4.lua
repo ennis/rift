@@ -16,4 +16,3 @@ project "librift"
 	use_gl()
 	use_assimp()
 	use_anttweakbar()
-	use_msgpack()

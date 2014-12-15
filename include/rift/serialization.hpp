@@ -107,7 +107,8 @@ public:
 		pack(str, std::strlen(str));
 		return *this;
 	}
-	Packer &pack(const char *str, unsigned int size) { pack_7bit(size); mStreamOut.write(str, size); return *this; }
+	// XXX fail if size > 4G
+	Packer &pack(const char *str, std::size_t size) { pack_7bit(static_cast<unsigned int>(size)); mStreamOut.write(str, size); return *this; }
 	Packer &pack(std::string const &str) { pack(str.c_str(), str.size()); return *this; }
 	Packer &pack_array_size(unsigned int size) { write_u32le(mStreamOut, size); return *this; }
 	template <typename Iter>

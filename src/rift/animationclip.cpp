@@ -63,7 +63,7 @@ namespace
 	int findNearestKey(const std::vector<T> &keys, float time)
 	{
 		unsigned int l = 0;
-		auto u = keys.size();
+		unsigned int u = static_cast<unsigned int>(keys.size());
 		unsigned int p = l + (u - l) / 2;
 		// dichotomy
 		while (p != l) {

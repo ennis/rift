@@ -36,7 +36,7 @@ void HUDTextRenderer::renderString(
 	glm::vec4 const &color,
 	glm::vec4 const &outlineColor)
 {
-	auto len=std::strlen(str);
+	unsigned int len= static_cast<int>(std::strlen(str));
 	// TODO do not truncate
 	if (len>kMaxNumGlyphs) len=kMaxNumGlyphs;
 	struct {

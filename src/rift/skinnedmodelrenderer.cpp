@@ -68,8 +68,8 @@ mRenderer(renderer),
 mModel(model),
 mMesh(renderer)
 {
-	auto nv = model.getPositions().size();
-	auto nbones = model.getBones().size();
+	auto nv = model.numVertices();
+	auto nbones = model.numIndices();
 	mFinalVertices.resize(nv);
 	mFinalTransforms.resize(nbones);
 	debugDraw = icf.create(nbones * 2, PrimitiveType::Line);
@@ -104,7 +104,7 @@ void SkinnedModelRenderer::draw(RenderContext const &context)
 			mModel.getBoneWeights(),
 			mFinalVertices,
 			mFinalTransforms);
-		mMesh.update(0, 0, mModel.getPositions().size(), mFinalVertices.data());
+		mMesh.update(0, 0, mModel.numVertices(), mFinalVertices.data());
 		mRenderer.setShader(mShader);
 		mRenderer.setConstantBuffer(0, context.perFrameShaderParameters);
 		mRenderer.setNamedConstantMatrix4("modelMatrix", glm::mat4(1.0f));
@@ -114,7 +114,7 @@ void SkinnedModelRenderer::draw(RenderContext const &context)
 	}
 	else {
 		// no skinning
-		mMesh.update(0, 0, mModel.getPositions().size(), mModel.getPositions().data());
+		mMesh.update(0, 0, mModel.numVertices(), mModel.getPositions().data());
 		mRenderer.setShader(mShader);
 		mRenderer.setConstantBuffer(0, context.perFrameShaderParameters);
 		auto const &submeshes = mModel.getSubmeshes();

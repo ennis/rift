@@ -11,4 +11,3 @@ project "model_converter"
 	use_gl()
 	use_assimp()
 	use_anttweakbar()
-	use_msgpack()
