@@ -31,32 +31,46 @@ namespace modelconverter
             public int Parent;
         }
 
-        
-	    private static void BuildSkeleton(
-		    HashSet<Assimp.Node> skeletonSet, 
+
+        private static void BuildSkeleton(
+            HashSet<Assimp.Node> skeletonSet,
             List<Bone> bones,
-		    List<Submesh> submeshes,
-		    int parent,
-		    Assimp.Node current)
-	    {
-		    if (!skeletonSet.Contains(current)) 
+            List<Submesh> submeshes,
+            int parent,
+            Assimp.Node current)
+        {
+            if (!skeletonSet.Contains(current))
             {
                 return;
             }
 
-            Bone bone = new Bone {
+            Bone bone = new Bone
+            {
                 Name = current.Name,
-                Transform = new Matrix {
-                    M11 = current.Transform.A1, M12 = current.Transform.A2, M13 = current.Transform.A3, M14 = current.Transform.A4,
-                    M21 = current.Transform.B1, M22 = current.Transform.B2, M23 = current.Transform.B3, M24 = current.Transform.B4,
-                    M31 = current.Transform.C1, M32 = current.Transform.C2, M33 = current.Transform.C3, M34 = current.Transform.C4,
-                    M41 = current.Transform.D1, M42 = current.Transform.D2, M43 = current.Transform.D3, M44 = current.Transform.D4
+                Transform = new Matrix
+                {
+                    M11 = current.Transform.A1,
+                    M12 = current.Transform.A2,
+                    M13 = current.Transform.A3,
+                    M14 = current.Transform.A4,
+                    M21 = current.Transform.B1,
+                    M22 = current.Transform.B2,
+                    M23 = current.Transform.B3,
+                    M24 = current.Transform.B4,
+                    M31 = current.Transform.C1,
+                    M32 = current.Transform.C2,
+                    M33 = current.Transform.C3,
+                    M34 = current.Transform.C4,
+                    M41 = current.Transform.D1,
+                    M42 = current.Transform.D2,
+                    M43 = current.Transform.D3,
+                    M44 = current.Transform.D4
                 },
                 Parent = parent
             };
 
             bones.Add(bone);
-            var boneId = bones.Count-1;
+            var boneId = bones.Count - 1;
 
             foreach (var im in current.MeshIndices)
             {
@@ -64,11 +78,11 @@ namespace modelconverter
                 mesh.Bone = (byte)boneId;
             }
 
-            foreach (var child in current.Children) 
+            foreach (var child in current.Children)
             {
                 BuildSkeleton(skeletonSet, bones, submeshes, boneId, child);
             }
-	    }
+        }
 
         public static void Export(Assimp.Scene scene, ProgramOptions options)
         {
@@ -85,10 +99,10 @@ namespace modelconverter
             List<sbyte[]> boneIds = new List<sbyte[]>();
             List<ushort> indices = new List<ushort>();
 
-            for (int i = 0; i< boneIds.Count; ++i)
+            for (int i = 0; i < boneIds.Count; ++i)
             {
                 boneWeights[i] = new float[4] { 0.0f, 0.0f, 0.0f, 0.0f };
-                boneIds[i] = new sbyte[4] {-1, -1, -1, -1};
+                boneIds[i] = new sbyte[4] { -1, -1, -1, -1 };
             }
 
             // all nodes that are part of the skeleton
@@ -97,12 +111,12 @@ namespace modelconverter
             bool hasMoreThan4Weights = false;
 
             // Count number of vertices, indices
-	        int nbvertex = 0, nbindex = 0;
-	        foreach (var mesh in scene.Meshes) 
+            int nbvertex = 0, nbindex = 0;
+            foreach (var mesh in scene.Meshes)
             {
-		        nbvertex += mesh.VertexCount;
+                nbvertex += mesh.VertexCount;
                 nbindex += mesh.FaceCount * 3;
-	        }
+            }
 
             positions.Capacity = nbvertex;
             normals.Capacity = nbvertex;
@@ -120,7 +134,7 @@ namespace modelconverter
             {
                 // find matching node in hierarchy
                 var node = scene.RootNode.FindNode(mesh.Name);
-                if (node != null) 
+                if (node != null)
                 {
                     AddNodes(skeletonSet, node);
                 }
@@ -167,11 +181,11 @@ namespace modelconverter
 
                 foreach (var bone in mesh.Bones)
                 {
-	                // mark the nodes that are associated to a bone
-	                isSkinned = true;
-	                var boneNode = scene.RootNode.FindNode(bone.Name);
+                    // mark the nodes that are associated to a bone
+                    isSkinned = true;
+                    var boneNode = scene.RootNode.FindNode(bone.Name);
                     Debug.Assert(boneNode != null);
-	                AddNodes(skeletonSet, boneNode);
+                    AddNodes(skeletonSet, boneNode);
                 }
 
                 vertexbase += mesh.VertexCount;
@@ -302,7 +316,7 @@ namespace modelconverter
                 writer.Write(positions.Count);
                 writer.Write(indices.Count);
                 writer.Write(isSkinned ? (byte)1 : (byte)0);
-                
+
                 foreach (var pos in positions)
                 {
                     writer.Write(pos.X);
