@@ -48,7 +48,11 @@ namespace modelconverter
             // These animations must match the skeleton of the master model file
             
             // Import master model 
-            Scene masterScene = importer.ImportFile(options.InputFiles[0], PostProcessSteps.OptimizeGraph | PostProcessSteps.OptimizeMeshes);
+            Scene masterScene = importer.ImportFile(options.InputFiles[0], 
+                PostProcessSteps.OptimizeGraph | 
+                PostProcessSteps.OptimizeMeshes | 
+                PostProcessSteps.CalculateTangentSpace);
+
             ModelExporter.Export(masterScene, options);
             AnimationExporter.Export(masterScene, options);
 
@@ -57,6 +61,9 @@ namespace modelconverter
                 Scene scene = importer.ImportFile(file, PostProcessSteps.OptimizeGraph | PostProcessSteps.OptimizeMeshes);
                 AnimationExporter.Export(scene, options);
             }
+
+            Console.WriteLine("*** Press any key ***");
+            Console.ReadKey();
         }
     }
 }

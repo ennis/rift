@@ -13,7 +13,6 @@ namespace modelconverter
         public static void Export(Assimp.Scene scene, ProgramOptions options)
         {
             bool verb = options.Verbose;
-            if (verb) Console.WriteLine("Exporting Animations...");
             if (!Directory.Exists(options.OutputDirectory))
                 Directory.CreateDirectory(options.OutputDirectory);
 
@@ -28,7 +27,7 @@ namespace modelconverter
                     writer.Write(anim.NodeAnimationChannelCount);
                     foreach (var channel in anim.NodeAnimationChannels)
                     {
-                        Console.WriteLine(anim.Name + " / " + channel.NodeName);
+                        //Console.WriteLine(anim.Name + " / " + channel.NodeName);
                         writer.Write(channel.NodeName);
                         writer.Write(channel.PositionKeyCount);
                         foreach (var key in channel.PositionKeys) 
