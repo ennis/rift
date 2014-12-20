@@ -3,7 +3,7 @@
 #include <transform.hpp>
 #include <log.hpp>
 #include <freecameracontrol.hpp>
-#include <yaml-cpp/yaml.h>
+//#include <yaml-cpp/yaml.h>
 #include <entity.hpp>
 #include <renderer.hpp>
 #include <AntTweakBar.h>
