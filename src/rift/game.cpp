@@ -6,8 +6,6 @@
 #include <renderer.hpp>
 #include <entity.hpp>
 #include <sharedresources.hpp>
-
-// TODO
 #include <AntTweakBar.h>
 
 GLFWwindow *Game::sWindow = nullptr;

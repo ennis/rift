@@ -10,10 +10,18 @@ namespace ModelLoadHint
 	static const unsigned int Static = (1 << 1);
 };
 
-// static models
+/**
+ * @brief Classe représentant un modèle 3D
+ * @details 
+ * 
+ */
 class Model
 {
 public:
+	/**
+	 * @brief XXX
+	 * @details non utilisé
+	 */
 	struct GPUVertex {
 		// packed layout (less precise but more compact)
 		glm::vec3 position;
@@ -23,6 +31,11 @@ public:
 		glm::uint32 texcoord;	// packUnorm2x16
 	}; 
 	
+	/**
+	 * @brief XXX
+	 * @details non utilisé
+	 * 
+	 */
 	struct GPUSkinnedVertex {
 		glm::vec3 position;
 		glm::uint32 normal; // packSnorm3x10_1x2
@@ -33,31 +46,81 @@ public:
 		glm::uint64 boneWeights; // packUnorm4x16
 	};
 
+	/**
+	 * @brief Un os du squelette
+	 * @details 
+	 * 
+	 */
 	struct Bone {
+		// Index (dans la table des os) de l'os parent dans le squelette
 		int parent;
+		// Transformation (du repère local du parent vers le repère local de cet os)
 		glm::mat4 transform;
+		// Inverse bind pose transformation
+		// c'est peut-être utilisé quelque part mais je sais plus où
 		glm::mat4 invBindPose;
+		// ça à l'air d'être utilisé nulle part
 		glm::mat4 finalTransform;
-		// TODO SmallVector
+		// Indices des os descendants
 		std::vector<int> children;
 	};
 
+	/**
+	 * @brief XXX
+	 * @details inutilisé
+	 * 
+	 */
 	struct GPUBone {
 		glm::mat4 transform;
 	};
 
+	/**
+	 * @brief Sous-mesh
+	 * @details Représente une partie des données du maillage
+	 * 
+	 */
 	struct Submesh {
+		// Index du premier vertex 
 		unsigned int startVertex;
+		// Index du premier index (dans la table des indices)
 		unsigned int startIndex;
+		// Nombre de vertices dans la sous-mesh
 		unsigned int numVertices;
+		// Nombre d'indices
 		unsigned int numIndices;
+		// Os du squelette attaché à cette sous-mesh
 		int bone;
 	};
 
+	/**
+	 * @brief Constructeur
+	 * @details Constructeur
+	 * 
+	 * @param renderer Réference vers le renderer
+	 * 
+	 * TODO Instance globale de Renderer
+	 */
 	Model(Renderer &renderer);
+
+	/**
+	 * @brief Constructeur
+	 * @details Constructeur; appelle également loadFromFile
+	 * 
+	 * @param renderer Réference vers le renderer
+	 * @param filePath Chemin du fichier à charger
+	 * 
+	 * TODO Instance globale de Renderer
+	 */
 	Model(Renderer &renderer, const char *filePath);
 	~Model();
 	
+	/**
+	 * @brief Chargement depuis un fichier
+	 * @details 
+	 * 
+	 * @param filePath Chemin du fichier à charger
+	 * @param hints Inutilisé
+	 */
 	void loadFromFile(const char *filePath, unsigned int hints = 0);
 
 	unsigned int numVertices() const {

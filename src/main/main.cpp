@@ -22,9 +22,13 @@
 #include <animationclip.hpp>
 
 //============================================================================
+// Classe de base du jeu
 class RiftGame : public Game
 {
 public:
+	// Constructeur
+	// On passe en paramètre au constructeur de Game un ivec2 représentant la taille
+	// de la fenêtre
 	RiftGame() : Game(glm::ivec2(1280, 720))
 	{}
 

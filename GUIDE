@@ -1,0 +1,67 @@
+(pour Okami_no_shu)
+
+Ce qui suit est un petit guide pour le projet. Il décrit les fonctionnalités déjà présentes et celles prévues.
+
+====== Structure du projet ======
+Comme tu as pu le constater, il y a trois sous-repertoires dans le dossier src/
+	o main
+	o rift
+	o modelconverter
+
+Chaque dossier correspond à un sous-projet. Le dossier rift (TODO renommer en librift) correspond au code du moteur partagé entre les différentes applications. 
+Techniquement, le projet génère une lib statique qui est liée par les différents (TODO créer plusieurs programmes de test) programmes qui l'utilise. (le projet librift n'est donc pas exécutable)
+C'est le cas du projet 'main': c'est la seule application test pour le moment. Pour en créer d'autres, il suffit de créer un nouveau sous-repertoire, de copier le premake4.lua de 'main' dans le nouveau repertoire et de modifier certains trucs dedans (...).
+
+====== Projet 'main' ======
+C'est plus ou moins un programme fourre-tout pour tester des trucs. En gros, on charge les ressources dans la fonction
+RiftGame::init() et on gère le rendu dans RiftGame::render().
+
+Tu peux voir que la classe RiftGame dérive de Game (implémentée dans game.{h,c}pp). La classe Game implémente toute la logique de création de la fenêtre, initialisation du renderer, etc. 
+La boucle principale du jeu est dans Game::run(). Elle appelle les méthodes virtuelles init(), update() et render()
+qui sont dans la classe RiftGame.
+(TODO nettoyer la classe Game. Il y a des methodes statiques qui ne sont pas utilisées)
+
+====== Projet 'modelconverter' ======
+C'est une application en C# qui convertit les fichiers de modèles en un format binaire qui est chargé par librift.
+Elle gère aussi les animations. Elle s'utilise comme suit:
+
+	modelconverter [-m nom_du_modèle] <master_model> <animation_files>...
+
+<master_model> est le nom du modèle 3D à convertir. L'application extrait les mesh et le squelette (si il y en a un) et créé le fichier binaire dans le même dossier en remplaçant l'extension par '.mesh'.
+<animation_files> est une liste de fichiers contenant des animations (ils peuvent contenir des meshes mais ils seront ignorés).
+Les animations sont exportées dans le même dossier que le 'master model', avec le nom 
+
+	nom_du_master_model@nom_de_l_animation.anim
+
+TODO: les noms des os des fichiers d'animation devraient correspondre avec ceux du squelette du master model, mais on ne le vérifie pas pour l'instant.
+
+L'application utilise Assimp.Net (https://code.google.com/p/assimp-net/) qui est un très bon wrapper .Net de Assimp, pour charger les fichiers. Pour l'instant, j'ai essayé qu'avec des fichiers COLLADA (extension .dae), un format d'échange de modèles et d'animation 3D assez standard (Blender, 3ds max et maya ont des plugins installés par défaut pour exporter en COLLADA).
+Il y a un exemple de modèle COLLADA dans resources/models/danbo.dae
+
+====== Format de chargement des modèles ======
+Les modèles (mesh+squelette) sont stockés dans un format binaire (.mesh). Pour en charger un depuis un fichier, on peut utiliser Model::loadFromFile(const char *filePath)
+Pour lire depuis un fichier, j'utilise la class Unpacker dans serialization.hpp. C'est juste un wrapper pour les flux d'entrée binaires (std::istream avec std::ios::binary). 
+TODO la classe Unpacker est plus compliquée que nécessaire: réécriture?
+
+====== Pourquoi un format binaire? ======
+C'est plus rapide à charger qu'un format texte du genre OBJ et ça prend moins de code. Et j'avais pas envie d'utiliser assimp en c++.
+
+====== Classe Model ======
+La classe Model représente un modèle 3D avec son squelette (voir model.hpp et model.cpp)
+
+====== Renderer ======
+C'est un peu compliqué...
+J'avais commencé à faire un niveau d'abstraction au dessus d'OpenGL (renderer/gl3/renderer.hpp). 
+Il y a des classes pour les VertexBuffer, les IndexBuffer, les textures, les cubemap, les shaders, etc.
+En théorie, avec ce niveau d'abstraction, on peut remplacer l'API graphique utilisée sans changer le reste du code. Mais ça n'arrivera probablement jamais.
+
+Concrètement, pour afficher un truc à l'écran, il faut:
+- une instance de la classe Mesh, qui se charge d'allouer les Vertex/Index buffers sur le GPU
+	La classe Mesh à besoin:
+	- du type des primitives à afficher (Triangles, Lignes ou TriangleStrips)
+	- du layout des attributs des vertices 
+		(càd comment les attributs des vertices (position, normales, tangentes, coordonnées de textures) sont ordonnés en mémoire)
+	- du nombre de buffers à utiliser (typiquement, un seul)
+- un shader
+
+Voir l'exemple dans src/test_mesh/main.cpp

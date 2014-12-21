@@ -68,6 +68,7 @@ namespace serialization {
 
 }}
 
+
 void Model::loadFromFile(const char *filePath, unsigned int hints)
 {
 	using namespace rift::serialization;
