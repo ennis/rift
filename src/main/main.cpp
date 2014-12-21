@@ -3,7 +3,6 @@
 #include <transform.hpp>
 #include <log.hpp>
 #include <freecameracontrol.hpp>
-#include <yaml-cpp/yaml.h>
 #include <entity.hpp>
 #include <renderer.hpp>
 #include <AntTweakBar.h>
@@ -125,15 +124,14 @@ void RiftGame::init()
 	frameData = rd.createConstantBuffer(sizeof(PerFrameShaderParameters), ResourceUsage::Dynamic, nullptr);
 
 	// TEST TEST
-	sky = new Sky();
+	sky = new Sky(rd);
 	sky->setTimeOfDay(21.0f);
 
 	// terrain
 	{
-		Image *heightmapData = new Image();
-		heightmapData->loadFromFile("resources/img/terrain/height.dds");
-		assert(heightmapData->format() == ElementFormat::Unorm16);
-		terrain = new Terrain(heightmapData);
+		Image heightmapData = Image::loadFromFile("resources/img/terrain/height.dds");
+		assert(heightmapData.format() == ElementFormat::Unorm16);
+		terrain = new Terrain(rd, std::move(heightmapData));
 	}
 
 	// Effect test

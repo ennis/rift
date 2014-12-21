@@ -5,7 +5,8 @@
 #include <algorithm>
 
 //=============================================================================
-Terrain::Terrain(Image *heightmapData) :
+Terrain::Terrain(Renderer &renderer, Image &&heightmapData) :
+mRenderer(renderer),
 mNumSelectedNodes(0), 
 mPatchGridSize(16),
 mPatchGridVB(nullptr),
@@ -13,7 +14,7 @@ mPatchGridIB(nullptr),
 mHeightmapData(heightmapData),
 mHeightmapTexture(nullptr),
 mHeightmapVerticalScale(200.f),
-mHeightmapSize(heightmapData->imageView(0, 0).size()),
+mHeightmapSize(heightmapData.getImageView(0, 0).size()),
 mNumLodLevels(0),
 mShader(nullptr)
 {
@@ -23,7 +24,6 @@ mShader(nullptr)
 //=============================================================================
 Terrain::~Terrain()
 {
-	mHeightmapData->release();
 	mHeightmapTexture->release();
 	mPatchGridVB->release();
 	mPatchGridIB->release();
@@ -41,10 +41,8 @@ void Terrain::init()
 //=============================================================================
 void Terrain::initHeightmap()
 {
-	auto &renderer = Engine::instance().getRenderer();
-
-	mHeightmapView = mHeightmapData->imageView(0, 0).viewAs<uint16_t>();
-	mHeightmapTexture = renderer.createTexture2D(
+	mHeightmapView = mHeightmapData.getImageView(0, 0).viewAs<uint16_t>();
+	mHeightmapTexture = mRenderer.createTexture2D(
 		mHeightmapSize,
 		1,
 		ElementFormat::Unorm16,
@@ -56,9 +54,7 @@ void Terrain::initHeightmap()
 //=============================================================================
 void Terrain::initShader()
 {
-	auto &renderer = Engine::instance().getRenderer();
-
-	mShader = renderer.createShader(
+	mShader = mRenderer.createShader(
 		loadShaderSource("resources/shaders/terrain/vert.glsl").c_str(),
 		loadShaderSource("resources/shaders/terrain/frag.glsl").c_str());
 }
@@ -83,8 +79,6 @@ void Terrain::render(RenderContext const &renderContext)
 //=============================================================================
 void Terrain::initGrid()
 {
-	auto &renderer = Engine::instance().getRenderer();
-
 	// number of vertices 
 	int gs = mPatchGridSize+1;
 	mPatchNumVertices = gs*gs;
@@ -110,12 +104,12 @@ void Terrain::initGrid()
 		}
 	}
 	// create VB and IB
-	mPatchGridVB = renderer.createVertexBuffer(
+	mPatchGridVB = mRenderer.createVertexBuffer(
 		2*sizeof(float), 
 		mPatchNumVertices,
 		ResourceUsage::Static, 
 		vertices);
-	mPatchGridIB = renderer.createIndexBuffer(
+	mPatchGridIB = mRenderer.createIndexBuffer(
 		sizeof(uint16_t),
 		mPatchNumIndices,
 		ResourceUsage::Static,
@@ -124,7 +118,7 @@ void Terrain::initGrid()
 	const VertexElement elem_v2f[1] = {
 		VertexElement(0, 0, 0, 2 * sizeof(float), ElementFormat::Float2)
 	};
-	mVertexLayout = renderer.createVertexLayout(1, elem_v2f);
+	mVertexLayout = mRenderer.createVertexLayout(1, elem_v2f);
 
 	delete[] vertices;
 	delete[] indices;
@@ -133,19 +127,18 @@ void Terrain::initGrid()
 //=============================================================================
 void Terrain::renderSelection(RenderContext const &renderContext)
 {
-	auto &renderer = Engine::instance().getRenderer();
 	// TODO support renderstates
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	renderer.setVertexBuffer(0, mPatchGridVB);
-	renderer.setIndexBuffer(mPatchGridIB);
-	renderer.setVertexLayout(mVertexLayout);
-	renderer.setShader(mShader);
-	renderer.setConstantBuffer(0, renderContext.perFrameShaderParameters);
-	renderer.setNamedConstantMatrix4("modelMatrix",
+	mRenderer.setVertexBuffer(0, mPatchGridVB);
+	mRenderer.setIndexBuffer(mPatchGridIB);
+	mRenderer.setVertexLayout(mVertexLayout);
+	mRenderer.setShader(mShader);
+	mRenderer.setConstantBuffer(0, renderContext.perFrameShaderParameters);
+	mRenderer.setNamedConstantMatrix4("modelMatrix",
 		Transform().scale(1.f).toMatrix());
-	renderer.setNamedConstantInt2("heightmapSize", mHeightmapSize);
-	renderer.setNamedConstantFloat("heightmapScale", mHeightmapVerticalScale);
-	renderer.setTexture(0, mHeightmapTexture);
+	mRenderer.setNamedConstantInt2("heightmapSize", mHeightmapSize);
+	mRenderer.setNamedConstantFloat("heightmapScale", mHeightmapVerticalScale);
+	mRenderer.setTexture(0, mHeightmapTexture);
 	for (int i = 0; i < mNumSelectedNodes; ++i) {
 		Node const &node = mSelectedNodes[i];
 		renderNode(renderContext, node);
@@ -156,14 +149,13 @@ void Terrain::renderSelection(RenderContext const &renderContext)
 //=============================================================================
 void Terrain::renderNode(RenderContext const &renderContext, Node const &node) 
 {
-	auto &renderer = Engine::instance().getRenderer();
 	// just update the uniforms and do the draw call:
 	// the resources are already bound
 	// patch offset in world coordinates
-	renderer.setNamedConstantFloat2("patchOffset", glm::vec2(node.x, node.y));
-	renderer.setNamedConstantFloat("patchScale", float(node.size));
-	renderer.setNamedConstantInt("lodLevel", node.lod);
-	renderer.drawIndexed(
+	mRenderer.setNamedConstantFloat2("patchOffset", glm::vec2(node.x, node.y));
+	mRenderer.setNamedConstantFloat("patchScale", float(node.size));
+	mRenderer.setNamedConstantInt("lodLevel", node.lod);
+	mRenderer.drawIndexed(
 		PrimitiveType::Triangle, 
 		0, 
 		mPatchNumVertices, 
