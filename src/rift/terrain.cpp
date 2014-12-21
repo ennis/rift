@@ -1,12 +1,11 @@
 #include <terrain.hpp>
+#include <engine.hpp>
 #include <boundingbox.hpp>
-#include <sharedresources.hpp>
 #include <cmath>
 #include <algorithm>
 
 //=============================================================================
-Terrain::Terrain(Renderer &renderer, Image *heightmapData) :
-Renderable(renderer),
+Terrain::Terrain(Image *heightmapData) :
 mNumSelectedNodes(0), 
 mPatchGridSize(16),
 mPatchGridVB(nullptr),
@@ -42,8 +41,10 @@ void Terrain::init()
 //=============================================================================
 void Terrain::initHeightmap()
 {
+	auto &renderer = Engine::instance().getRenderer();
+
 	mHeightmapView = mHeightmapData->imageView(0, 0).viewAs<uint16_t>();
-	mHeightmapTexture = mRenderer.createTexture2D(
+	mHeightmapTexture = renderer.createTexture2D(
 		mHeightmapSize,
 		1,
 		ElementFormat::Unorm16,
@@ -55,7 +56,9 @@ void Terrain::initHeightmap()
 //=============================================================================
 void Terrain::initShader()
 {
-	mShader = mRenderer.createShader(
+	auto &renderer = Engine::instance().getRenderer();
+
+	mShader = renderer.createShader(
 		loadShaderSource("resources/shaders/terrain/vert.glsl").c_str(),
 		loadShaderSource("resources/shaders/terrain/frag.glsl").c_str());
 }
@@ -80,6 +83,8 @@ void Terrain::render(RenderContext const &renderContext)
 //=============================================================================
 void Terrain::initGrid()
 {
+	auto &renderer = Engine::instance().getRenderer();
+
 	// number of vertices 
 	int gs = mPatchGridSize+1;
 	mPatchNumVertices = gs*gs;
@@ -105,16 +110,22 @@ void Terrain::initGrid()
 		}
 	}
 	// create VB and IB
-	mPatchGridVB = mRenderer.createVertexBuffer(
+	mPatchGridVB = renderer.createVertexBuffer(
 		2*sizeof(float), 
 		mPatchNumVertices,
 		ResourceUsage::Static, 
 		vertices);
-	mPatchGridIB = mRenderer.createIndexBuffer(
+	mPatchGridIB = renderer.createIndexBuffer(
 		sizeof(uint16_t),
 		mPatchNumIndices,
 		ResourceUsage::Static,
 		indices);
+
+	const VertexElement elem_v2f[1] = {
+		VertexElement(0, 0, 0, 2 * sizeof(float), ElementFormat::Float2)
+	};
+	mVertexLayout = renderer.createVertexLayout(1, elem_v2f);
+
 	delete[] vertices;
 	delete[] indices;
 }
@@ -122,18 +133,19 @@ void Terrain::initGrid()
 //=============================================================================
 void Terrain::renderSelection(RenderContext const &renderContext)
 {
+	auto &renderer = Engine::instance().getRenderer();
 	// TODO support renderstates
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	mRenderer.setVertexBuffer(0, mPatchGridVB);
-	mRenderer.setIndexBuffer(mPatchGridIB);
-	mRenderer.setVertexLayout(GVertexLayout_V2F);
-	mRenderer.setShader(mShader);
-	mRenderer.setConstantBuffer(0, renderContext.perFrameShaderParameters);
-	mRenderer.setNamedConstantMatrix4("modelMatrix", 
+	renderer.setVertexBuffer(0, mPatchGridVB);
+	renderer.setIndexBuffer(mPatchGridIB);
+	renderer.setVertexLayout(mVertexLayout);
+	renderer.setShader(mShader);
+	renderer.setConstantBuffer(0, renderContext.perFrameShaderParameters);
+	renderer.setNamedConstantMatrix4("modelMatrix",
 		Transform().scale(1.f).toMatrix());
-	mRenderer.setNamedConstantInt2("heightmapSize", mHeightmapSize);
-	mRenderer.setNamedConstantFloat("heightmapScale", mHeightmapVerticalScale);
-	mRenderer.setTexture(0, mHeightmapTexture);
+	renderer.setNamedConstantInt2("heightmapSize", mHeightmapSize);
+	renderer.setNamedConstantFloat("heightmapScale", mHeightmapVerticalScale);
+	renderer.setTexture(0, mHeightmapTexture);
 	for (int i = 0; i < mNumSelectedNodes; ++i) {
 		Node const &node = mSelectedNodes[i];
 		renderNode(renderContext, node);
@@ -144,13 +156,14 @@ void Terrain::renderSelection(RenderContext const &renderContext)
 //=============================================================================
 void Terrain::renderNode(RenderContext const &renderContext, Node const &node) 
 {
+	auto &renderer = Engine::instance().getRenderer();
 	// just update the uniforms and do the draw call:
 	// the resources are already bound
 	// patch offset in world coordinates
-	mRenderer.setNamedConstantFloat2("patchOffset", glm::vec2(node.x, node.y));
-	mRenderer.setNamedConstantFloat("patchScale", float(node.size));
-	mRenderer.setNamedConstantInt("lodLevel", node.lod);
-	mRenderer.drawIndexed(
+	renderer.setNamedConstantFloat2("patchOffset", glm::vec2(node.x, node.y));
+	renderer.setNamedConstantFloat("patchScale", float(node.size));
+	renderer.setNamedConstantInt("lodLevel", node.lod);
+	renderer.drawIndexed(
 		PrimitiveType::Triangle, 
 		0, 
 		mPatchNumVertices, 

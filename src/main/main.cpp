@@ -10,7 +10,6 @@
 #include <sky.hpp>
 #include <dds.hpp>
 #include <terrain.hpp>
-#include <sharedresources.hpp>
 #include <shadersource.hpp>
 #include <effect.hpp>
 #include <font.hpp>
@@ -27,10 +26,10 @@ class RiftGame : public Game
 {
 public:
 	// Constructeur
-	// On passe en paramètre au constructeur de Game un ivec2 représentant la taille
-	// de la fenêtre
-	RiftGame() : Game(glm::ivec2(1280, 720))
-	{}
+	RiftGame()
+	{
+		init();
+	}
 
 	void init();
 	void render(float dt);
@@ -99,7 +98,8 @@ void RiftGame::init()
 {
 	initTweakBar();
 	
-	Renderer &rd = renderer();
+	Renderer &rd = Engine::instance().getRenderer();
+	
 	effectCompiler = std::unique_ptr<EffectCompiler>(new EffectCompiler(&rd, "resources/shaders"));
 	hudTextRenderer = std::unique_ptr<HUDTextRenderer>(new HUDTextRenderer(rd));
 	immediateContextFactory = std::unique_ptr<ImmediateContextFactory>(new ImmediateContextFactory(rd));
@@ -133,7 +133,7 @@ void RiftGame::init()
 		Image *heightmapData = new Image();
 		heightmapData->loadFromFile("resources/img/terrain/height.dds");
 		assert(heightmapData->format() == ElementFormat::Unorm16);
-		terrain = new Terrain(rd, heightmapData);
+		terrain = new Terrain(heightmapData);
 	}
 
 	// Effect test
@@ -171,12 +171,12 @@ void RiftGame::init()
 void RiftGame::render(float dt)
 {
 	// rendu de la scene
-	Renderer &R = renderer();
+	Renderer &R = Engine::instance().getRenderer();
 
 	// render to screen
 	R.bindRenderTargets(0, nullptr, nullptr);
 	// update viewport
-	glm::ivec2 win_size = Game::getSize();
+	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	Viewport vp{ 0.f, 0.f, float(win_size.x), float(win_size.y) };
 	Viewport vp_half{ 0.f, 0.f, float(win_size.x/2), float(win_size.y/2) };
 	R.setViewports(1, &vp);
@@ -200,7 +200,7 @@ void RiftGame::render(float dt)
 	pfsp.lightDir = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
 	pfsp.projMatrix = rc.projMatrix;
 	pfsp.viewMatrix = rc.viewMatrix;
-	pfsp.viewportSize = Game::getSize();
+	pfsp.viewportSize = win_size;
 	pfsp.viewProjMatrix = rc.projMatrix * rc.viewMatrix;
 	R.updateBuffer(frameData, 0, sizeof(PerFrameShaderParameters), &pfsp);
 	rc.pfsp = pfsp;
@@ -240,7 +240,7 @@ void RiftGame::render(float dt)
 		.addVertex(Vertex({ 1, 2, 2 }, { 1.0, 0.5, 0.0, 1.0 }))
 		.render(rc);
 
-	animTest->applyPose(testPose);
+	//animTest->applyPose(testPose);
 	animTest->draw(rc);
 
 	// render tweak bar
@@ -256,7 +256,7 @@ void RiftGame::update(float dt)
 	if (mLastTime > 1.f) {
 		mLastTime = 0.f;
 		mFPS = 1.f / dt;
-		glfwSetWindowTitle(Game::window(), ("Rift (" + std::to_string(mFPS) + " FPS)").c_str());
+		Engine::instance().getWindow().setTitle(("Rift (" + std::to_string(mFPS) + " FPS)").c_str());
 	}
 
 	sky->setTimeOfDay(twTimeOfDay);
@@ -274,6 +274,7 @@ void RiftGame::tearDown()
 int main()
 {
 	logInit("log");
-	Game::run(std::unique_ptr<Game>(new RiftGame()));
+	Window window("Rift", 1280, 720);
+	Engine::run<RiftGame>(window);
 	return 0;
 }

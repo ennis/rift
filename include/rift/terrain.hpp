@@ -5,14 +5,14 @@
 #include <renderable.hpp>
 #include <image.hpp>
 
-class Terrain : public Renderable
+class Terrain
 {
 public:
 	// TODO reference
-	Terrain(Renderer &renderer, Image *heightmapData);
+	Terrain(Image *heightmapData);
 	~Terrain();
 
-	void render(RenderContext const &renderContext) override;
+	void render(RenderContext const &renderContext);
 
 private:
 	void init();
@@ -52,6 +52,7 @@ private:
 	int mPatchNumIndices;
 	VertexBuffer *mPatchGridVB; // unique_ptr
 	IndexBuffer *mPatchGridIB; // unique_ptr
+	VertexLayout *mVertexLayout;
 
 	// Terrain heightmap data & texture
 	Image *mHeightmapData; // non-owning reference

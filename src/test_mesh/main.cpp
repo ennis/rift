@@ -14,8 +14,10 @@
 class TestMesh : public Game
 {
 public:
-	TestMesh() : Game(glm::ivec2(1280, 720))
-	{}
+	TestMesh()
+	{
+		init();
+	}
 
 	void init();
 	void initMesh();
@@ -43,7 +45,7 @@ private:
 //============================================================================
 void TestMesh::init()
 {	
-	Renderer &rd = renderer();
+	Renderer &rd = Engine::instance().getRenderer();
 	
 	// Création de la caméra 
 	// XXX mieux vaut ignorer le truc avec les entités
@@ -67,7 +69,7 @@ void TestMesh::init()
 
 void TestMesh::initMesh()
 {
-	mesh = new Mesh(renderer());
+	mesh = new Mesh(Engine::instance().getRenderer());
 
 	// buffer contenant les données des vertex (c'est un cube, pour info)
 	// ici: position (x,y,z), normales (x,y,z), coordonnées de texture (x,y) 
@@ -175,7 +177,7 @@ void TestMesh::initShader()
 	std::string fragmentShaderSource = loadShaderSource("resources/shaders/test_mesh/frag.glsl");
 
 	// on appelle le renderer pour qu'il créé le shader
-	Renderer &r = renderer();
+	Renderer &r = Engine::instance().getRenderer();
 	shader = r.createShader(
 		/* source du vertex shader */
 		vertexShaderSource.c_str(), 
@@ -186,13 +188,13 @@ void TestMesh::initShader()
 void TestMesh::render(float dt)
 {
 	// rendu de la scene
-	Renderer &R = renderer();
+	Renderer &R = Engine::instance().getRenderer();
 
 	// la ligne suivante indique au renderer que l'on dessine à l'écran
 	// (et non pas vers une texture comme on pourrait le faire pour du shadow mapping)
 	R.bindRenderTargets(0, nullptr, nullptr);
 	// on met à jour la taille du viewport opengl (pour qu'il corresponde à la taille de la fenêtre)
-	glm::ivec2 win_size = Game::getSize();
+	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	Viewport vp{ 0.f, 0.f, float(win_size.x), float(win_size.y) };
 	R.setViewports(1, &vp);
 	// on efface le color buffer
@@ -225,7 +227,7 @@ void TestMesh::render(float dt)
 	pfsp.lightDir = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
 	pfsp.projMatrix = rc.projMatrix;
 	pfsp.viewMatrix = rc.viewMatrix;
-	pfsp.viewportSize = Game::getSize();
+	pfsp.viewportSize = win_size;
 	pfsp.viewProjMatrix = rc.projMatrix * rc.viewMatrix;
 	// on demande au renderer de mettre à jour le buffer avec les nouveaux paramètres
 	R.updateBuffer(frameData, 0, sizeof(PerFrameShaderParameters), &pfsp);
@@ -263,7 +265,7 @@ void TestMesh::update(float dt)
 	if (mLastTime > 1.f) {
 		mLastTime = 0.f;
 		mFPS = 1.f / dt;
-		glfwSetWindowTitle(Game::window(), ("Rift (" + std::to_string(mFPS) + " FPS)").c_str());
+		Engine::instance().getWindow().setTitle(("Rift (" + std::to_string(mFPS) + " FPS)").c_str());
 	}
 }
 
@@ -277,8 +279,10 @@ int main()
 	// Initialise le système de logs
 	// logInit prend en paramètre un nom de fichier dans lequel les logs seront copiés
 	logInit("test_mesh");
+	// fenêtre principale
+	Window window("Rift", 1280, 720);
 	// Création de la classe principale TestMesh
-	// et démarrage de la boucle principale (Game::run(...))
-	Game::run(std::unique_ptr<Game>(new TestMesh()));
+	// et démarrage de la boucle principale 
+	Engine::run<TestMesh>(window);
 	return 0;
 }

@@ -1,9 +1,11 @@
 #include <sky.hpp>
-#include <game.hpp>
+#include <engine.hpp>
 
-Sky::Sky() : mTimeOfDay(0.f), mSkybox(Game::renderer())
+Sky::Sky() : 
+	mTimeOfDay(0.f), 
+	mSkybox(Engine::instance().getRenderer())
 {
-	auto &renderer = Game::renderer();
+	auto &renderer = Engine::instance().getRenderer();
 	mSkyShader = renderer.createShader(
 		loadShaderSource("resources/shaders/sky/vert.glsl").c_str(),
 		loadShaderSource("resources/shaders/sky/frag.glsl").c_str());

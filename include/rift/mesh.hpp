@@ -15,7 +15,6 @@ public:
 	};
 
 	Mesh(Renderer &renderer);
-	Mesh(Renderer &renderer, const char *filePath);
 	Mesh(
 		Renderer &renderer,
 		PrimitiveType primitiveType,

@@ -3,10 +3,6 @@
 Mesh::Mesh(Renderer &renderer) : mRenderer(&renderer)
 {}
 
-Mesh::Mesh(Renderer &renderer, const char *filePath) : mRenderer(&renderer)
-{
-	// TODO load from file
-}
 
 Mesh::Mesh(
 	Renderer &renderer,
