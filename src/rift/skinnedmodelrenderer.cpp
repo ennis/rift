@@ -68,14 +68,14 @@ mRenderer(renderer),
 mModel(model),
 mMesh(renderer)
 {
-	auto nv = model.numVertices();
-	auto nbones = model.numIndices();
+	auto nv = model.getNumVertices();
+	auto nbones = model.getNumIndices();
 	mFinalVertices.resize(nv);
 	mFinalTransforms.resize(nbones);
 	debugDraw = icf.create(nbones * 2, PrimitiveType::Line);
 	Mesh::Attribute attribs[] = { {0, ElementFormat::Float3} };
 	Mesh::Buffer buffers[] = { { ResourceUsage::Dynamic } };
-	mMesh.allocate(PrimitiveType::Triangle, 1, attribs, 1, buffers, nv, nullptr, model.numIndices(), ElementFormat::Uint16, ResourceUsage::Static, mModel.getIndices().data());
+	mMesh.allocate(PrimitiveType::Triangle, 1, attribs, 1, buffers, nv, nullptr, model.getNumIndices(), ElementFormat::Uint16, ResourceUsage::Static, mModel.getIndices().data());
 	mShader = renderer.createShader(
 		loadShaderSource("resources/shaders/model/vert.glsl").c_str(),
 		loadShaderSource("resources/shaders/model/frag.glsl").c_str());
@@ -104,7 +104,7 @@ void SkinnedModelRenderer::draw(RenderContext const &context)
 			mModel.getBoneWeights(),
 			mFinalVertices,
 			mFinalTransforms);
-		mMesh.update(0, 0, mModel.numVertices(), mFinalVertices.data());
+		mMesh.update(0, 0, mModel.getNumVertices(), mFinalVertices.data());
 		mRenderer.setShader(mShader);
 		mRenderer.setConstantBuffer(0, context.perFrameShaderParameters);
 		mRenderer.setNamedConstantMatrix4("modelMatrix", glm::mat4(1.0f));
@@ -114,7 +114,7 @@ void SkinnedModelRenderer::draw(RenderContext const &context)
 	}
 	else {
 		// no skinning
-		mMesh.update(0, 0, mModel.numVertices(), mModel.getPositions().data());
+		mMesh.update(0, 0, mModel.getNumVertices(), mModel.getPositions().data());
 		mRenderer.setShader(mShader);
 		mRenderer.setConstantBuffer(0, context.perFrameShaderParameters);
 		auto const &submeshes = mModel.getSubmeshes();

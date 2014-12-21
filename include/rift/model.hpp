@@ -52,6 +52,16 @@ public:
 	 * 
 	 */
 	struct Bone {
+		Bone() = default;
+
+		Bone(Bone &&rhs) : 
+			parent(std::move(rhs.parent)),
+			transform(std::move(rhs.transform)),
+			invBindPose(std::move(rhs.invBindPose)),
+			finalTransform(std::move(rhs.finalTransform)),
+			children(std::move(rhs.children))
+		{}
+
 		// Index (dans la table des os) de l'os parent dans le squelette
 		int parent;
 		// Transformation (du repère local du parent vers le repère local de cet os)
@@ -97,22 +107,14 @@ public:
 	 * @details Constructeur
 	 * 
 	 * @param renderer Réference vers le renderer
-	 * 
-	 * TODO Instance globale de Renderer
-	 */
-	Model(Renderer &renderer);
-
-	/**
-	 * @brief Constructeur
-	 * @details Constructeur; appelle également loadFromFile
-	 * 
-	 * @param renderer Réference vers le renderer
 	 * @param filePath Chemin du fichier à charger
 	 * 
-	 * TODO Instance globale de Renderer
 	 */
-	Model(Renderer &renderer, const char *filePath);
+	Model(Renderer &renderer, const char *filePath, unsigned int hints = 0);
+	Model(Model const &rhs) = delete;
+	Model(Model &&model);
 	~Model();
+	Model &operator=(Model &&model);
 	
 	/**
 	 * @brief Chargement depuis un fichier
@@ -121,13 +123,13 @@ public:
 	 * @param filePath Chemin du fichier à charger
 	 * @param hints Inutilisé
 	 */
-	void loadFromFile(const char *filePath, unsigned int hints = 0);
+	static Model loadFromFile(Renderer &renderer, const char *filePath, unsigned int hints = 0);
 
-	unsigned int numVertices() const {
-		return mNumVertices;
+	unsigned int getNumVertices() const {
+		return mPositions.size();
 	}
-	unsigned int numIndices() const {
-		return mNumIndices;
+	unsigned int getNumIndices() const {
+		return mIndices.size();
 	}
 	bool isSkinned() const {
 		return !mBoneIDs.empty();
@@ -164,14 +166,25 @@ public:
 	}
 	
 private:
+	Model(
+		Renderer &renderer,
+		std::vector<Submesh> &&submeshes,
+		std::vector<uint16_t> &&indices,
+		std::vector<Bone> &&bones,
+		std::vector<glm::vec3> &&positions,
+		std::vector<glm::vec3> &&normals,
+		std::vector<glm::vec3> &&tangents,
+		std::vector<glm::vec3> &&bitangents,
+		std::vector<glm::vec2> &&texcoords,
+		std::vector<glm::u8vec4> &&boneIds,
+		std::vector<glm::vec4> &&boneWeights);
+
 	Renderer &mRenderer;
 	std::vector<Submesh> mSubmeshes;
 	//std::vector<Model::Vertex> mVertices;
 	std::vector<uint16_t> mIndices;
 	std::vector<Bone> mBones;
-	std::unique_ptr<Mesh> mMesh;
-	unsigned int mNumVertices;
-	unsigned int mNumIndices;
+	Mesh mMesh;
 	std::vector<glm::vec3> mPositions;
 	std::vector<glm::vec3> mNormals;
 	std::vector<glm::vec3> mTangents;

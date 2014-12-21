@@ -2,6 +2,7 @@
 #define Mesh_HPP
 
 #include <renderer.hpp>
+#include <array>
 
 class Mesh
 {
@@ -10,11 +11,14 @@ public:
 		unsigned int buffer;
 		ElementFormat elementFormat;
 	};
+
 	struct Buffer {
 		ResourceUsage usage;
 	};
+	
+	Mesh(Renderer &renderer) : mRenderer(renderer)
+	{}
 
-	Mesh(Renderer &renderer);
 	Mesh(
 		Renderer &renderer,
 		PrimitiveType primitiveType,
@@ -28,8 +32,10 @@ public:
 		ElementFormat indexFormat,
 		ResourceUsage indexUsage,
 		const void *initialIndices);
-
+	Mesh(Mesh const &rhs) = delete;
+	Mesh(Mesh &&rhs);
 	~Mesh();
+	Mesh &operator=(Mesh &&rhs);
 
 	void allocate(
 		PrimitiveType primitiveType,
@@ -76,15 +82,16 @@ public:
 	}
 
 private:
+
 	void prepareDraw();
 
-	Renderer *mRenderer;	// borrowed ref
+	Renderer &mRenderer;	// borrowed ref
 	// TODO usage-agnostic buffer class
-	VertexBuffer *mVertexBuffers[16];	// owned
+	std::array<VertexBuffer*, 16> mVertexBuffers;	// owned
 	IndexBuffer *mIndexBuffer;	// owned
 	VertexLayout *mVertexLayout;	// owned
 	PrimitiveType mPrimitiveType;
-	unsigned int mStride[16];
+	std::array<unsigned int, 16> mStride;
 	unsigned int mIndexStride;
 	unsigned int mNumBuffers;
 	unsigned int mNumVertices;

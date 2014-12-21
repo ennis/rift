@@ -1,17 +1,63 @@
 #include <model.hpp>
 #include <serialization.hpp>
 
-Model::Model(Renderer &renderer) : mRenderer(renderer)
+Model::Model(Renderer &renderer, const char *filePath, unsigned int hints) : 
+	Model(Model::loadFromFile(renderer, filePath, hints))
 {
 }
 
-Model::Model(Renderer &renderer, const char *filePath) : mRenderer(renderer)
+Model::Model(Model &&rhs) : 
+mRenderer(rhs.mRenderer),
+mMesh(rhs.mRenderer)
 {
-	loadFromFile(filePath);
+	*this = std::move(rhs);
+}
+
+Model::Model(
+	Renderer &renderer,
+	std::vector<Submesh> &&submeshes,
+	std::vector<uint16_t> &&indices,
+	std::vector<Bone> &&bones,
+	std::vector<glm::vec3> &&positions,
+	std::vector<glm::vec3> &&normals,
+	std::vector<glm::vec3> &&tangents,
+	std::vector<glm::vec3> &&bitangents,
+	std::vector<glm::vec2> &&texcoords,
+	std::vector<glm::u8vec4> &&boneIds,
+	std::vector<glm::vec4> &&boneWeights) :
+mRenderer(renderer),
+mSubmeshes(submeshes),
+mIndices(std::move(indices)),
+mBones(std::move(bones)),
+mMesh(renderer),
+mPositions(std::move(positions)),
+mNormals(std::move(normals)),
+mTangents(std::move(tangents)),
+mBitangents(std::move(bitangents)),
+mTexcoords(std::move(texcoords)),
+mBoneIDs(std::move(boneIds)),
+mBoneWeights(std::move(boneWeights))
+{
 }
 
 Model::~Model()
 {
+}
+
+Model &Model::operator=(Model &&rhs)
+{
+	mSubmeshes = std::move(rhs.mSubmeshes);
+	mIndices = std::move(rhs.mIndices);
+	mBones = std::move(rhs.mBones);
+	mMesh = std::move(rhs.mMesh);
+	mPositions = std::move(rhs.mPositions);
+	mNormals = std::move(rhs.mNormals);
+	mTangents = std::move(rhs.mTangents);
+	mBitangents = std::move(rhs.mBitangents);
+	mTexcoords = std::move(rhs.mTexcoords);
+	mBoneIDs = std::move(rhs.mBoneIDs);
+	mBoneWeights = std::move(rhs.mBoneWeights);
+	return *this;
 }
 
 namespace rift {
@@ -69,54 +115,125 @@ namespace serialization {
 }}
 
 
-void Model::loadFromFile(const char *filePath, unsigned int hints)
+Model Model::loadFromFile(Renderer &renderer, const char *filePath, unsigned int hints)
 {
 	using namespace rift::serialization;
 
 	std::ifstream fileIn(filePath, std::ios::in | std::ios::binary);
 	Unpacker unpacker(fileIn);
 
-	unpacker.unpack(mSubmeshes, [](Unpacker &u) -> Submesh {
+	unsigned int numSubmeshes, numBones, numVertices, numIndices, format;
+	std::vector<Model::Submesh> submeshes;
+	std::vector<Model::Bone> bones;
+	std::vector<glm::vec3> positions;
+	std::vector<glm::vec3> normals;
+	std::vector<glm::vec3> tangents;
+	std::vector<glm::vec3> bitangents;
+	std::vector<glm::vec2> texcoords;
+	std::vector<glm::u8vec4> boneIds;
+	std::vector<glm::vec4> boneWeights;
+	std::vector<uint16_t> indices;
+	
+	unpacker.unpack(numSubmeshes);
+	assert(numSubmeshes < 65536);
+	submeshes.reserve(numSubmeshes);
+	for (unsigned int i = 0; i < numSubmeshes; ++i) {
 		Submesh sm;
-		u.unpack(sm.startVertex);
-		u.unpack(sm.startIndex);
-		u.unpack(sm.numVertices);
-		u.unpack(sm.numIndices);
-		u.unpack(sm.bone);
-		return sm;
-	});
-	// skip bones
-	unpacker.unpack(mBones, [](Unpacker &u) -> Bone {
+		unpacker.unpack(sm.startVertex);
+		unpacker.unpack(sm.startIndex);
+		unpacker.unpack(sm.numVertices);
+		unpacker.unpack(sm.numIndices);
+		unpacker.unpack(sm.bone);
+		submeshes.push_back(sm);
+	}
+
+	unpacker.unpack(numBones);
+	assert(numBones < 256);
+	bones.reserve(numBones);
+	for (unsigned int i = 0; i < numBones; ++i) {
 		Bone b;
 		std::string name;
-		u.unpack(name);
-		u.unpack(b.transform);
-		u.unpack(b.invBindPose);
-		u.unpack(b.parent);
-		return b;
-	});
-	unpacker.unpack(mNumVertices);
-	unpacker.unpack(mNumIndices);
-	unsigned int format;
+		unpacker.unpack(name);
+		unpacker.unpack(b.transform);
+		unpacker.unpack(b.invBindPose);
+		unpacker.unpack(b.parent);
+		bones.push_back(b);
+	}
+
+	unpacker.unpack(numVertices);
+	unpacker.unpack(numIndices);
+	// TODO what is a reasonable size?
+	assert(numVertices < 40*1024*1024);
+	assert(numIndices < 40*1024*1024);
 	unpacker.unpack(format);
+
+	positions.reserve(numVertices);
+	normals.reserve(numVertices);
+	tangents.reserve(numVertices);
+	bitangents.reserve(numVertices);
+	texcoords.reserve(numVertices);
+	boneIds.reserve(numVertices);
+	boneWeights.reserve(numVertices);
+	indices.reserve(numIndices);
 
 	// unpack data
 	// type 0/1 - non-interleaved attributes
 	if (format == 0 || format == 1)
 	{
-		unpacker.unpack_n(mNumVertices, mPositions);
-		unpacker.unpack_n(mNumVertices, mNormals);
-		unpacker.unpack_n(mNumVertices, mTangents);
-		unpacker.unpack_n(mNumVertices, mBitangents);
-		unpacker.unpack_n(mNumVertices, mTexcoords);
-		if (format == 1) {
-			unpacker.unpack_n(mNumVertices, mBoneIDs);
-			unpacker.unpack_n(mNumVertices, mBoneWeights);
+		// ==== positions ====
+		for (unsigned int i = 0; i < numVertices; ++i) {
+			glm::vec3 v;
+			unpacker.unpack(v);
+			positions.push_back(v);
 		}
-		for (unsigned int i = 0; i < mNumIndices; ++i) {
+
+		// ==== normals ====
+		for (unsigned int i = 0; i < numVertices; ++i) {
+			glm::vec3 v;
+			unpacker.unpack(v);
+			normals.push_back(v);
+		}
+
+		// ==== tangents ====
+		for (unsigned int i = 0; i < numVertices; ++i) {
+			glm::vec3 v;
+			unpacker.unpack(v);
+			tangents.push_back(v);
+		}
+
+		// ==== bitangents ====
+		for (unsigned int i = 0; i < numVertices; ++i) {
+			glm::vec3 v;
+			unpacker.unpack(v);
+			bitangents.push_back(v);
+		}
+
+		// ==== texcoords ====
+		for (unsigned int i = 0; i < numVertices; ++i) {
+			glm::vec2 v;
+			unpacker.unpack(v);
+			texcoords.push_back(v);
+		}
+
+		if (format == 1) {
+			// ==== bone ids ====
+			for (unsigned int i = 0; i < numVertices; ++i) {
+				glm::u8vec4 v;
+				unpacker.unpack(v);
+				boneIds.push_back(v);
+			}
+
+			// ==== bone weights ====
+			for (unsigned int i = 0; i < numVertices; ++i) {
+				glm::vec4 v;
+				unpacker.unpack(v);
+				boneWeights.push_back(v);
+			}
+		}
+		for (unsigned int i = 0; i < numIndices; ++i) {
 			unsigned short ix;
 			unpacker.unpack16(ix);
-			mIndices.push_back(ix);
+			indices.push_back(ix);
 		}
 	}
 	else if (format == 2) {
@@ -129,12 +246,25 @@ void Model::loadFromFile(const char *filePath, unsigned int hints)
 	}
 
 	// build bone tree
-	auto nb = mBones.size();
+	auto nb = bones.size();
 	for (unsigned int i = 0; i < nb; ++i) {
-		int p = mBones[i].parent;
+		int p = bones[i].parent;
 		if (p != -1) {
 			assert(p < nb);
-			mBones[p].children.push_back(i);
+			bones[p].children.push_back(i);
 		}
 	}
+
+	return Model(
+		renderer,
+		std::move(submeshes),
+		std::move(indices),
+		std::move(bones),
+		std::move(positions),
+		std::move(normals),
+		std::move(tangents),
+		std::move(bitangents),
+		std::move(texcoords),
+		std::move(boneIds),
+		std::move(boneWeights));
 }
