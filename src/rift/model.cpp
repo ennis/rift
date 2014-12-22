@@ -140,12 +140,12 @@ Model Model::loadFromFile(Renderer &renderer, const char *filePath, unsigned int
 		unpacker.unpack(sm.startVertex);
 		unpacker.unpack(sm.startIndex);
 		unpacker.unpack(sm.numVertices);
-		unpacker.unpack(sm.numIndices);
-		unpacker.unpack(sm.bone);
+		read_u16le(fileIn, sm.numIndices);
+		read_u8(fileIn, sm.bone);
 		submeshes.push_back(sm);
 	}
 
-	unpacker.unpack(numBones);
+	read_u8(fileIn, numBones);
 	assert(numBones < 256);
 	bones.reserve(numBones);
 	for (unsigned int i = 0; i < numBones; ++i) {
@@ -153,8 +153,8 @@ Model Model::loadFromFile(Renderer &renderer, const char *filePath, unsigned int
 		std::string name;
 		unpacker.unpack(name);
 		unpacker.unpack(b.transform);
-		unpacker.unpack(b.invBindPose);
-		unpacker.unpack(b.parent);
+		unpacker.unpack(b.invBindPose); 
+		read_u8(fileIn, b.parent);
 		bones.push_back(b);
 	}
 
@@ -163,7 +163,7 @@ Model Model::loadFromFile(Renderer &renderer, const char *filePath, unsigned int
 	// TODO what is a reasonable size?
 	assert(numVertices < 40*1024*1024);
 	assert(numIndices < 40*1024*1024);
-	unpacker.unpack(format);
+	read_u8(fileIn, format);
 
 	positions.reserve(numVertices);
 	normals.reserve(numVertices);
@@ -247,7 +247,8 @@ Model Model::loadFromFile(Renderer &renderer, const char *filePath, unsigned int
 	auto nb = bones.size();
 	for (unsigned int i = 0; i < nb; ++i) {
 		int p = bones[i].parent;
-		if (p != -1) {
+		// p == 255 means root node
+		if (p != 255) {
 			assert(p < nb);
 			bones[p].children.push_back(i);
 		}
