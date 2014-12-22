@@ -46,6 +46,11 @@ void TestImage::init()
 	// Unorm8x3 == 3 elements de type Unorm8 (i.e. un entier de 8 bits représentant une valeur entre 0.0 (0) et 1.0 (255) )
 	// (aka RGB8, R8G8B8, etc...)
 	assert(image.format() == ElementFormat::Unorm8x3);
+
+	// TODO test chargement DDS, PNG, JPEG
+	// TODO test allocation
+	// TODO test ImageView
+	// TODO test copy/move, etc.
 }
 
 void TestImage::render(float dt)

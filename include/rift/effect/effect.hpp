@@ -3,9 +3,25 @@
 
 #include <renderer.hpp>
 #include <shadersource.hpp>
-#include <map>
+#include <unordered_map>
+#include <array>
+#include <glm/gtc/type_ptr.hpp>
 
 class EffectCompiler;
+
+enum class EffectParameterType
+{
+	Float,
+	Float2,
+	Float3, 
+	Float4,
+	Int,
+	Int2,
+	Int3, 
+	Int4,
+	Float3x4,
+	Float4x4
+};
 
 //=============================================================================
 class Effect
@@ -15,35 +31,37 @@ public:
 
 	Effect() = default;
 	Effect(
-		ShaderSource *vsSource,
-		ShaderSource *fsSource,
+		std::string vertexShaderSource,
+		std::string fragmentShaderSource,
 		RenderState const &renderState = RenderState());
-	virtual ~Effect();
 
-	void createFromSource(
-		ShaderSource *vsSource, 
-		ShaderSource *fsSource, 
-		RenderState const &renderState = RenderState());
-	
+	~Effect();
+
 	// used internally by EffectCompiler
 	void setEffectID(unsigned int id);
 	unsigned int getEffectID() const;
 
+	struct Parameter
+	{
+		std::string name;
+		EffectParameterType type;
+	};
+
 private:
-	// same
 	unsigned int mID = 0; 
-	// TODO: with effect files, the shaders will be merged into one source file
-	// remove the ShaderSource class
-	// will contain passes and techniques
-	// borrowed refs
-	ShaderSource *mVertexShader = nullptr;
-	ShaderSource *mGeometryShader = nullptr;
-	ShaderSource *mFragmentShader = nullptr;
+
+	std::string mVertexShader;
+	std::string mFragmentShader;
+	// true if mVertexShader contains both the vertex shader and the fragment shader
+	bool mCombinedSource;
+	// Sorted list of #defines
+	std::vector<std::string> mKeywords;
+	// list of material parameters
+	std::vector<Parameter> mParameters;
 	// Render state
 	RenderState mRenderState;
 };
 
-typedef std::unique_ptr<Effect> EffectPtr;
 
 //=============================================================================
 // Pipeline state
@@ -130,9 +148,9 @@ private:
 	unsigned int mIDPipelineState;
 
 	// array of pipeline states
-	std::vector<PipelineStatePtr> mPipelineStates;
+	std::vector<PipelineState> mPipelineStates;
 	// Map key -> PipelineState (borrowed)
-	std::map<uint64_t, PipelineState*> mPipelineStateMap;
+	std::unordered_map<uint64_t, PipelineState*> mPipelineStateMap;
 
 	//
 	// Database:
