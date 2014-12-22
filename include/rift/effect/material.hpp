@@ -14,8 +14,22 @@ struct TextureState
 	TextureAddressMode addressModeV;
 	TextureAddressMode addressModeW;
 };
+
+
 //=============================================================================
-// Effect instance
+// 
+// classe Material
+// Gère la technique de rendu d'un objet
+// En d'autres termes, la classe Material contient une partie de l'état du pipeline
+// graphique: les shaders à utiliser et les 'render states' (alpha blending, depth test, culling, etc.)
+//
+// Les Materials ont une référence vers un 'Effect' qui contient les shaders
+// et possèdent un dictionnaire de paramètres qui correspond aux paramètres de l'Effect
+// Normalement, il n'y a qu'une seule copie d'un Material pour chaque objet.
+// Les effects peuvent cependant être partagés entre plusieurs Materials.
+//
+// Pour utiliser un Material, il suffit d'appeller Material::setup(Renderer &renderer)
+// 
 class Material
 {
 public:
@@ -139,8 +153,10 @@ private:
 
 	// associated effect
 	Effect *mEffect;
+	// parameter dictionary
 	std::unordered_map<std::string, Parameter> mParameters;
-	std::array<Texture*, 16> mSamplers = { { nullptr } };
+	// textures
+	std::array<Texture*, 16> mSamplers/* = { { nullptr } }*/;
 };
 
 

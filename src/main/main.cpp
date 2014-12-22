@@ -9,7 +9,6 @@
 #include <sky.hpp>
 #include <dds.hpp>
 #include <terrain.hpp>
-#include <shadersource.hpp>
 #include <effect.hpp>
 #include <font.hpp>
 #include <hudtext.hpp>
@@ -41,7 +40,6 @@ private:
 	float mTotalTime = 0.f;
 	float mFPS = 0;
 
-	std::unique_ptr<EffectCompiler> effectCompiler;
 	std::unique_ptr<HUDTextRenderer> hudTextRenderer;
 	std::unique_ptr<ImmediateContextFactory> immediateContextFactory;
 	Model model;
@@ -57,13 +55,6 @@ private:
 	ConstantBuffer *frameData = nullptr;
 	Terrain *terrain = nullptr;
 	Sky *sky = nullptr;
-	Effect testEffect;
-
-	ShaderSource meshVS;
-	ShaderSource meshFS;
-	std::unique_ptr<Effect> meshEffect;
-	PipelineState *meshPS;
-
 	TwBar *tweakBar = nullptr;
 
 	float twSunDirection[3];
@@ -99,7 +90,6 @@ void RiftGame::init()
 	
 	Renderer &rd = Engine::instance().getRenderer();
 	
-	effectCompiler = std::unique_ptr<EffectCompiler>(new EffectCompiler(&rd, "resources/shaders"));
 	hudTextRenderer = std::unique_ptr<HUDTextRenderer>(new HUDTextRenderer(rd));
 	immediateContextFactory = std::unique_ptr<ImmediateContextFactory>(new ImmediateContextFactory(rd));
 
@@ -139,14 +129,19 @@ void RiftGame::init()
 		loadShaderSource("resources/shaders/sprite/vert.glsl").c_str(),
 		loadShaderSource("resources/shaders/sprite/frag.glsl").c_str());
 
-	auto ps1 = effectCompiler->createPipelineStateFromShader(
-		&testEffect, sh);
-
-	meshVS.loadFromFile("resources/shaders/mesh_default/vert.glsl", ShaderSourceType::Vertex);
-	meshFS.loadFromFile("resources/shaders/mesh_default/frag.glsl", ShaderSourceType::Fragment);
-	meshEffect = std::unique_ptr<Effect>(new Effect(&meshVS, &meshFS));
-	// create pipeline state
-	meshPS = effectCompiler->createPipelineState(meshEffect.get());
+	Effect eff = Effect(
+		loadShaderSource("resources/shaders/sprite/vert.glsl"),
+		loadShaderSource("resources/shaders/sprite/frag.glsl"));
+	Effect::Keyword keywords[] = {
+		{ "HELLO", "" },
+		{ "WORLD", "" }
+	};
+	eff.compileShader(2, keywords);
+	Effect::Keyword keywords2[] = {
+		{ "HELLO", "" },
+		{ "WORLD", "" }
+	};
+	eff.compileShader(2, keywords2);
 
 	// font loading
 	fnt.loadFromFile(rd, "resources/img/fonts/arial.fnt");
@@ -155,9 +150,7 @@ void RiftGame::init()
 	immediateContext = immediateContextFactory->create(200, PrimitiveType::Triangle);
 
 	// test loading of animated mesh
-	//animTest = std::unique_ptr<AnimatedMesh>(new AnimatedMesh(*immediateContextFactory, rd));
-	//animTest->loadFromFile("resources/models/animated/mokou.dae");
-	model = Model::loadFromFile(rd, "resources/models/animated/mokou.model");
+	model = Model::loadFromFile(rd, "resources/models/danbo/danbo.model");
 	animTest = SkinnedModelRenderer(rd, model);
 
 	// test loading of animation clips
@@ -202,9 +195,6 @@ void RiftGame::render(float dt)
 	pfsp.viewProjMatrix = rc.projMatrix * rc.viewMatrix;
 	R.updateBuffer(frameData, 0, sizeof(PerFrameShaderParameters), &pfsp);
 	rc.pfsp = pfsp;
-
-	// draw mesh
-	meshPS->setup();
 
 	// draw sky!
 	//sky->render(rc);
