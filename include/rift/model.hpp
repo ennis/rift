@@ -110,6 +110,7 @@ public:
 	 * @param filePath Chemin du fichier à charger
 	 * 
 	 */
+	Model() = default;
 	Model(Renderer &renderer, const char *filePath, unsigned int hints = 0);
 	Model(Model const &rhs) = delete;
 	Model(Model &&model);
@@ -126,10 +127,10 @@ public:
 	static Model loadFromFile(Renderer &renderer, const char *filePath, unsigned int hints = 0);
 
 	unsigned int getNumVertices() const {
-		return mPositions.size();
+		return static_cast<unsigned int>(mPositions.size());
 	}
 	unsigned int getNumIndices() const {
-		return mIndices.size();
+		return static_cast<unsigned int>(mIndices.size());
 	}
 	bool isSkinned() const {
 		return !mBoneIDs.empty();
@@ -179,7 +180,7 @@ private:
 		std::vector<glm::u8vec4> &&boneIds,
 		std::vector<glm::vec4> &&boneWeights);
 
-	Renderer &mRenderer;
+	Renderer *mRenderer = nullptr;
 	std::vector<Submesh> mSubmeshes;
 	//std::vector<Model::Vertex> mVertices;
 	std::vector<uint16_t> mIndices;

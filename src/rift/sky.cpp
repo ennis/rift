@@ -4,7 +4,7 @@
 Sky::Sky(Renderer &renderer) : 
 	mRenderer(renderer),
 	mTimeOfDay(0.f), 
-	mSkybox(renderer)
+	mSkybox()
 {
 	mSkyShader = renderer.createShader(
 		loadShaderSource("resources/shaders/sky/vert.glsl").c_str(),
@@ -57,7 +57,7 @@ Sky::Sky(Renderer &renderer) :
 	Mesh::Attribute attribs[] = { { 0, ElementFormat::Float3 } };
 	Mesh::Buffer buffers[] = { { ResourceUsage::Static } };
 	const void *init[] = { skycubeVertices };
-	mSkybox.allocate(PrimitiveType::Triangle, 1, attribs, 1, buffers, 36, init, 0, ElementFormat::Max, ResourceUsage::Static, nullptr);
+	mSkybox = Mesh(renderer, PrimitiveType::Triangle, 1, attribs, 1, buffers, 36, init, 0, ElementFormat::Max, ResourceUsage::Static, nullptr);
 }
 
 Sky::~Sky()

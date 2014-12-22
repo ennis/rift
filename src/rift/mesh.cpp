@@ -12,10 +12,10 @@ Mesh::Mesh(
 	unsigned int numIndices,
 	ElementFormat indexFormat,
 	ResourceUsage indexUsage,
-	const void *initialIndices) :
-mRenderer(renderer)
+	const void *initialIndices) 
 {
 	allocate(
+		renderer,
 		primitiveType, 
 		numAttributes,
 		attributes, 
@@ -29,7 +29,7 @@ mRenderer(renderer)
 		initialIndices);
 }
 
-Mesh::Mesh(Mesh &&rhs) : mRenderer(rhs.mRenderer)
+Mesh::Mesh(Mesh &&rhs)
 {
 	*this = std::move(rhs);
 }
@@ -41,6 +41,7 @@ Mesh::~Mesh()
 
 Mesh &Mesh::operator=(Mesh &&rhs)
 {
+	mRenderer = std::move(rhs.mRenderer);
 	mVertexBuffers = std::move(rhs.mVertexBuffers);
 	mIndexBuffer = std::move(rhs.mIndexBuffer);
 	mVertexLayout = std::move(rhs.mVertexLayout);
@@ -54,6 +55,7 @@ Mesh &Mesh::operator=(Mesh &&rhs)
 }
 
 void Mesh::allocate(
+	Renderer &renderer,
 	PrimitiveType primitiveType,
 	unsigned int numAttributes,
 	Mesh::Attribute attributes[],
@@ -66,6 +68,7 @@ void Mesh::allocate(
 	ResourceUsage indexUsage,
 	const void *initialIndices)
 {
+	mRenderer = &renderer;
 	mPrimitiveType = primitiveType;
 	mNumVertices = numVertices;
 	mNumIndices = numIndices;
@@ -86,9 +89,9 @@ void Mesh::allocate(
 		auto &e = elements[i];
 		e.stride = mStride[e.bufferSlot];
 	}
-	mVertexLayout = mRenderer.createVertexLayout(numAttributes, elements);
+	mVertexLayout = renderer.createVertexLayout(numAttributes, elements);
 	for (unsigned int ib = 0; ib < numBuffers; ++ib) {
-		mVertexBuffers[ib] = mRenderer.createVertexBuffer(
+		mVertexBuffers[ib] = renderer.createVertexBuffer(
 			mStride[ib], 
 			numVertices, 
 			buffers[ib].usage, 
@@ -99,7 +102,7 @@ void Mesh::allocate(
 	}
 	if (numIndices != 0) {
 		mIndexStride = getElementFormatSize(indexFormat);
-		mIndexBuffer = mRenderer.createIndexBuffer(mIndexStride, numIndices, indexUsage, initialIndices);
+		mIndexBuffer = renderer.createIndexBuffer(mIndexStride, numIndices, indexUsage, initialIndices);
 	}
 	else {
 		mIndexBuffer = nullptr;
@@ -113,7 +116,7 @@ void Mesh::update(
 	unsigned int numVertices, 
 	const void *data)
 {
-	mRenderer.updateBuffer(mVertexBuffers[buffer],startVertex*mStride[buffer],numVertices*mStride[buffer],data);
+	mRenderer->updateBuffer(mVertexBuffers[buffer],startVertex*mStride[buffer],numVertices*mStride[buffer],data);
 }
 
 void Mesh::updateIndices(
@@ -121,7 +124,7 @@ void Mesh::updateIndices(
 	unsigned int numIndices,
 	const void *data)
 {
-	mRenderer.updateBuffer(mIndexBuffer, startIndex*mIndexStride, numIndices * mIndexStride, data);
+	mRenderer->updateBuffer(mIndexBuffer, startIndex*mIndexStride, numIndices * mIndexStride, data);
 }
 
 VertexBuffer *Mesh::getVertexBuffer(unsigned int id) 
@@ -151,9 +154,9 @@ void Mesh::draw()
 
 void Mesh::prepareDraw()
 {
-	mRenderer.setVertexLayout(mVertexLayout);
+	mRenderer->setVertexLayout(mVertexLayout);
 	for (unsigned int ib = 0; ib < mNumBuffers; ++ib) {
-		mRenderer.setVertexBuffer(ib, mVertexBuffers[ib]);
+		mRenderer->setVertexBuffer(ib, mVertexBuffers[ib]);
 	}
 }
 
@@ -162,7 +165,7 @@ void Mesh::drawPart(
 	unsigned int numVertices)
 {
 	prepareDraw();
-	mRenderer.draw(mPrimitiveType, baseVertex, numVertices);
+	mRenderer->draw(mPrimitiveType, baseVertex, numVertices);
 }
 
 void Mesh::drawPart(
@@ -172,8 +175,8 @@ void Mesh::drawPart(
 {
 	assert(mNumIndices != 0);
 	prepareDraw();
-	mRenderer.setIndexBuffer(mIndexBuffer);
-	mRenderer.drawIndexed(
+	mRenderer->setIndexBuffer(mIndexBuffer);
+	mRenderer->drawIndexed(
 		mPrimitiveType, 
 		baseVertex,
 		0, 

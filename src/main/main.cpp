@@ -44,8 +44,8 @@ private:
 	std::unique_ptr<EffectCompiler> effectCompiler;
 	std::unique_ptr<HUDTextRenderer> hudTextRenderer;
 	std::unique_ptr<ImmediateContextFactory> immediateContextFactory;
-	std::unique_ptr<Model> model;
-	std::unique_ptr<SkinnedModelRenderer> animTest;
+	Model model;
+	SkinnedModelRenderer animTest;
 	Pose testPose;
 	//std::unique_ptr<AnimatedMesh> animTest;
 	ImmediateContext *immediateContext;
@@ -157,8 +157,8 @@ void RiftGame::init()
 	// test loading of animated mesh
 	//animTest = std::unique_ptr<AnimatedMesh>(new AnimatedMesh(*immediateContextFactory, rd));
 	//animTest->loadFromFile("resources/models/animated/mokou.dae");
-	model = std::unique_ptr<Model>(new Model(rd, "resources/models/danbo/danbo.dae.mesh"));
-	animTest = std::unique_ptr<SkinnedModelRenderer>(new SkinnedModelRenderer(rd, *immediateContextFactory, *model));
+	model = Model::loadFromFile(rd, "resources/models/danbo/danbo.dae.mesh");
+	animTest = SkinnedModelRenderer(rd, model);
 
 	// test loading of animation clips
 	AnimationClip clip = AnimationClip::loadFromFile("resources/models/danbo/danbo@animation.anim");
@@ -239,7 +239,7 @@ void RiftGame::render(float dt)
 		.render(rc);
 
 	//animTest->applyPose(testPose);
-	animTest->draw(rc);
+	animTest.draw(rc);
 
 	// render tweak bar
 	//TwDraw();

@@ -37,7 +37,7 @@ private:
 	ConstantBuffer *frameData;
 
 	// Le maillage
-	Mesh *mesh;
+	Mesh mesh;
 	// Le shader que l'on va utiliser pour afficher le maillage
 	Shader *shader;
 };
@@ -69,8 +69,6 @@ void TestMesh::init()
 
 void TestMesh::initMesh()
 {
-	mesh = new Mesh(Engine::instance().getRenderer());
-
 	// buffer contenant les données des vertex (c'est un cube, pour info)
 	// ici: position (x,y,z), normales (x,y,z), coordonnées de texture (x,y) 
 	// les normales et les coordonnées de textures sont fausses (c'est juste pour illustrer)
@@ -141,7 +139,8 @@ void TestMesh::initMesh()
 	const void *init[] = { cubeMeshData };
 
 	// allocation
-	mesh->allocate(
+	mesh.allocate(
+		Engine::instance().getRenderer(),
 		// on dessine des triangles
 		PrimitiveType::Triangle, 
 		// il y a trois attributs par vertex
@@ -247,7 +246,7 @@ void TestMesh::render(float dt)
 	R.setNamedConstantFloat("lightIntensity", 1.0f);
 	R.setNamedConstantMatrix4("modelMatrix", Transform().toMatrix());	// matrice identité
 	// enfin, on dit au mesh de se dessiner
-	mesh->draw();
+	mesh.draw();
 	// en interne, Mesh::draw va faire plusieurs choses:
 	//	- dire à OpenGL quels vertex buffers utiliser
 	//	- dire à OpenGL quel index buffer utiliser

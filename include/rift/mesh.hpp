@@ -15,10 +15,8 @@ public:
 	struct Buffer {
 		ResourceUsage usage;
 	};
-	
-	Mesh(Renderer &renderer) : mRenderer(renderer)
-	{}
 
+	Mesh() = default;
 	Mesh(
 		Renderer &renderer,
 		PrimitiveType primitiveType,
@@ -38,6 +36,7 @@ public:
 	Mesh &operator=(Mesh &&rhs);
 
 	void allocate(
+		Renderer &renderer,
 		PrimitiveType primitiveType,
 		unsigned int numAttributes,
 		Mesh::Attribute attributes[],
@@ -85,17 +84,17 @@ private:
 
 	void prepareDraw();
 
-	Renderer &mRenderer;	// borrowed ref
+	Renderer *mRenderer = nullptr;	// borrowed ref
 	// TODO usage-agnostic buffer class
 	std::array<VertexBuffer*, 16> mVertexBuffers;	// owned
-	IndexBuffer *mIndexBuffer;	// owned
-	VertexLayout *mVertexLayout;	// owned
+	IndexBuffer *mIndexBuffer = nullptr;	// owned
+	VertexLayout *mVertexLayout = nullptr;	// owned
 	PrimitiveType mPrimitiveType;
 	std::array<unsigned int, 16> mStride;
-	unsigned int mIndexStride;
-	unsigned int mNumBuffers;
-	unsigned int mNumVertices;
-	unsigned int mNumIndices; 
+	unsigned int mIndexStride = 0;
+	unsigned int mNumBuffers = 0;
+	unsigned int mNumVertices = 0;
+	unsigned int mNumIndices = 0;
 };
 
  

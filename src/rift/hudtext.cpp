@@ -1,7 +1,7 @@
 #include <hudtext.hpp>
 #include <cstring>
 
-HUDTextRenderer::HUDTextRenderer(Renderer &renderer) : mRenderer(&renderer),mMesh(renderer)
+HUDTextRenderer::HUDTextRenderer(Renderer &renderer) : mRenderer(&renderer)
 {
 	init();
 }
@@ -17,6 +17,7 @@ void HUDTextRenderer::init()
 	Mesh::Buffer buffers[] = { { ResourceUsage::Dynamic } };
 
 	mMesh.allocate(
+		*mRenderer,
 		PrimitiveType::Triangle, 
 		1, attrib, 
 		1, buffers, 

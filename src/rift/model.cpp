@@ -6,9 +6,7 @@ Model::Model(Renderer &renderer, const char *filePath, unsigned int hints) :
 {
 }
 
-Model::Model(Model &&rhs) : 
-mRenderer(rhs.mRenderer),
-mMesh(rhs.mRenderer)
+Model::Model(Model &&rhs)
 {
 	*this = std::move(rhs);
 }
@@ -25,11 +23,10 @@ Model::Model(
 	std::vector<glm::vec2> &&texcoords,
 	std::vector<glm::u8vec4> &&boneIds,
 	std::vector<glm::vec4> &&boneWeights) :
-mRenderer(renderer),
+mRenderer(&renderer),
 mSubmeshes(submeshes),
 mIndices(std::move(indices)),
 mBones(std::move(bones)),
-mMesh(renderer),
 mPositions(std::move(positions)),
 mNormals(std::move(normals)),
 mTangents(std::move(tangents)),
@@ -46,6 +43,7 @@ Model::~Model()
 
 Model &Model::operator=(Model &&rhs)
 {
+	mRenderer = std::move(rhs.mRenderer);
 	mSubmeshes = std::move(rhs.mSubmeshes);
 	mIndices = std::move(rhs.mIndices);
 	mBones = std::move(rhs.mBones);
