@@ -24,7 +24,6 @@ end
 
 -- only for VS
 function use_boost_module(name)
-	use_boost_module("system")
 	configuration "Debug"
 		links { "libboost_"..name.."-vc120-mt-s-1_57" }
 	configuration {}
