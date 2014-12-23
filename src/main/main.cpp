@@ -20,6 +20,7 @@
 #include <model.hpp>
 #include <skinnedmodelrenderer.hpp>
 #include <animationclip.hpp>
+#include <boundingcuboid.hpp>
 
 //============================================================================
 class RiftGame : public Game
@@ -63,6 +64,8 @@ private:
 	PipelineState *meshPS;
 
 	TwBar *tweakBar = nullptr;
+
+	BoundingCuboid *cuboid_test1, *cuboid_test2;
 
 	float twSunDirection[3];
 	float twTimeOfDay;
@@ -161,6 +164,11 @@ void RiftGame::init()
 	// test loading of animation clips
 	AnimationClip clip = AnimationClip::loadFromFile("resources/models/danbo/danbo@animation.anim");
 	testPose = clip.computePose(0.1f);
+
+	//collisions
+	cuboid_test1 = new BoundingCuboid(glm::vec3(0,0,0),glm::vec3(1,1,1));
+	cuboid_test2 = new BoundingCuboid(glm::vec3(2, 2, 2), glm::vec3(1, 1, 1));
+
 }
 
 
@@ -236,8 +244,12 @@ void RiftGame::render(float dt)
 		.addVertex(Vertex({ 1, 2, 2 }, { 1.0, 0.5, 0.0, 1.0 }))
 		.render(rc);
 
-	animTest->applyPose(testPose);
+	//animTest->applyPose(testPose);
 	animTest->draw(rc);
+
+	cuboid_test1->render(rc);
+	cuboid_test2->render(rc);
+
 
 	// render tweak bar
 	//TwDraw();
@@ -255,6 +267,11 @@ void RiftGame::update(float dt)
 		glfwSetWindowTitle(Game::window(), ("Rift (" + std::to_string(mFPS) + " FPS)").c_str());
 	}
 
+	//collision test
+	if (cuboid_test1->isColliding(cuboid_test2)){
+		std::cout << "collision" << std::endl;
+	}
+
 	sky->setTimeOfDay(twTimeOfDay);
 }
 
@@ -265,6 +282,8 @@ void RiftGame::tearDown()
 	Entity::destroy(light);
 	delete terrain;
 	delete sky;
+	delete cuboid_test1;
+	delete cuboid_test2;
 }
 
 int main()
