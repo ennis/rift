@@ -1,4 +1,4 @@
-libdirs { "lib/" }
+libdirs { "lib/", "lib/boost/ "}
 includedirs { "include/" }
 local thisDir = os.getcwd().."/";
 
@@ -18,3 +18,15 @@ function use_anttweakbar()
 	links {"AntTweakBar64"}
 end
 
+function use_boost()
+	-- nothing to do
+end
+
+-- only for VS
+function use_boost_module(name)
+	use_boost_module("system")
+	configuration "Debug"
+		links { "libboost_"..name.."-vc120-mt-s-1_57" }
+	configuration {}
+		links { "libboost_"..name.."-vc120-mt-sgd-1_57" }
+end
