@@ -23,7 +23,7 @@ out vec2 fTexcoord;
 //--- UNIFORMS -----------------------
 // Ici on déclare le buffer contenant les paramètres partagés
 // Il est attaché au slot 0 (binding=0): il correspond donc à la structure
-// 'PerFrameShaderParameters' défini dans test_mesh/main.cpp
+// 'PerFrameShaderParameters' définie dans test_mesh/main.cpp
 // !!! Les données doivent être agencées en mémoire de la même façon 
 // dans le fichier .cpp et dans le shader : i.e. les types doivent correspondre
 // et les variables doivent être définies dans le même ordre 

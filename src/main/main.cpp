@@ -17,6 +17,7 @@
 #include <model.hpp>
 #include <skinnedmodelrenderer.hpp>
 #include <animationclip.hpp>
+#include <boost/filesystem.hpp>
 
 //============================================================================
 // Classe de base du jeu
@@ -86,6 +87,8 @@ void RiftGame::initTweakBar()
 //============================================================================
 void RiftGame::init()
 {
+	boost::filesystem::path path(".");
+
 	initTweakBar();
 	
 	Renderer &rd = Engine::instance().getRenderer();
@@ -129,19 +132,9 @@ void RiftGame::init()
 		loadShaderSource("resources/shaders/sprite/vert.glsl").c_str(),
 		loadShaderSource("resources/shaders/sprite/frag.glsl").c_str());
 
-	Effect eff = Effect(
-		loadShaderSource("resources/shaders/sprite/vert.glsl"),
-		loadShaderSource("resources/shaders/sprite/frag.glsl"));
-	Effect::Keyword keywords[] = {
-		{ "HELLO", "" },
-		{ "WORLD", "" }
-	};
-	eff.compileShader(2, keywords);
-	Effect::Keyword keywords2[] = {
-		{ "HELLO", "" },
-		{ "WORLD", "" }
-	};
-	eff.compileShader(2, keywords2);
+	// load from file
+	Effect eff("resources/shaders/default.glsl");
+	auto cs2 = eff.compileShader(rd, 0, nullptr);
 
 	// font loading
 	fnt.loadFromFile(rd, "resources/img/fonts/arial.fnt");

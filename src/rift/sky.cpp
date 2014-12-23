@@ -1,5 +1,5 @@
 #include <sky.hpp>
-#include <engine.hpp>
+#include <effect.hpp>
 
 Sky::Sky(Renderer &renderer) : 
 	mRenderer(renderer),

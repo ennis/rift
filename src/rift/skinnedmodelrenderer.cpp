@@ -1,6 +1,7 @@
 #include <skinnedmodelrenderer.hpp>
 #include <immediatecontext.hpp>
 #include <pose.hpp>
+#include <effect.hpp>
 
 namespace {
 	void calculateTransformsRec(

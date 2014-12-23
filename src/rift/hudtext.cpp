@@ -1,4 +1,5 @@
 #include <hudtext.hpp>
+#include <effect.hpp>
 #include <cstring>
 
 HUDTextRenderer::HUDTextRenderer(Renderer &renderer) : mRenderer(&renderer)

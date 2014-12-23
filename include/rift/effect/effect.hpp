@@ -6,6 +6,7 @@
 #include <array>
 #include <vector>
 #include <glm/gtc/type_ptr.hpp>
+#include <boost/filesystem/path.hpp>
 
 enum class EffectParameterType
 {
@@ -21,7 +22,9 @@ enum class EffectParameterType
 	Float4x4
 };
 
-class CompiledShader;
+class CompiledShader; 
+
+std::string loadShaderSource(const char *path);
 
 //=============================================================================
 //
@@ -40,7 +43,7 @@ class CompiledShader;
 // Exemple:
 // Chargement d'un Effect:
 //
-//		Effect e = Effect("resources/shaders/test.glsl");	// combined source
+//		Effect e ("resources/shaders/test.glsl");	// combined source
 //
 // Compilation d'un shader à partir d'un effect:
 //
@@ -54,14 +57,29 @@ class CompiledShader;
 class Effect
 {
 public:
+	struct Keyword
+	{
+		std::string define;
+		std::string value;
+	};
+
 	// nullable
 	Effect() = default;
 	Effect(
-		std::string vertexShaderSource,
-		std::string fragmentShaderSource,
-		RenderState const &renderState = RenderState())
-	{//TODO
+		const char *combinedSourcePath, 
+		std::initializer_list<Effect::Keyword> keywords = {})
+	{
+		loadFromFile(combinedSourcePath, keywords);
 	}
+
+	Effect(
+		const char *vsPath, 
+		const char *fsPath, 
+		std::initializer_list<Effect::Keyword> keywords = {})
+	{
+		loadFromFile(vsPath, fsPath, keywords);
+	}
+
 	// noncopyable
 	Effect(const Effect &) = delete;
 	Effect &operator=(const Effect &) = delete;
@@ -77,13 +95,17 @@ public:
 	{//TODO
 	}
 
-	struct Keyword
+
+	enum class ShaderStage
 	{
-		std::string define;
-		std::string value;
+		Vertex,
+		Fragment
 	};
 
-	CompiledShader *compileShader(int numAdditionalKeywords = 0, Keyword *additionalKeywords = nullptr);
+	CompiledShader *compileShader(
+		Renderer &renderer, 
+		int numAdditionalKeywords = 0, 
+		Keyword *additionalKeywords = nullptr);
 
 	struct Parameter
 	{
@@ -91,11 +113,28 @@ public:
 		EffectParameterType type;
 	};
 
+	void loadFromFile(const char *combinedSourcePath, std::initializer_list<Effect::Keyword> keywords = {});
+	void loadFromFile(const char *vsPath, const char *fsPath, std::initializer_list<Effect::Keyword> keywords = {});
+
 private:
 	std::size_t getHash(int numAdditionalKeywords, Keyword *additionalKeywords);
+	std::string preprocess(
+		const boost::filesystem::path &sourcePath, 
+		std::istream &sourceIn, 
+		int numAdditionalKeywords,
+		Effect::Keyword *additionalKeywords,
+		ShaderStage stage);
+	void preprocessRec(
+		const boost::filesystem::path &sourcePath, 
+		std::istream &sourceIn, 
+		std::ostream &sourceOut, 
+		int includeDepth,
+		int &glslVersion);
 
 	static unsigned int sCurrentID;
 	unsigned int mID = 0; 
+	boost::filesystem::path mVSPath;
+	boost::filesystem::path mFSPath;
 	std::string mVertexShader;
 	std::string mFragmentShader;
 	// true if mVertexShader contains both the vertex shader and the fragment shader

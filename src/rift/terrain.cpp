@@ -1,8 +1,8 @@
 #include <terrain.hpp>
-#include <engine.hpp>
 #include <boundingbox.hpp>
 #include <cmath>
 #include <algorithm>
+#include <effect.hpp>
 
 //=============================================================================
 Terrain::Terrain(Renderer &renderer, Image &&heightmapData) :
