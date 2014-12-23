@@ -15,8 +15,9 @@ end
 
 function use_librift()
 	links "librift"
-	use_boost_module("filesystem")
-	use_boost_module("system")
+	--no need for that, boost already adds itself to the linker. sneaky
+	--use_boost_module("filesystem")
+	--use_boost_module("system")
 end
 
 

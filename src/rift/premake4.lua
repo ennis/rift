@@ -16,5 +16,3 @@ project "librift"
 	use_gl()
 	use_assimp()
 	use_anttweakbar()
-	use_boost_module("system")
-	use_boost_module("filesystem")
