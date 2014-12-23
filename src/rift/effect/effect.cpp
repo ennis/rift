@@ -53,7 +53,8 @@ CompiledShader *Effect::compileShader(
 	if (mCombinedSource) {
 		std::istringstream vsIn(mVertexShader);
 		vs = preprocess(mVSPath, vsIn, numAdditionalKeywords, additionalKeywords, ShaderStage::Vertex);
-		vsIn = std::istringstream(mVertexShader);
+		vsIn.clear();
+		vsIn.seekg(0);
 		fs = preprocess(mVSPath, vsIn, numAdditionalKeywords, additionalKeywords, ShaderStage::Fragment);
 	}
 	else {
