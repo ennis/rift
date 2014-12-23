@@ -4,7 +4,6 @@
 #include <freecameracontrol.hpp>	// component FreeCameraController
 #include <entity.hpp>	// class Entity
 #include <renderer.hpp>	// class Renderer
-#include <shadersource.hpp>	// loadShaderSource
 #include <mesh.hpp>		// class Mesh
 #include <renderable.hpp>	// struct PerFrameShaderParameters
 #include <image.hpp> // class Image
