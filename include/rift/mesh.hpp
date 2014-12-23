@@ -2,6 +2,7 @@
 #define Mesh_HPP
 
 #include <renderer.hpp>
+#include <array>
 
 class Mesh
 {
@@ -10,12 +11,12 @@ public:
 		unsigned int buffer;
 		ElementFormat elementFormat;
 	};
+
 	struct Buffer {
 		ResourceUsage usage;
 	};
 
-	Mesh(Renderer &renderer);
-	Mesh(Renderer &renderer, const char *filePath);
+	Mesh() = default;
 	Mesh(
 		Renderer &renderer,
 		PrimitiveType primitiveType,
@@ -29,10 +30,13 @@ public:
 		ElementFormat indexFormat,
 		ResourceUsage indexUsage,
 		const void *initialIndices);
-
+	Mesh(Mesh const &rhs) = delete;
+	Mesh(Mesh &&rhs);
 	~Mesh();
+	Mesh &operator=(Mesh &&rhs);
 
 	void allocate(
+		Renderer &renderer,
 		PrimitiveType primitiveType,
 		unsigned int numAttributes,
 		Mesh::Attribute attributes[],
@@ -77,19 +81,20 @@ public:
 	}
 
 private:
+
 	void prepareDraw();
 
-	Renderer *mRenderer;	// borrowed ref
+	Renderer *mRenderer = nullptr;	// borrowed ref
 	// TODO usage-agnostic buffer class
-	VertexBuffer *mVertexBuffers[16];	// owned
-	IndexBuffer *mIndexBuffer;	// owned
-	VertexLayout *mVertexLayout;	// owned
+	std::array<VertexBuffer*, 16> mVertexBuffers;	// owned
+	IndexBuffer *mIndexBuffer = nullptr;	// owned
+	VertexLayout *mVertexLayout = nullptr;	// owned
 	PrimitiveType mPrimitiveType;
-	unsigned int mStride[16];
-	unsigned int mIndexStride;
-	unsigned int mNumBuffers;
-	unsigned int mNumVertices;
-	unsigned int mNumIndices; 
+	std::array<unsigned int, 16> mStride;
+	unsigned int mIndexStride = 0;
+	unsigned int mNumBuffers = 0;
+	unsigned int mNumVertices = 0;
+	unsigned int mNumIndices = 0;
 };
 
  

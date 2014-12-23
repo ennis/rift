@@ -3,15 +3,12 @@
 #include <transform.hpp>
 #include <log.hpp>
 #include <freecameracontrol.hpp>
-//#include <yaml-cpp/yaml.h>
 #include <entity.hpp>
 #include <renderer.hpp>
 #include <AntTweakBar.h>
 #include <sky.hpp>
 #include <dds.hpp>
 #include <terrain.hpp>
-#include <sharedresources.hpp>
-#include <shadersource.hpp>
 #include <effect.hpp>
 #include <font.hpp>
 #include <hudtext.hpp>
@@ -21,13 +18,18 @@
 #include <skinnedmodelrenderer.hpp>
 #include <animationclip.hpp>
 #include <boundingcuboid.hpp>
+#include <boost/filesystem.hpp>
 
 //============================================================================
+// Classe de base du jeu
 class RiftGame : public Game
 {
 public:
-	RiftGame() : Game(glm::ivec2(1280, 720))
-	{}
+	// Constructeur
+	RiftGame()
+	{
+		init();
+	}
 
 	void init();
 	void render(float dt);
@@ -40,11 +42,10 @@ private:
 	float mTotalTime = 0.f;
 	float mFPS = 0;
 
-	std::unique_ptr<EffectCompiler> effectCompiler;
 	std::unique_ptr<HUDTextRenderer> hudTextRenderer;
 	std::unique_ptr<ImmediateContextFactory> immediateContextFactory;
-	std::unique_ptr<Model> model;
-	std::unique_ptr<SkinnedModelRenderer> animTest;
+	Model model;
+	SkinnedModelRenderer animTest;
 	Pose testPose;
 	//std::unique_ptr<AnimatedMesh> animTest;
 	ImmediateContext *immediateContext;
@@ -56,13 +57,6 @@ private:
 	ConstantBuffer *frameData = nullptr;
 	Terrain *terrain = nullptr;
 	Sky *sky = nullptr;
-	Effect testEffect;
-
-	ShaderSource meshVS;
-	ShaderSource meshFS;
-	std::unique_ptr<Effect> meshEffect;
-	PipelineState *meshPS;
-
 	TwBar *tweakBar = nullptr;
 
 	BoundingCuboid *cuboid_test1, *cuboid_test2;
@@ -96,10 +90,12 @@ void RiftGame::initTweakBar()
 //============================================================================
 void RiftGame::init()
 {
+	boost::filesystem::path path(".");
+
 	initTweakBar();
 	
-	Renderer &rd = renderer();
-	effectCompiler = std::unique_ptr<EffectCompiler>(new EffectCompiler(&rd, "resources/shaders"));
+	Renderer &rd = Engine::instance().getRenderer();
+	
 	hudTextRenderer = std::unique_ptr<HUDTextRenderer>(new HUDTextRenderer(rd));
 	immediateContextFactory = std::unique_ptr<ImmediateContextFactory>(new ImmediateContextFactory(rd));
 
@@ -124,15 +120,14 @@ void RiftGame::init()
 	frameData = rd.createConstantBuffer(sizeof(PerFrameShaderParameters), ResourceUsage::Dynamic, nullptr);
 
 	// TEST TEST
-	sky = new Sky();
+	sky = new Sky(rd);
 	sky->setTimeOfDay(21.0f);
 
 	// terrain
 	{
-		Image *heightmapData = new Image();
-		heightmapData->loadFromFile("resources/img/terrain/height.dds");
-		assert(heightmapData->format() == ElementFormat::Unorm16);
-		terrain = new Terrain(rd, heightmapData);
+		Image heightmapData = Image::loadFromFile("resources/img/terrain/height.dds");
+		assert(heightmapData.format() == ElementFormat::Unorm16);
+		terrain = new Terrain(rd, std::move(heightmapData));
 	}
 
 	// Effect test
@@ -140,14 +135,9 @@ void RiftGame::init()
 		loadShaderSource("resources/shaders/sprite/vert.glsl").c_str(),
 		loadShaderSource("resources/shaders/sprite/frag.glsl").c_str());
 
-	auto ps1 = effectCompiler->createPipelineStateFromShader(
-		&testEffect, sh);
-
-	meshVS.loadFromFile("resources/shaders/mesh_default/vert.glsl", ShaderSourceType::Vertex);
-	meshFS.loadFromFile("resources/shaders/mesh_default/frag.glsl", ShaderSourceType::Fragment);
-	meshEffect = std::unique_ptr<Effect>(new Effect(&meshVS, &meshFS));
-	// create pipeline state
-	meshPS = effectCompiler->createPipelineState(meshEffect.get());
+	// load from file
+	Effect eff("resources/shaders/default.glsl");
+	auto cs2 = eff.compileShader(rd, 0, nullptr);
 
 	// font loading
 	fnt.loadFromFile(rd, "resources/img/fonts/arial.fnt");
@@ -156,10 +146,8 @@ void RiftGame::init()
 	immediateContext = immediateContextFactory->create(200, PrimitiveType::Triangle);
 
 	// test loading of animated mesh
-	//animTest = std::unique_ptr<AnimatedMesh>(new AnimatedMesh(*immediateContextFactory, rd));
-	//animTest->loadFromFile("resources/models/animated/mokou.dae");
-	model = std::unique_ptr<Model>(new Model(rd, "resources/models/danbo/danbo.dae.mesh"));
-	animTest = std::unique_ptr<SkinnedModelRenderer>(new SkinnedModelRenderer(rd, *immediateContextFactory, *model));
+	model = Model::loadFromFile(rd, "resources/models/danbo/danbo.model");
+	animTest = SkinnedModelRenderer(rd, model);
 
 	// test loading of animation clips
 	AnimationClip clip = AnimationClip::loadFromFile("resources/models/danbo/danbo@animation.anim");
@@ -175,12 +163,12 @@ void RiftGame::init()
 void RiftGame::render(float dt)
 {
 	// rendu de la scene
-	Renderer &R = renderer();
+	Renderer &R = Engine::instance().getRenderer();
 
 	// render to screen
 	R.bindRenderTargets(0, nullptr, nullptr);
 	// update viewport
-	glm::ivec2 win_size = Game::getSize();
+	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	Viewport vp{ 0.f, 0.f, float(win_size.x), float(win_size.y) };
 	Viewport vp_half{ 0.f, 0.f, float(win_size.x/2), float(win_size.y/2) };
 	R.setViewports(1, &vp);
@@ -204,13 +192,10 @@ void RiftGame::render(float dt)
 	pfsp.lightDir = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
 	pfsp.projMatrix = rc.projMatrix;
 	pfsp.viewMatrix = rc.viewMatrix;
-	pfsp.viewportSize = Game::getSize();
+	pfsp.viewportSize = win_size;
 	pfsp.viewProjMatrix = rc.projMatrix * rc.viewMatrix;
 	R.updateBuffer(frameData, 0, sizeof(PerFrameShaderParameters), &pfsp);
 	rc.pfsp = pfsp;
-
-	// draw mesh
-	meshPS->setup();
 
 	// draw sky!
 	//sky->render(rc);
@@ -245,7 +230,7 @@ void RiftGame::render(float dt)
 		.render(rc);
 
 	//animTest->applyPose(testPose);
-	animTest->draw(rc);
+	animTest.draw(rc);
 
 	cuboid_test1->render(rc);
 	cuboid_test2->render(rc);
@@ -264,7 +249,7 @@ void RiftGame::update(float dt)
 	if (mLastTime > 1.f) {
 		mLastTime = 0.f;
 		mFPS = 1.f / dt;
-		glfwSetWindowTitle(Game::window(), ("Rift (" + std::to_string(mFPS) + " FPS)").c_str());
+		Engine::instance().getWindow().setTitle(("Rift (" + std::to_string(mFPS) + " FPS)").c_str());
 	}
 
 	//collision test
@@ -289,6 +274,7 @@ void RiftGame::tearDown()
 int main()
 {
 	logInit("log");
-	Game::run(std::unique_ptr<Game>(new RiftGame()));
+	Window window("Rift", 1280, 720);
+	Engine::run<RiftGame>(window);
 	return 0;
 }

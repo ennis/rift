@@ -4,7 +4,6 @@
 
 #include <opengl.hpp>
 #include <shader.hpp>
-#include <shadersource.hpp> // ShaderSource type
 
 #include <resource.hpp>
 #include <resourcemanager.hpp>

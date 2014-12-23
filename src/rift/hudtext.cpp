@@ -1,7 +1,8 @@
 #include <hudtext.hpp>
+#include <effect.hpp>
 #include <cstring>
 
-HUDTextRenderer::HUDTextRenderer(Renderer &renderer) : mRenderer(&renderer),mMesh(renderer)
+HUDTextRenderer::HUDTextRenderer(Renderer &renderer) : mRenderer(&renderer)
 {
 	init();
 }
@@ -17,6 +18,7 @@ void HUDTextRenderer::init()
 	Mesh::Buffer buffers[] = { { ResourceUsage::Dynamic } };
 
 	mMesh.allocate(
+		*mRenderer,
 		PrimitiveType::Triangle, 
 		1, attrib, 
 		1, buffers, 
@@ -36,7 +38,7 @@ void HUDTextRenderer::renderString(
 	glm::vec4 const &color,
 	glm::vec4 const &outlineColor)
 {
-	unsigned int len= static_cast<int>(std::strlen(str));
+	auto len= static_cast<unsigned int>(std::strlen(str));
 	// TODO do not truncate
 	if (len>kMaxNumGlyphs) len=kMaxNumGlyphs;
 	struct {
@@ -46,7 +48,7 @@ void HUDTextRenderer::renderString(
 	uint16_t ibuf[kMaxNumGlyphs*6];
 	auto &metrics=font->metrics();
 	int x=0,y=0;
-	for (int i=0; i<len; ++i) {
+	for (unsigned int i=0; i<len; ++i) {
 		Font::Glyph const *g=nullptr;
 		if (!font->getGlyph(char32_t(str[i]),g)) {
 			WARNING<<"No glyph for character "<<str[i];

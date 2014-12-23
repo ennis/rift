@@ -198,7 +198,7 @@ namespace modelconverter
             }
 
             // build skeleton
-            BuildSkeleton(skeletonSet, bones, submeshes, -1, scene.RootNode);
+            BuildSkeleton(skeletonSet, bones, submeshes, 255, scene.RootNode);
 
             if (bones.Count > byte.MaxValue)
             {
@@ -273,6 +273,7 @@ namespace modelconverter
                     writer.Write(sm.NumIndices);
                     writer.Write((byte)sm.Bone);
                 }
+                writer.Write((byte)bones.Count);
                 foreach (var b in bones)
                 {
                     writer.Write(b.Name);

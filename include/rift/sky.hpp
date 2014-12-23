@@ -8,7 +8,7 @@
 class Sky
 {
 public:
-	Sky();
+	Sky(Renderer &renderer);
 	virtual ~Sky();
 
 	void setTimeOfDay(float hour);
@@ -16,6 +16,7 @@ public:
 	void render(RenderContext const &renderContext);
 
 protected:
+	Renderer &mRenderer;
 	float mTimeOfDay;
 	// unique_ptr OR resource_ptr
 	Shader *mSkyShader;

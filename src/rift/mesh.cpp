@@ -1,13 +1,5 @@
 #include <mesh.hpp>
 
-Mesh::Mesh(Renderer &renderer) : mRenderer(&renderer)
-{}
-
-Mesh::Mesh(Renderer &renderer, const char *filePath) : mRenderer(&renderer)
-{
-	// TODO load from file
-}
-
 Mesh::Mesh(
 	Renderer &renderer,
 	PrimitiveType primitiveType,
@@ -20,10 +12,10 @@ Mesh::Mesh(
 	unsigned int numIndices,
 	ElementFormat indexFormat,
 	ResourceUsage indexUsage,
-	const void *initialIndices) :
-mRenderer(&renderer)
+	const void *initialIndices) 
 {
 	allocate(
+		renderer,
 		primitiveType, 
 		numAttributes,
 		attributes, 
@@ -37,12 +29,33 @@ mRenderer(&renderer)
 		initialIndices);
 }
 
+Mesh::Mesh(Mesh &&rhs)
+{
+	*this = std::move(rhs);
+}
+
 Mesh::~Mesh()
 {
 	// TODO destroy
 }
 
+Mesh &Mesh::operator=(Mesh &&rhs)
+{
+	mRenderer = std::move(rhs.mRenderer);
+	mVertexBuffers = std::move(rhs.mVertexBuffers);
+	mIndexBuffer = std::move(rhs.mIndexBuffer);
+	mVertexLayout = std::move(rhs.mVertexLayout);
+	mPrimitiveType = std::move(rhs.mPrimitiveType);
+	mStride = std::move(rhs.mStride);
+	mIndexStride = std::move(rhs.mIndexStride);
+	mNumBuffers = std::move(rhs.mNumBuffers);
+	mNumVertices = std::move(rhs.mNumVertices);
+	mNumIndices = std::move(rhs.mNumIndices);
+	return *this;
+}
+
 void Mesh::allocate(
+	Renderer &renderer,
 	PrimitiveType primitiveType,
 	unsigned int numAttributes,
 	Mesh::Attribute attributes[],
@@ -55,6 +68,7 @@ void Mesh::allocate(
 	ResourceUsage indexUsage,
 	const void *initialIndices)
 {
+	mRenderer = &renderer;
 	mPrimitiveType = primitiveType;
 	mNumVertices = numVertices;
 	mNumIndices = numIndices;
@@ -75,9 +89,9 @@ void Mesh::allocate(
 		auto &e = elements[i];
 		e.stride = mStride[e.bufferSlot];
 	}
-	mVertexLayout = mRenderer->createVertexLayout(numAttributes, elements);
+	mVertexLayout = renderer.createVertexLayout(numAttributes, elements);
 	for (unsigned int ib = 0; ib < numBuffers; ++ib) {
-		mVertexBuffers[ib] = mRenderer->createVertexBuffer(
+		mVertexBuffers[ib] = renderer.createVertexBuffer(
 			mStride[ib], 
 			numVertices, 
 			buffers[ib].usage, 
@@ -88,7 +102,7 @@ void Mesh::allocate(
 	}
 	if (numIndices != 0) {
 		mIndexStride = getElementFormatSize(indexFormat);
-		mIndexBuffer = mRenderer->createIndexBuffer(mIndexStride, numIndices, indexUsage, initialIndices);
+		mIndexBuffer = renderer.createIndexBuffer(mIndexStride, numIndices, indexUsage, initialIndices);
 	}
 	else {
 		mIndexBuffer = nullptr;

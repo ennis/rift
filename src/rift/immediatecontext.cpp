@@ -1,5 +1,6 @@
 #include <immediatecontext.hpp>
 #include <cassert>
+#include <effect.hpp>
 
 ImmediateContext &ImmediateContext::addVertex(Vertex const &vertex)
 {

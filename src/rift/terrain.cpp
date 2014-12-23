@@ -1,12 +1,12 @@
 #include <terrain.hpp>
 #include <boundingbox.hpp>
-#include <sharedresources.hpp>
 #include <cmath>
 #include <algorithm>
+#include <effect.hpp>
 
 //=============================================================================
-Terrain::Terrain(Renderer &renderer, Image *heightmapData) :
-Renderable(renderer),
+Terrain::Terrain(Renderer &renderer, Image &&heightmapData) :
+mRenderer(renderer),
 mNumSelectedNodes(0), 
 mPatchGridSize(16),
 mPatchGridVB(nullptr),
@@ -14,7 +14,7 @@ mPatchGridIB(nullptr),
 mHeightmapData(heightmapData),
 mHeightmapTexture(nullptr),
 mHeightmapVerticalScale(200.f),
-mHeightmapSize(heightmapData->imageView(0, 0).size()),
+mHeightmapSize(heightmapData.getImageView(0, 0).size()),
 mNumLodLevels(0),
 mShader(nullptr)
 {
@@ -24,7 +24,6 @@ mShader(nullptr)
 //=============================================================================
 Terrain::~Terrain()
 {
-	mHeightmapData->release();
 	mHeightmapTexture->release();
 	mPatchGridVB->release();
 	mPatchGridIB->release();
@@ -42,7 +41,7 @@ void Terrain::init()
 //=============================================================================
 void Terrain::initHeightmap()
 {
-	mHeightmapView = mHeightmapData->imageView(0, 0).viewAs<uint16_t>();
+	mHeightmapView = mHeightmapData.getImageView(0, 0).viewAs<uint16_t>();
 	mHeightmapTexture = mRenderer.createTexture2D(
 		mHeightmapSize,
 		1,
@@ -115,6 +114,12 @@ void Terrain::initGrid()
 		mPatchNumIndices,
 		ResourceUsage::Static,
 		indices);
+
+	const VertexElement elem_v2f[1] = {
+		VertexElement(0, 0, 0, 2 * sizeof(float), ElementFormat::Float2)
+	};
+	mVertexLayout = mRenderer.createVertexLayout(1, elem_v2f);
+
 	delete[] vertices;
 	delete[] indices;
 }
@@ -126,10 +131,10 @@ void Terrain::renderSelection(RenderContext const &renderContext)
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	mRenderer.setVertexBuffer(0, mPatchGridVB);
 	mRenderer.setIndexBuffer(mPatchGridIB);
-	mRenderer.setVertexLayout(GVertexLayout_V2F);
+	mRenderer.setVertexLayout(mVertexLayout);
 	mRenderer.setShader(mShader);
 	mRenderer.setConstantBuffer(0, renderContext.perFrameShaderParameters);
-	mRenderer.setNamedConstantMatrix4("modelMatrix", 
+	mRenderer.setNamedConstantMatrix4("modelMatrix",
 		Transform().scale(1.f).toMatrix());
 	mRenderer.setNamedConstantInt2("heightmapSize", mHeightmapSize);
 	mRenderer.setNamedConstantFloat("heightmapScale", mHeightmapVerticalScale);

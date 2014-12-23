@@ -750,7 +750,7 @@ void Renderer::drawIndexed(
 	glDrawElementsBaseVertex(
 		mode,
 		numIndices,
-		GL_UNSIGNED_SHORT,	// TODO 32-bit integer index type
+		GL_UNSIGNED_SHORT,
 		(void*)(indexOffset * 2),
 		vertexOffset);
 }

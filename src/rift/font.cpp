@@ -125,7 +125,7 @@ void Font::loadFromFile(Renderer &renderer, const char *fontFilePath)
 		sp += textureFileNames[i];
 		LOG << "Loading " << sp.c_str();
 		auto &texData = mGlyphPages[i].data; 
-		texData.loadFromFile(sp.c_str());
+		texData = Image::loadFromFile(sp.c_str());
 		mGlyphPages[i].tex = texData.convertToTexture2D(renderer);
 	}
 }

@@ -5,90 +5,101 @@
 #include <istream>
 #include <memory>
 
+enum class ImageFileFormat
+{
+	Autodetect,
+	DDS,
+	PNG,
+	JPEG,
+	TGA
+};
+
 //=============================================================================
 // texture data
 // TODO 3D textures, texture arrays, cubemap textures
 class Image : public Resource 
 {
 public:
+	struct Subimage {
+		std::size_t offset;
+		std::size_t numBytes;
+		glm::ivec2 size;
+	};
+
+	static const int kMaxMipLevels = 32;
+	static const int kMaxFaces = 6;
+
 	Image();
+	Image(ElementFormat format, glm::ivec3 size, unsigned int numMipLevels = 1, unsigned int numFaces = 1);
+	Image(Image const &rhs);
+	Image(Image &&rhs);
 	~Image();
-	void loadFromFile(const char *filePath);
+
+	Image &operator=(Image &&rhs);
+
 	void allocate(ElementFormat format, glm::ivec3 size, int numMips);
+
 	ElementFormat format() const {
 		return mFormat;
 	}
-	glm::ivec2 size(int mipLevel = 0) const {
+
+	glm::ivec2 getSize(unsigned int mipLevel = 0) const 
+	{
 		assert(mipLevel < mNumMipLevels);
-		return mMipMaps[mipLevel][0].size;
+		return getSubimage(mipLevel, 0).size;
 	}
-	int numFaces() const {
+
+	unsigned int getNumFaces() const 
+	{
 		return mNumFaces;
 	}
-	int numMipLevels() const {
+
+	unsigned int getNumMipLevels() const 
+	{
 		return mNumMipLevels;
 	}
 
-	// use imageView(mipLevel, face).data()
-
-	/*void *data(int mipLevel = 0, int face = 0) {
+	std::size_t getDataSize(unsigned int mipLevel = 0, unsigned int face = 0)
+	{
 		assert(mipLevel < mNumMipLevels);
 		assert(face < mNumFaces);
-		return mMipData.get() + mMipMaps[mipLevel][0].offset;
-	}*/
-
-	int dataSize(int mipLevel = 0, int face = 0) {
-		assert(mipLevel < mNumMipLevels);
-		assert(face < mNumFaces);
-		return mMipMaps[mipLevel][face].bytes;
+		return getSubimage(mipLevel, face).numBytes;
 	}
-	BaseImageView imageView(int mipLevel = 0, int face = 0) {
+
+	BaseImageView getImageView(unsigned int mipLevel = 0, unsigned int face = 0)
+	{
 		assert(mipLevel < mNumMipLevels);
 		assert(face < mNumFaces);
-		auto &mip = mMipMaps[mipLevel][face];
+		auto &mip = getSubimage(mipLevel, face);
 		return BaseImageView(
-			mMipData.get()->ptr + mip.offset, 
+			mData.data() + mip.offset, 
 			mFormat, 
 			mip.size, 
 			mip.size.x);
 	}
-	// return unique_ptr
+	
 	Texture2D *convertToTexture2D(Renderer &renderer);
-	//------ DDS ------
+
+	static Image loadFromFile(const char *filePath, ImageFileFormat format = ImageFileFormat::Autodetect);
+	static Image loadFromStream(std::istream &streamIn, ImageFileFormat format);
 	void loadDDS(std::istream &streamIn);
+
 private:
+	Subimage &getSubimage(unsigned int mipLevel, unsigned int face)
+	{
+		return mSubimages[mipLevel*mNumFaces + face];
+	}
+
+	Subimage const &getSubimage(unsigned int mipLevel, unsigned int face) const
+	{
+		return mSubimages[mipLevel*mNumFaces + face];
+	}
+
 	ElementFormat mFormat;
-	glm::ivec2 mMainSize;
-	int mNumMipLevels;
-	int mNumFaces;
-	static const int kMaxMipLevels = 32;
-	static const int kMaxFaces = 6;
-	// TODO rename MipData: a member with the same name already exists
-	struct MipData {
-		int offset;
-		int bytes;
-		glm::ivec2 size;
-	};
-	MipData mMipMaps[kMaxMipLevels][kMaxFaces];
-	int mDataSize;
-	// necessary for stb_image support (which uses malloc)
-	// Abstract base class needed because reasons 
-	// // (unique_ptr madness and polymorphic deleters)
-	struct PtrWrap {
-		PtrWrap(unsigned char *ptr_) : ptr(ptr_)
-		{}
-		virtual ~PtrWrap() {}
-		unsigned char *ptr;
-	};
-	struct MallocPtrWrap : public PtrWrap {
-		MallocPtrWrap(unsigned char *ptr_) : PtrWrap(ptr_) {}
-		~MallocPtrWrap() { free(ptr); }
-	};
-	struct DefaultPtrWrap : public PtrWrap {
-		DefaultPtrWrap(unsigned char *ptr_) : PtrWrap(ptr_) {}
-		~DefaultPtrWrap() { LOG << "DELETE ";  delete[] ptr; }
-	};
-	std::unique_ptr<PtrWrap> mMipData;
+	unsigned int mNumMipLevels;
+	unsigned int mNumFaces;
+	std::vector<Subimage> mSubimages;
+	std::vector<unsigned char> mData;
 };
 
 #endif

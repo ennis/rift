@@ -1,9 +1,11 @@
 #include <sky.hpp>
-#include <game.hpp>
+#include <effect.hpp>
 
-Sky::Sky() : mTimeOfDay(0.f), mSkybox(Game::renderer())
+Sky::Sky(Renderer &renderer) : 
+	mRenderer(renderer),
+	mTimeOfDay(0.f), 
+	mSkybox()
 {
-	auto &renderer = Game::renderer();
 	mSkyShader = renderer.createShader(
 		loadShaderSource("resources/shaders/sky/vert.glsl").c_str(),
 		loadShaderSource("resources/shaders/sky/frag.glsl").c_str());
@@ -55,7 +57,7 @@ Sky::Sky() : mTimeOfDay(0.f), mSkybox(Game::renderer())
 	Mesh::Attribute attribs[] = { { 0, ElementFormat::Float3 } };
 	Mesh::Buffer buffers[] = { { ResourceUsage::Static } };
 	const void *init[] = { skycubeVertices };
-	mSkybox.allocate(PrimitiveType::Triangle, 1, attribs, 1, buffers, 36, init, 0, ElementFormat::Max, ResourceUsage::Static, nullptr);
+	mSkybox = Mesh(renderer, PrimitiveType::Triangle, 1, attribs, 1, buffers, 36, init, 0, ElementFormat::Max, ResourceUsage::Static, nullptr);
 }
 
 Sky::~Sky()

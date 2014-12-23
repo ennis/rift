@@ -10,10 +10,18 @@ namespace ModelLoadHint
 	static const unsigned int Static = (1 << 1);
 };
 
-// static models
+/**
+ * @brief Classe représentant un modèle 3D
+ * @details 
+ * 
+ */
 class Model
 {
 public:
+	/**
+	 * @brief XXX
+	 * @details non utilisé
+	 */
 	struct GPUVertex {
 		// packed layout (less precise but more compact)
 		glm::vec3 position;
@@ -23,6 +31,11 @@ public:
 		glm::uint32 texcoord;	// packUnorm2x16
 	}; 
 	
+	/**
+	 * @brief XXX
+	 * @details non utilisé
+	 * 
+	 */
 	struct GPUSkinnedVertex {
 		glm::vec3 position;
 		glm::uint32 normal; // packSnorm3x10_1x2
@@ -33,38 +46,91 @@ public:
 		glm::uint64 boneWeights; // packUnorm4x16
 	};
 
+	/**
+	 * @brief Un os du squelette
+	 * @details 
+	 * 
+	 */
 	struct Bone {
+		Bone() = default;
+
+		Bone(Bone &&rhs) : 
+			parent(std::move(rhs.parent)),
+			transform(std::move(rhs.transform)),
+			invBindPose(std::move(rhs.invBindPose)),
+			finalTransform(std::move(rhs.finalTransform)),
+			children(std::move(rhs.children))
+		{}
+
+		// Index (dans la table des os) de l'os parent dans le squelette
 		int parent;
+		// Transformation (du repère local du parent vers le repère local de cet os)
 		glm::mat4 transform;
+		// Inverse bind pose transformation
+		// c'est peut-être utilisé quelque part mais je sais plus où
 		glm::mat4 invBindPose;
+		// ça à l'air d'être utilisé nulle part
 		glm::mat4 finalTransform;
-		// TODO SmallVector
+		// Indices des os descendants
 		std::vector<int> children;
 	};
 
+	/**
+	 * @brief XXX
+	 * @details inutilisé
+	 * 
+	 */
 	struct GPUBone {
 		glm::mat4 transform;
 	};
 
+	/**
+	 * @brief Sous-mesh
+	 * @details Représente une partie des données du maillage
+	 * 
+	 */
 	struct Submesh {
+		// Index du premier vertex 
 		unsigned int startVertex;
+		// Index du premier index (dans la table des indices)
 		unsigned int startIndex;
+		// Nombre de vertices dans la sous-mesh
 		unsigned int numVertices;
+		// Nombre d'indices
 		unsigned int numIndices;
+		// Os du squelette attaché à cette sous-mesh
 		int bone;
 	};
 
-	Model(Renderer &renderer);
-	Model(Renderer &renderer, const char *filePath);
+	/**
+	 * @brief Constructeur
+	 * @details Constructeur
+	 * 
+	 * @param renderer Réference vers le renderer
+	 * @param filePath Chemin du fichier à charger
+	 * 
+	 */
+	Model() = default;
+	Model(Renderer &renderer, const char *filePath, unsigned int hints = 0);
+	Model(Model const &rhs) = delete;
+	Model(Model &&model);
 	~Model();
+	Model &operator=(Model &&model);
 	
-	void loadFromFile(const char *filePath, unsigned int hints = 0);
+	/**
+	 * @brief Chargement depuis un fichier
+	 * @details 
+	 * 
+	 * @param filePath Chemin du fichier à charger
+	 * @param hints Inutilisé
+	 */
+	static Model loadFromFile(Renderer &renderer, const char *filePath, unsigned int hints = 0);
 
-	unsigned int numVertices() const {
-		return mNumVertices;
+	unsigned int getNumVertices() const {
+		return static_cast<unsigned int>(mPositions.size());
 	}
-	unsigned int numIndices() const {
-		return mNumIndices;
+	unsigned int getNumIndices() const {
+		return static_cast<unsigned int>(mIndices.size());
 	}
 	bool isSkinned() const {
 		return !mBoneIDs.empty();
@@ -101,14 +167,25 @@ public:
 	}
 	
 private:
-	Renderer &mRenderer;
+	Model(
+		Renderer &renderer,
+		std::vector<Submesh> &&submeshes,
+		std::vector<uint16_t> &&indices,
+		std::vector<Bone> &&bones,
+		std::vector<glm::vec3> &&positions,
+		std::vector<glm::vec3> &&normals,
+		std::vector<glm::vec3> &&tangents,
+		std::vector<glm::vec3> &&bitangents,
+		std::vector<glm::vec2> &&texcoords,
+		std::vector<glm::u8vec4> &&boneIds,
+		std::vector<glm::vec4> &&boneWeights);
+
+	Renderer *mRenderer = nullptr;
 	std::vector<Submesh> mSubmeshes;
 	//std::vector<Model::Vertex> mVertices;
 	std::vector<uint16_t> mIndices;
 	std::vector<Bone> mBones;
-	std::unique_ptr<Mesh> mMesh;
-	unsigned int mNumVertices;
-	unsigned int mNumIndices;
+	Mesh mMesh;
 	std::vector<glm::vec3> mPositions;
 	std::vector<glm::vec3> mNormals;
 	std::vector<glm::vec3> mTangents;

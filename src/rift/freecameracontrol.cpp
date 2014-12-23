@@ -1,5 +1,5 @@
 #include <freecameracontrol.hpp>
-#include <game.hpp>
+#include <engine.hpp>
 #include <common.hpp>
 
 void FreeCameraController::updateViewport(Camera *camera, glm::vec2 windowSize)
@@ -17,16 +17,16 @@ void FreeCameraController::update(float dt)
 {
 	using namespace glm;
 
-	auto window = Game::instance().window();
+	auto windowHandle = Engine::instance().getWindow().getHandle();
 	auto &transform = getEntity()->getTransform();
 
 	int width, height;
-	glfwGetWindowSize(window, &width, &height);
+	glfwGetWindowSize(windowHandle, &width, &height);
 	updateViewport(mCamera, glm::vec2(float(width), float(height)));
 
 	// handle mouse input
 	double cursorX, cursorY;
-	glfwGetCursorPos(window, &cursorX, &cursorY);
+	glfwGetCursorPos(windowHandle, &cursorX, &cursorY);
 	float dx = (float(cursorX) - mLastMousePos.x) / 100.f;
 	float dy = (float(cursorY) - mLastMousePos.y) / 100.f;
 
@@ -38,8 +38,8 @@ void FreeCameraController::update(float dt)
 	}
 
 	// TODO utiliser l'input manager
-	bool mouseRight = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS;
-	bool mouseLeft = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS;
+	bool mouseRight = glfwGetMouseButton(windowHandle, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS;
+	bool mouseLeft = glfwGetMouseButton(windowHandle, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS;
 
 	if ((mouseRight || mouseLeft) && (dx != 0 || dy != 0)) 
 	{
@@ -64,10 +64,10 @@ void FreeCameraController::update(float dt)
 	vec3 right = transform.rotation * Camera::Right;
 
 	// handle keyboard input
-	int keyW = glfwGetKey(window, GLFW_KEY_Z);
-	int keyA = glfwGetKey(window, GLFW_KEY_Q);
-	int keyS = glfwGetKey(window, GLFW_KEY_S);
-	int keyD = glfwGetKey(window, GLFW_KEY_D);
+	int keyW = glfwGetKey(windowHandle, GLFW_KEY_Z);
+	int keyA = glfwGetKey(windowHandle, GLFW_KEY_Q);
+	int keyS = glfwGetKey(windowHandle, GLFW_KEY_S);
+	int keyD = glfwGetKey(windowHandle, GLFW_KEY_D);
 
 	if (keyW == GLFW_PRESS) {
 		transform.position += 100 * dt * front;
