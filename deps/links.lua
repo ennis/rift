@@ -13,6 +13,13 @@ function use_assimp()
 	links {"assimp"}
 end
 
+function use_librift()
+	links "librift"
+	use_boost_module("filesystem")
+	use_boost_module("system")
+end
+
+
 function use_anttweakbar()
 	includedirs {thisDir.."include/anttweakbar"}
 	links {"AntTweakBar64"}

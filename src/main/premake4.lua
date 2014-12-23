@@ -1,5 +1,5 @@
 project "main"
-	links "librift"
+	use_librift()
 	kind "ConsoleApp"
 	location "../../build/main"
 	language "C++"
