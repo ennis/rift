@@ -143,7 +143,7 @@ void RiftGame::init()
 	immediateContext = immediateContextFactory->create(200, PrimitiveType::Triangle);
 
 	// test loading of animated mesh
-	model = Model::loadFromFile(rd, "resources/models/danbo/danbo.model");
+	model = Model::loadFromFile(rd, "resources/models/danbo/bananas.model");
 	// create an optimized static mesh and send it to the GPU
 	model.optimize();
 	animTest = SkinnedModelRenderer(rd, model);
@@ -226,7 +226,10 @@ void RiftGame::render(float dt)
 	auto ps = eff.compileShader(R, 0, nullptr);
 	ps->setup(R); 
 	R.setConstantBuffer(0, frameData);
-	R.setNamedConstantMatrix4("modelMatrix", Transform().toMatrix());
+	R.setNamedConstantFloat("eta", 2.0f);
+	R.setNamedConstantFloat("shininess", 5.0f);
+	R.setNamedConstantFloat("lightIntensity", 1.0f);
+	R.setNamedConstantMatrix4("modelMatrix", Transform().scale(0.01).rotate(3.1415/2, glm::vec3(0,0,1)).toMatrix());
 	const auto &mesh = model.getMesh();
 	mesh.draw();
 

@@ -46,7 +46,7 @@ vec4 PhongIllum(
     vec4 Rn = reflect(-Ln, Nn);
     vec4 specular = ks * albedo * pow(max(dot(Rn, Vn), 0.0), shininess) * lightIntensity;
     specular *= fresnel(eta, dot(H, Vn));
-	//return  ambient + diffuse + specular;
+	return vec4((ambient + diffuse + specular).xyz, 1.0);
 	// TEST
-	return vec4(position, 1.0f);
+	//return vec4(position, 1.0f);
 }

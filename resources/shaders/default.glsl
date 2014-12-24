@@ -53,7 +53,7 @@ in vec2 fTexcoord;
 // variables de sortie
 out vec4 oColor;
 
-const vec4 vertColor = vec4(0.5f, 0.5f, 0.5f, 1.0f);	
+const vec4 vertColor = vec4(0.9f, 0.9f, 0.1f, 1.0f);	
 
 void main()
 {
