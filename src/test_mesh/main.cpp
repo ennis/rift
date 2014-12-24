@@ -252,7 +252,6 @@ void TestMesh::render(float dt)
 	//	- dire à OpenGL quel index buffer utiliser
 	//  - passer le layout des vertex buffers à OpenGL (c'est moche)
 	//  - envoyer la commande de rendu (glDrawElementsXXX(...))
-
 }
 
 void TestMesh::update(float dt)

@@ -142,7 +142,7 @@ VertexLayout *Mesh::getVertexLayout()
 	return mVertexLayout;
 }
 
-void Mesh::draw()
+void Mesh::draw() const
 {
 	if (mNumIndices == 0) {
 		drawPart(0, mNumVertices);
@@ -152,7 +152,7 @@ void Mesh::draw()
 	}
 }
 
-void Mesh::prepareDraw()
+void Mesh::prepareDraw() const
 {
 	mRenderer->setVertexLayout(mVertexLayout);
 	for (unsigned int ib = 0; ib < mNumBuffers; ++ib) {
@@ -162,7 +162,7 @@ void Mesh::prepareDraw()
 
 void Mesh::drawPart(
 	unsigned int baseVertex,
-	unsigned int numVertices)
+	unsigned int numVertices) const
 {
 	prepareDraw();
 	mRenderer->draw(mPrimitiveType, baseVertex, numVertices);
@@ -171,7 +171,7 @@ void Mesh::drawPart(
 void Mesh::drawPart(
 	unsigned int baseVertex,
 	unsigned int startIndex,
-	unsigned int numIndices)
+	unsigned int numIndices) const
 {
 	assert(mNumIndices != 0);
 	prepareDraw();

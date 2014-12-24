@@ -52,6 +52,7 @@ private:
 	Entity *cameraEntity;
 	Entity *light;
 	Entity *sprite;
+	Effect eff;
 
 	ConstantBuffer *frameData = nullptr;
 	Terrain *terrain = nullptr;
@@ -133,8 +134,7 @@ void RiftGame::init()
 		loadShaderSource("resources/shaders/sprite/frag.glsl").c_str());
 
 	// load from file
-	Effect eff("resources/shaders/default.glsl");
-	auto cs2 = eff.compileShader(rd, 0, nullptr);
+	eff.loadFromFile("resources/shaders/default.glsl");
 
 	// font loading
 	fnt.loadFromFile(rd, "resources/img/fonts/arial.fnt");
@@ -144,6 +144,8 @@ void RiftGame::init()
 
 	// test loading of animated mesh
 	model = Model::loadFromFile(rd, "resources/models/danbo/danbo.model");
+	// create an optimized static mesh and send it to the GPU
+	model.optimize();
 	animTest = SkinnedModelRenderer(rd, model);
 
 	// test loading of animation clips
@@ -221,8 +223,15 @@ void RiftGame::render(float dt)
 		.addVertex(Vertex({ 1, 2, 2 }, { 1.0, 0.5, 0.0, 1.0 }))
 		.render(rc);
 
+	auto ps = eff.compileShader(R, 0, nullptr);
+	ps->setup(R); 
+	R.setConstantBuffer(0, frameData);
+	R.setNamedConstantMatrix4("modelMatrix", Transform().toMatrix());
+	const auto &mesh = model.getMesh();
+	mesh.draw();
+
 	//animTest->applyPose(testPose);
-	animTest.draw(rc);
+	//animTest.draw(rc);
 
 	// render tweak bar
 	//TwDraw();

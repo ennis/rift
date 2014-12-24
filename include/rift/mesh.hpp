@@ -64,14 +64,14 @@ public:
 	IndexBuffer *getIndexBuffer();
 	VertexLayout *getVertexLayout();
 
-	void draw();
+	void draw() const;
 	void drawPart(
 		unsigned int baseVertex,
-		unsigned int numVertices);
+		unsigned int numVertices) const;
 	void drawPart(
 		unsigned int baseVertex,
 		unsigned int startIndex, 
-		unsigned int numIndices);
+		unsigned int numIndices) const;
 
 	unsigned int getNumVertices() const {
 		return mNumVertices;
@@ -82,7 +82,7 @@ public:
 
 private:
 
-	void prepareDraw();
+	void prepareDraw() const;
 
 	Renderer *mRenderer = nullptr;	// borrowed ref
 	// TODO usage-agnostic buffer class

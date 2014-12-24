@@ -116,6 +116,8 @@ public:
 	Model(Model &&model);
 	~Model();
 	Model &operator=(Model &&model);
+	void optimize();
+	const Mesh &getMesh() const;
 	
 	/**
 	 * @brief Chargement depuis un fichier
@@ -167,19 +169,6 @@ public:
 	}
 	
 private:
-	Model(
-		Renderer &renderer,
-		std::vector<Submesh> &&submeshes,
-		std::vector<uint16_t> &&indices,
-		std::vector<Bone> &&bones,
-		std::vector<glm::vec3> &&positions,
-		std::vector<glm::vec3> &&normals,
-		std::vector<glm::vec3> &&tangents,
-		std::vector<glm::vec3> &&bitangents,
-		std::vector<glm::vec2> &&texcoords,
-		std::vector<glm::u8vec4> &&boneIds,
-		std::vector<glm::vec4> &&boneWeights);
-
 	Renderer *mRenderer = nullptr;
 	std::vector<Submesh> mSubmeshes;
 	//std::vector<Model::Vertex> mVertices;
