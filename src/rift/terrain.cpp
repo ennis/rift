@@ -3,23 +3,51 @@
 #include <cmath>
 #include <algorithm>
 #include <effect.hpp>
+#include <gl3error.hpp>
 
 //=============================================================================
-Terrain::Terrain(Renderer &renderer, Image &&heightmapData) :
-mRenderer(renderer),
-mNumSelectedNodes(0), 
+Terrain::Terrain(Terrain &&rhs) :
+mNumSelectedNodes(std::move(rhs.mNumSelectedNodes)),
+mPatchGridSize(std::move(rhs.mPatchGridSize)),
+mPatchNumVertices(std::move(rhs.mPatchNumVertices)),
+mPatchNumIndices(std::move(rhs.mPatchNumIndices)),
+mPatchGridVB(std::move(rhs.mPatchGridVB)),
+mPatchGridIB(std::move(rhs.mPatchGridIB)),
+mVertexLayout(std::move(rhs.mVertexLayout)),
+mHeightmapData(std::move(rhs.mHeightmapData)),
+mHeightmapView(std::move(rhs.mHeightmapView)),
+mHeightmapTexture(std::move(rhs.mHeightmapTexture)),
+mHeightmapVerticalScale(std::move(rhs.mHeightmapVerticalScale)),
+mHeightmapSize(std::move(rhs.mHeightmapSize)),
+mLog2HeightmapSize(std::move(rhs.mLog2HeightmapSize)),
+mNumLodLevels(std::move(rhs.mNumLodLevels)),
+mLodRanges(std::move(rhs.mLodRanges)),
+mEffect(std::move(rhs.mEffect))
+{
+}
+
+//=============================================================================
+Terrain::Terrain(
+	Renderer &renderer, 
+	Image &&heightmapData,
+	Texture2D *verticalTexture,
+	Texture2D *horizontalTexture) :
+mNumSelectedNodes(0),
 mPatchGridSize(16),
 mPatchGridVB(nullptr),
 mPatchGridIB(nullptr),
 mHeightmapData(heightmapData),
 mHeightmapTexture(nullptr),
-mHeightmapVerticalScale(200.f),
+mHeightmapVerticalScale(100.f),
 mHeightmapSize(heightmapData.getImageView(0, 0).size()),
-mNumLodLevels(0),
-mShader(nullptr)
+mNumLodLevels(0)
 {
-	init();
+	initHeightmap(renderer);
+	initEffect(renderer);
+	initGrid(renderer);
+	calculateLodRanges();
 }
+
 
 //=============================================================================
 Terrain::~Terrain()
@@ -30,19 +58,10 @@ Terrain::~Terrain()
 }
 
 //=============================================================================
-void Terrain::init()
-{
-	initShader();
-	initGrid();
-	initHeightmap();
-	calculateLodRanges();
-}
-
-//=============================================================================
-void Terrain::initHeightmap()
+void Terrain::initHeightmap(Renderer &renderer)
 {
 	mHeightmapView = mHeightmapData.getImageView(0, 0).viewAs<uint16_t>();
-	mHeightmapTexture = mRenderer.createTexture2D(
+	mHeightmapTexture = renderer.createTexture2D(
 		mHeightmapSize,
 		1,
 		ElementFormat::Unorm16,
@@ -52,11 +71,10 @@ void Terrain::initHeightmap()
 }
 
 //=============================================================================
-void Terrain::initShader()
+void Terrain::initEffect(Renderer &renderer)
 {
-	mShader = mRenderer.createShader(
-		loadShaderSource("resources/shaders/terrain/vert.glsl").c_str(),
-		loadShaderSource("resources/shaders/terrain/frag.glsl").c_str());
+	mEffect.loadFromFile("resources/shaders/terrain.glsl");
+	mShader = mEffect.compileShader(renderer);
 }
 
 //=============================================================================
@@ -77,7 +95,7 @@ void Terrain::render(RenderContext const &renderContext)
 }
 
 //=============================================================================
-void Terrain::initGrid()
+void Terrain::initGrid(Renderer &renderer)
 {
 	// number of vertices 
 	int gs = mPatchGridSize+1;
@@ -104,12 +122,12 @@ void Terrain::initGrid()
 		}
 	}
 	// create VB and IB
-	mPatchGridVB = mRenderer.createVertexBuffer(
+	mPatchGridVB = renderer.createVertexBuffer(
 		2*sizeof(float), 
 		mPatchNumVertices,
 		ResourceUsage::Static, 
 		vertices);
-	mPatchGridIB = mRenderer.createIndexBuffer(
+	mPatchGridIB = renderer.createIndexBuffer(
 		sizeof(uint16_t),
 		mPatchNumIndices,
 		ResourceUsage::Static,
@@ -118,7 +136,7 @@ void Terrain::initGrid()
 	const VertexElement elem_v2f[1] = {
 		VertexElement(0, 0, 0, 2 * sizeof(float), ElementFormat::Float2)
 	};
-	mVertexLayout = mRenderer.createVertexLayout(1, elem_v2f);
+	mVertexLayout = renderer.createVertexLayout(1, elem_v2f);
 
 	delete[] vertices;
 	delete[] indices;
@@ -128,22 +146,23 @@ void Terrain::initGrid()
 void Terrain::renderSelection(RenderContext const &renderContext)
 {
 	// TODO support renderstates
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	mRenderer.setVertexBuffer(0, mPatchGridVB);
-	mRenderer.setIndexBuffer(mPatchGridIB);
-	mRenderer.setVertexLayout(mVertexLayout);
-	mRenderer.setShader(mShader);
-	mRenderer.setConstantBuffer(0, renderContext.perFrameShaderParameters);
-	mRenderer.setNamedConstantMatrix4("modelMatrix",
+	auto &renderer = *renderContext.renderer;
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	renderer.setVertexBuffer(0, mPatchGridVB);
+	renderer.setIndexBuffer(mPatchGridIB);
+	renderer.setVertexLayout(mVertexLayout);
+	mShader->setup(renderer);
+	renderer.setConstantBuffer(0, renderContext.perFrameShaderParameters);
+	renderer.setNamedConstantMatrix4("modelMatrix",
 		Transform().scale(1.f).toMatrix());
-	mRenderer.setNamedConstantInt2("heightmapSize", mHeightmapSize);
-	mRenderer.setNamedConstantFloat("heightmapScale", mHeightmapVerticalScale);
-	mRenderer.setTexture(0, mHeightmapTexture);
-	for (int i = 0; i < mNumSelectedNodes; ++i) {
+	renderer.setNamedConstantFloat2("heightmapSize", glm::vec2(mHeightmapSize.x, mHeightmapSize.y));
+	renderer.setNamedConstantFloat("heightmapScale", mHeightmapVerticalScale);
+	renderer.setTexture(0, mHeightmapTexture);
+	for (int i = 0; i < mSelectedNodes.size(); ++i) {
 		Node const &node = mSelectedNodes[i];
 		renderNode(renderContext, node);
 	}
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 //=============================================================================
@@ -152,10 +171,11 @@ void Terrain::renderNode(RenderContext const &renderContext, Node const &node)
 	// just update the uniforms and do the draw call:
 	// the resources are already bound
 	// patch offset in world coordinates
-	mRenderer.setNamedConstantFloat2("patchOffset", glm::vec2(node.x, node.y));
-	mRenderer.setNamedConstantFloat("patchScale", float(node.size));
-	mRenderer.setNamedConstantInt("lodLevel", node.lod);
-	mRenderer.drawIndexed(
+	auto &renderer = *renderContext.renderer;
+	renderer.setNamedConstantFloat2("patchOffset", glm::vec2(node.x, node.y));
+	renderer.setNamedConstantFloat("patchScale", float(node.size));
+	renderer.setNamedConstantInt("lodLevel", node.lod);
+	renderer.drawIndexed(
 		PrimitiveType::Triangle, 
 		0, 
 		mPatchNumVertices, 
@@ -229,16 +249,13 @@ bool Terrain::nodeIntersectLodRange(
 //=============================================================================
 void Terrain::addNodeToSelection(Node const &node)
 {
-	if (mNumSelectedNodes >= kMaxNodes) {
-		return;
-	}
-	mSelectedNodes[mNumSelectedNodes++] = node;
+	mSelectedNodes.push_back(node);
 }
 
 //=============================================================================
 void Terrain::clearNodeSelection()
 {
-	mNumSelectedNodes = 0;
+	mSelectedNodes.clear();
 }
 
 //=============================================================================

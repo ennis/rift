@@ -34,7 +34,7 @@ vec4 PhongIllum(
 	float eta, 
 	float shininess)
 {
-	vec4 Ln = normalize(-gRenderData.lightDir),
+	vec4 Ln = normalize(gRenderData.lightDir),
          Nn = normalize(vec4(normal, 0.0)),
          Vn = normalize(gRenderData.eyePos - vec4(position, 1.0f));
     vec4 H = normalize(Ln + Vn);

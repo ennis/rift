@@ -19,6 +19,8 @@
 #include <animationclip.hpp>
 #include <modelrenderer.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/optional.hpp>
+#include <boost/utility/in_place_factory.hpp>
 
 //============================================================================
 // Classe de base du jeu
@@ -60,8 +62,15 @@ private:
 	Entity *sprite;
 
 	ConstantBuffer *frameData = nullptr;
-	Terrain *terrain = nullptr;
-	Sky *sky = nullptr;
+	// Terrain class is non-nullable (non default-constructible), but we cannot 
+	// initialize it in the member initialization list (we need to load an image first, perform various things, etc.)
+	// So we need to use a wrapper class that allows an object to be null
+	// until we are ready to construct it => boost::optional (soon std::optional)
+	// (this is absolutely disgusting)
+	// TODO maybe allow null-states / two-stage initialization
+	boost::optional<Terrain> terrain;
+	boost::optional<Sky> sky;
+
 	TwBar *tweakBar = nullptr;
 
 	float twSunDirection[3];
@@ -122,15 +131,15 @@ void RiftGame::init()
 
 	frameData = rd.createConstantBuffer(sizeof(PerFrameShaderParameters), ResourceUsage::Dynamic, nullptr);
 
-	// TEST TEST
-	sky = new Sky(rd);
+	// need to use emplace for nonmoveable types
+	sky.emplace(rd);
 	sky->setTimeOfDay(21.0f);
 
 	// terrain
 	{
-		Image heightmapData = Image::loadFromFile("resources/img/terrain/height.dds");
+		Image heightmapData = Image::loadFromFile("resources/img/terrain/tamrielheightsmall.dds");
 		assert(heightmapData.format() == ElementFormat::Unorm16);
-		terrain = new Terrain(rd, std::move(heightmapData));
+		terrain.emplace(rd, std::move(heightmapData), nullptr, nullptr);
 	}
 
 	// Effect test
@@ -195,6 +204,7 @@ void RiftGame::render(float dt)
 	PerFrameShaderParameters pfsp;
 	pfsp.eyePos = glm::vec4(cameraEntity->getTransform().position, 0.0f);
 	pfsp.lightDir = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+	pfsp.lightDir = glm::vec4(twSunDirection[0], twSunDirection[1], twSunDirection[2], 0.0f);
 	pfsp.projMatrix = rc.projMatrix;
 	pfsp.viewMatrix = rc.viewMatrix;
 	pfsp.viewportSize = win_size;
@@ -250,7 +260,7 @@ void RiftGame::render(float dt)
 	//animTest.draw(rc);
 
 	// render tweak bar
-	//TwDraw();
+	TwDraw();
 }
 
 void RiftGame::update(float dt)
@@ -273,8 +283,6 @@ void RiftGame::tearDown()
 	TwDeleteAllBars();
 	Entity::destroy(cameraEntity);
 	Entity::destroy(light);
-	delete terrain;
-	delete sky;
 }
 
 int main()
