@@ -30,7 +30,7 @@ CompiledShader *Effect::compileShader(
 	Effect::Keyword *additionalKeywords)
 {
 	auto hash = getHash(numAdditionalKeywords, additionalKeywords);
-	LOG << "Hash " << hash;
+	//LOG << "Hash " << hash;
 	auto &cs = mShaderCache[hash];
 	if (cs != nullptr) {
 		// already compiled

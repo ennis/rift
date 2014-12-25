@@ -3,6 +3,7 @@
 
 #include <renderer.hpp>
 #include <effect.hpp>
+#include <renderable.hpp>
 
 //=============================================================================
 struct TextureState
@@ -33,8 +34,25 @@ struct TextureState
 class Material
 {
 public:
+	Material() : mEffect(nullptr)
+	{
+		mSamplers.fill(nullptr);
+	}
+
 	Material(Effect &effect) : mEffect(&effect)
-	{}
+	{
+		mSamplers.fill(nullptr);
+	}
+
+	Effect *getEffect() const 
+	{
+		return mEffect;
+	}
+
+	void setEffect(Effect &effect)
+	{
+		mEffect = &effect;
+	}
 
 	void setParameter(const char *name, float value)
 	{
@@ -122,7 +140,7 @@ public:
 
 	// for each parameter, call setNamedConstantXXX
 	// for each sampler, call setTexture
-	void setup(Renderer &renderer);
+	void setup(const RenderContext &context) const;
 
 private:
 	struct Parameter

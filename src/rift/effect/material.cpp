@@ -1,7 +1,13 @@
 #include <material.hpp>
 
-void Material::setup(Renderer &renderer)
+void Material::setup(const RenderContext &context) const
 {
+	auto &renderer = *context.renderer;
+	// setup effect
+	auto cs = mEffect->compileShader(renderer);
+	cs->setup(renderer);
+	renderer.setConstantBuffer(0, context.perFrameShaderParameters);
+
 	for (auto &p : mParameters)
 	{
 		auto &pp = p.second;
@@ -47,6 +53,7 @@ void Material::setup(Renderer &renderer)
 
 	for (int i = 0; i < 16; ++i)
 	{
-		renderer.setTexture(i, mSamplers[i]);
+		if (mSamplers[i])
+			renderer.setTexture(i, mSamplers[i]);
 	}
 }

@@ -41,7 +41,7 @@ struct Transform
 
 	//
 	// matrice 4x4 correspondante
-	glm::mat4 toMatrix() {
+	glm::mat4 toMatrix() const {
 		return glm::translate(position) * glm::scale(scaling) * glm::toMat4(rotation);
 	}
 

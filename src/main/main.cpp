@@ -17,6 +17,7 @@
 #include <model.hpp>
 #include <skinnedmodelrenderer.hpp>
 #include <animationclip.hpp>
+#include <modelrenderer.hpp>
 #include <boost/filesystem.hpp>
 
 //============================================================================
@@ -43,7 +44,12 @@ private:
 
 	std::unique_ptr<HUDTextRenderer> hudTextRenderer;
 	std::unique_ptr<ImmediateContextFactory> immediateContextFactory;
+
+	Effect eff;
+	Material material;
 	Model model;
+	ModelRenderer staticModelRenderer;
+
 	SkinnedModelRenderer animTest;
 	Pose testPose;
 	//std::unique_ptr<AnimatedMesh> animTest;
@@ -52,7 +58,6 @@ private:
 	Entity *cameraEntity;
 	Entity *light;
 	Entity *sprite;
-	Effect eff;
 
 	ConstantBuffer *frameData = nullptr;
 	Terrain *terrain = nullptr;
@@ -143,10 +148,16 @@ void RiftGame::init()
 	immediateContext = immediateContextFactory->create(200, PrimitiveType::Triangle);
 
 	// test loading of animated mesh
-	model = Model::loadFromFile(rd, "resources/models/danbo/bananas.model");
+	model = Model::loadFromFile(rd, "resources/models/animated/mokou.model");
 	// create an optimized static mesh and send it to the GPU
 	model.optimize();
 	animTest = SkinnedModelRenderer(rd, model);
+	staticModelRenderer.setModel(model);
+	material.setEffect(eff);
+	material.setParameter("eta", 2.0f);
+	material.setParameter("shininess", 5.0f);
+	material.setParameter("lightIntensity", 1.0f);
+	staticModelRenderer.setMaterial(0, material);
 
 	// test loading of animation clips
 	AnimationClip clip = AnimationClip::loadFromFile("resources/models/danbo/danbo@animation.anim");
@@ -223,7 +234,7 @@ void RiftGame::render(float dt)
 		.addVertex(Vertex({ 1, 2, 2 }, { 1.0, 0.5, 0.0, 1.0 }))
 		.render(rc);
 
-	auto ps = eff.compileShader(R, 0, nullptr);
+	/*auto ps = eff.compileShader(R, 0, nullptr);
 	ps->setup(R); 
 	R.setConstantBuffer(0, frameData);
 	R.setNamedConstantFloat("eta", 2.0f);
@@ -231,7 +242,9 @@ void RiftGame::render(float dt)
 	R.setNamedConstantFloat("lightIntensity", 1.0f);
 	R.setNamedConstantMatrix4("modelMatrix", Transform().scale(0.01).rotate(3.1415/2, glm::vec3(0,0,1)).toMatrix());
 	const auto &mesh = model.getMesh();
-	mesh.draw();
+	mesh.draw();*/
+
+	staticModelRenderer.render(rc, Transform());
 
 	//animTest->applyPose(testPose);
 	//animTest.draw(rc);
