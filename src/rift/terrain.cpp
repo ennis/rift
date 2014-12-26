@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <effect.hpp>
 #include <gl3error.hpp>
+#include <glm/gtc/packing.hpp>
 
 //=============================================================================
 Terrain::Terrain(Terrain &&rhs) :
@@ -33,7 +34,7 @@ Terrain::Terrain(
 	Texture2D *verticalTexture,
 	Texture2D *horizontalTexture) :
 mNumSelectedNodes(0),
-mPatchGridSize(16),
+mPatchGridSize(32),
 mPatchGridVB(nullptr),
 mPatchGridIB(nullptr),
 mHeightmapData(heightmapData),
@@ -58,6 +59,13 @@ Terrain::~Terrain()
 }
 
 //=============================================================================
+float Terrain::getHeight(const glm::ivec2 &position)
+{
+	auto p = glm::clamp(position, glm::ivec2{ 0, 0 }, glm::ivec2{ mHeightmapSize.x - 1, mHeightmapSize.y - 1 });
+	return mHeightmapVerticalScale * float(mHeightmapView(p.x, p.y)) / UINT16_MAX;
+}
+
+//=============================================================================
 void Terrain::initHeightmap(Renderer &renderer)
 {
 	mHeightmapView = mHeightmapData.getImageView(0, 0).viewAs<uint16_t>();
@@ -67,7 +75,33 @@ void Terrain::initHeightmap(Renderer &renderer)
 		ElementFormat::Unorm16,
 		mHeightmapSize.x * mHeightmapSize.y * sizeof(uint16_t),
 		mHeightmapView.data());
-	mLog2HeightmapSize = std::max(1, int(log2(std::max(mHeightmapSize.x / mPatchGridSize, 1))) + 1);
+	mLog2HeightmapSize = std::max(1, int(std::log2(std::max(mHeightmapSize.x / mPatchGridSize , 1))) + 1);
+
+	// compute normals
+	// TODO more compact format
+	mHeightmapNormals.allocate(ElementFormat::Float3, glm::ivec3(mHeightmapSize, 1.f), 1);
+	mHeightmapNormalsView = mHeightmapNormals.getImageView().viewAs<glm::vec3>();
+
+	LOG << "Calulating terrain normal map...";
+	for (int x = 0; x < mHeightmapSize.x; ++x) {
+		for (int y = 0; y < mHeightmapSize.y; ++y) {
+			// skewed 5-point stencil
+			float h00 = getHeight({ x, y });
+			float h01 = getHeight({ x + 1 , y });
+			float h10 = getHeight({ x , y + 1 });
+			float h11 = getHeight({ x + 1, y + 1 });
+
+			float gx = 0.5f * (h11 - h00 + h01 - h10);
+			float gy = 0.5f * (h00 - h11 + h01 - h10);
+
+			glm::vec3 n{ -gx, 1.414213f, -gy };	// sqrt(2)/2 ???
+			n = glm::normalize(n);
+			mHeightmapNormalsView(x, y) = n;
+		}
+	}
+
+	// create texture
+	mHeightmapNormalTexture = mHeightmapNormals.convertToTexture2D(renderer);
 }
 
 //=============================================================================
@@ -158,11 +192,12 @@ void Terrain::renderSelection(RenderContext const &renderContext)
 	renderer.setNamedConstantFloat2("heightmapSize", glm::vec2(mHeightmapSize.x, mHeightmapSize.y));
 	renderer.setNamedConstantFloat("heightmapScale", mHeightmapVerticalScale);
 	renderer.setTexture(0, mHeightmapTexture);
+	renderer.setTexture(1, mHeightmapNormalTexture);
 	for (int i = 0; i < mSelectedNodes.size(); ++i) {
 		Node const &node = mSelectedNodes[i];
 		renderNode(renderContext, node);
 	}
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 //=============================================================================

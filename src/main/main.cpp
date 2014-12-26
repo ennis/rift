@@ -137,7 +137,7 @@ void RiftGame::init()
 
 	// terrain
 	{
-		Image heightmapData = Image::loadFromFile("resources/img/terrain/tamrielheightsmall.dds");
+		Image heightmapData = Image::loadFromFile("resources/img/terrain/island.dds");
 		assert(heightmapData.format() == ElementFormat::Unorm16);
 		terrain.emplace(rd, std::move(heightmapData), nullptr, nullptr);
 	}
@@ -204,7 +204,7 @@ void RiftGame::render(float dt)
 	PerFrameShaderParameters pfsp;
 	pfsp.eyePos = glm::vec4(cameraEntity->getTransform().position, 0.0f);
 	pfsp.lightDir = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
-	pfsp.lightDir = glm::vec4(twSunDirection[0], twSunDirection[1], twSunDirection[2], 0.0f);
+	//pfsp.lightDir = glm::vec4(twSunDirection[0], twSunDirection[1], twSunDirection[2], 0.0f);
 	pfsp.projMatrix = rc.projMatrix;
 	pfsp.viewMatrix = rc.viewMatrix;
 	pfsp.viewportSize = win_size;

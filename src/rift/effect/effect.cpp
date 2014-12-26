@@ -64,8 +64,8 @@ CompiledShader *Effect::compileShader(
 		fs = preprocess(mFSPath, fsIn, numAdditionalKeywords, additionalKeywords, ShaderStage::Fragment);
 	}
 	// create shader
-	LOG << vs;
-	LOG << fs;
+	//LOG << vs;
+	//LOG << fs;
 	auto sh = renderer.createShader(vs.c_str(), fs.c_str());
 	cs = std::unique_ptr<CompiledShader>(new CompiledShader(*this, hash, sh, RenderState()));
 	return cs.get();

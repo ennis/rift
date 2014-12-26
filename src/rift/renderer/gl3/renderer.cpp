@@ -178,8 +178,8 @@ static const GLPixelFormat sGLPixelFormats[(int)ElementFormat::Max] =
 	/*Sint8x2*/    {GL_RG8I, GL_RG_INTEGER, GL_BYTE, false},
 	/*Unorm8x2*/   {GL_RG8, GL_RG, GL_UNSIGNED_BYTE, false},
 	/*Snorm8x2*/   {GL_RG8_SNORM, GL_RG, GL_BYTE, false},
-	/*Unorm10x3_1x2*/ {GL_RGB10_A2UI, GL_RGBA, GL_UNSIGNED_INT_10_10_10_2, false},
-	/*Snorm10x3_1x2*/ {0, 0, 0, false}, 
+	/*Unorm10x3_1x2*/{ GL_RGB10_A2, GL_RGBA, GL_UNSIGNED_INT_10_10_10_2, false },	// unsigned normalized
+	/*Snorm10x3_1x2*/{ GL_RGB10_A2, GL_RGBA, GL_UNSIGNED_INT_10_10_10_2, true },	// XXX unsupported (no signed-normalized version)
 	/*BC1*/        {GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_RGBA, 0, true},
 	/*BC2*/        {GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_RGBA, 0, true},
 	/*BC3*/        {GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_RGBA, 0, true},

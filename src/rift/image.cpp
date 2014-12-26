@@ -14,11 +14,18 @@ Image::Image() :
 }
 
 //====================================
-Image::Image(ElementFormat format, glm::ivec3 size, unsigned int numMipLevels, unsigned int numFaces) :
-mFormat(format),
-mNumMipLevels(numMipLevels),
-mNumFaces(numFaces)
+Image::Image(ElementFormat format, glm::ivec3 size, unsigned int numMipLevels, unsigned int numFaces)
 {
+	allocate(format, size, numMipLevels, numFaces);
+}
+
+//====================================
+void Image::allocate(ElementFormat format, glm::ivec3 size, unsigned int numMipLevels, unsigned int numFaces)
+{
+	mFormat = format;
+	mNumMipLevels = numMipLevels;
+	mNumFaces = numFaces;
+
 	auto elemsize = getElementFormatSize(format);
 	std::size_t len = size.x * size.y * size.z * elemsize * numFaces * numMipLevels;
 	std::size_t offset = 0;

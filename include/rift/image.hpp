@@ -37,7 +37,7 @@ public:
 
 	Image &operator=(Image &&rhs);
 
-	void allocate(ElementFormat format, glm::ivec3 size, int numMips);
+	void allocate(ElementFormat format, glm::ivec3 size, unsigned int numMipLevels = 1, unsigned int numFaces = 1);
 
 	ElementFormat format() const {
 		return mFormat;

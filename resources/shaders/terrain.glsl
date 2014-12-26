@@ -3,6 +3,7 @@
 #pragma include <scene.glsl>
 
 layout(binding = 0) uniform sampler2D heightmap;
+layout(binding = 1) uniform sampler2D normalMap;
 uniform mat4 modelMatrix;
 // position of the grid in world space (in meters)
 uniform vec2 patchOffset;
@@ -37,17 +38,31 @@ float sampleHeight(vec2 coords)
 void main() 
 {
 	const float ddp = 1.0;
-	const vec2 dx = vec2(1.0, 0);
-	const vec2 dy = vec2(0, 1.0);
+	const vec2 dx = vec2(ddp, 0);
+	const vec2 dy = vec2(0, ddp);
 
 	// model space 2D position (heightmap sampling coordinates)
 	// position in [0,1]
 	vec2 pos = patchOffset + position * patchScale;
 
+	//    h0
+	// h1 hi h2
+	//    h3
+	/*float h0 = sampleHeight(pos-dy); 
+	float h1 = sampleHeight(pos-dx); 
+	float h2 = sampleHeight(pos+dx); 
+	float h3 = sampleHeight(pos+dy); 
+	float hp = sampleHeight(pos);
+
+	float d0 = abs(h0-hp), d1 = abs(h1-hp), d2=abs(h2-hp), d3=abs(h3-hp);
+	float ds = d0+d1+d2+d3+0.01;
+	d0 /= ds; d1 /= ds; d2 /= ds; d3 /= ds; 
+	vec2 dir = 0.5 * (d0*(-dy) + d1*(-dx) + d2*(+dx) + d3*(+dy)); */
+
 	vec2 dd = vec2(sampleHeight(pos+dx)-sampleHeight(pos-dx),
 					sampleHeight(pos+dy)-sampleHeight(pos-dy));
-
 	vec3 normal = normalize(vec3(-dd.x, 2.0*ddp, -dd.y));
+	//vec3 normal = texture(normalMap, ((pos+vec2(0.5,0.5))/heightmapSize)).xyz;
 
 	// model space 3D position
 	vec4 disp = vec4(pos.x, sampleHeight(pos), pos.y, 1.f);
@@ -57,6 +72,7 @@ void main()
     // world-space position
     fPosition = (modelMatrix * disp).xyz;
     fNormal = normal;
+    //fNormal = vec3(hp,hp,hp)/heightmapScale;
 	fTexcoord = pos / heightmapSize;
 }
 
@@ -73,7 +89,13 @@ in vec2 fTexcoord;
 //--- OUT ----------------------------
 out vec4 oColor;
 
+
 //--- CODE ---------------------------
+float sampleHeight2(vec2 tex)
+{
+	return heightmapScale*texture(heightmap, tex).x;
+}
+
 const vec4 lodColorMap[10] = vec4[](
 	vec4(1.0, 0.0, 0.0, 1.0),
 	vec4(0.9, 0.1, 0.0, 1.0),
@@ -88,42 +110,17 @@ const vec4 lodColorMap[10] = vec4[](
 );
 
 //--- CODE ---------------------------
-float sampleTex(vec2 texcoords)
-{
-	return texture(heightmap, texcoords).x;
-}
-
 void main()
 {	
-	vec4 tmpcolor = lodColorMap[lodLevel];
-	const float ddp = 2.0;
-	const vec2 dx = vec2(ddp, 0)/heightmapSize.x;
-	const vec2 dy = vec2(0, ddp)/heightmapSize.y;
-
-	// http://stackoverflow.com/questions/5281261/generating-a-normal-map-from-a-height-map
-	float s[9];
-	s[0] = sampleTex(fTexcoord-dx-dy);
-	s[1] = sampleTex(fTexcoord   -dy);
-	s[2] = sampleTex(fTexcoord+dx-dy);
-	s[3] = sampleTex(fTexcoord-dx);
-	s[4] = sampleTex(fTexcoord);
-	s[5] = sampleTex(fTexcoord+dx);
-	s[6] = sampleTex(fTexcoord-dx+dy);
-	s[7] = sampleTex(fTexcoord   +dy);
-	s[8] = sampleTex(fTexcoord+dx+dy);
-
-	vec3 n;
-	n.x = heightmapScale * -(s[2]-s[0]+2*(s[5]-s[3])+s[8]-s[6]);
-	n.y = heightmapScale * -(s[6]-s[0]+2*(s[7]-s[1])+s[8]-s[2]);
-	n.z = 1.0;
-	n = normalize(n);
-
+	//vec4 tmpcolor = lodColorMap[lodLevel];
+	vec4 tmpcolor = vec4(0.7, 0.7, 0.7, 1.0);
+	vec3 normal = texture(normalMap, fTexcoord).xyz;
 	oColor = PhongIllum(tmpcolor, 
-				n, // normal
+				fNormal, // normal
 				fPosition,	// position
 				0.0,	// ka
-				0.0,	// ks
-				1.0, 	// kd
+				0.4,	// ks
+				0.8, 	// kd
 				1, 
 				1, 
 				1);

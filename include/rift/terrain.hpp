@@ -25,7 +25,8 @@ public:
 	Terrain &operator=(Terrain &&rhs) = delete;
 	~Terrain();
 
-	void render(RenderContext const &renderContext);
+	void render(const RenderContext &renderContext);
+	float getHeight(const glm::ivec2 &position);
 
 private:
 	void initHeightmap(Renderer &renderer);
@@ -40,8 +41,8 @@ private:
 		int x, y, size, lod;
 	};
 
-	void renderSelection(RenderContext const &renderContext);
-	void renderNode(RenderContext const &renderContext, Node const &node);
+	void renderSelection(const RenderContext &renderContext);
+	void renderNode(const RenderContext &renderContext, const Node &node);
 
 	void nodeLodSelect(
 		Node const &node, 
@@ -66,7 +67,11 @@ private:
 	// Terrain heightmap data & texture
 	Image mHeightmapData;
 	ImageView<uint16_t> mHeightmapView;
+	// Terrain normal map
+	Image mHeightmapNormals;
+	ImageView<glm::vec3> mHeightmapNormalsView;
 	Texture2D *mHeightmapTexture; // unique_ptr
+	Texture2D *mHeightmapNormalTexture;	// owned
 	// Heightmap vertical scale
 	float mHeightmapVerticalScale;
 	// Heightmap size in pixels
