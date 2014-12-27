@@ -4,6 +4,8 @@
 
 layout(binding = 0) uniform sampler2D heightmap;
 layout(binding = 1) uniform sampler2D normalMap;
+layout(binding = 2) uniform sampler2D slopeTex;
+layout(binding = 3) uniform sampler2D flatTex;
 uniform mat4 modelMatrix;
 // position of the grid in world space (in meters)
 uniform vec2 patchOffset;
@@ -15,6 +17,9 @@ uniform vec2 heightmapSize;
 uniform float heightmapScale;
 // LOD level
 uniform int lodLevel;
+// texture scale
+uniform float flatTextureScale;
+uniform float slopeTextureScale;
 
 //===================================================================
 #ifdef _VERTEX_
@@ -113,9 +118,18 @@ const vec4 lodColorMap[10] = vec4[](
 void main()
 {	
 	//vec4 tmpcolor = lodColorMap[lodLevel];
-	vec4 tmpcolor = vec4(0.7, 0.7, 0.7, 1.0);
-	vec3 normal = texture(normalMap, fTexcoord).xyz;
-	oColor = PhongIllum(tmpcolor, 
+	//vec4 tmpcolor = vec4(0.7, 0.7, 0.7, 1.0);
+
+	float flatness = smoothstep(0.8, 0.85, abs(fNormal.y));
+	float dir = abs(atan(fNormal.z, fNormal.x) / 3.14159);
+
+	vec4 flatColor = texture(flatTex, fPosition.xz);
+	vec4 slopeColorX = texture(slopeTex, fPosition.yz);
+	vec4 slopeColorZ = texture(slopeTex, fPosition.xy);
+
+	vec4 final = mix(mix(slopeColorX, slopeColorZ, dir), flatColor, flatness);
+
+	oColor = PhongIllum(final, 
 				fNormal, // normal
 				fPosition,	// position
 				0.0,	// ka
@@ -124,7 +138,7 @@ void main()
 				1, 
 				1, 
 				1);
-	//oColor = vec4(fNormal, 1.0f);
+	//oColor = vec4(slope, slope, slope, 1.0f);
 }
 
 #endif

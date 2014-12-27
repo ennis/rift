@@ -71,6 +71,9 @@ private:
 	boost::optional<Terrain> terrain;
 	boost::optional<Sky> sky;
 
+	Texture2D *terrainSlopeTex;
+	Texture2D *terrainFlatTex;
+
 	TwBar *tweakBar = nullptr;
 
 	float twSunDirection[3];
@@ -137,9 +140,11 @@ void RiftGame::init()
 
 	// terrain
 	{
-		Image heightmapData = Image::loadFromFile("resources/img/terrain/island.dds");
+		Image heightmapData = Image::loadFromFile("resources/img/terrain/tamrielheightsmall.dds");
 		assert(heightmapData.format() == ElementFormat::Unorm16);
-		terrain.emplace(rd, std::move(heightmapData), nullptr, nullptr);
+		terrainSlopeTex = Image::loadFromFile("resources/img/rock2.dds").convertToTexture2D(rd);
+		terrainFlatTex = Image::loadFromFile("resources/img/grasstile_c.dds").convertToTexture2D(rd);
+		terrain.emplace(rd, std::move(heightmapData), terrainSlopeTex, terrainFlatTex);
 	}
 
 	// Effect test

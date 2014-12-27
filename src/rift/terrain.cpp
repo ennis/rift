@@ -31,14 +31,16 @@ mEffect(std::move(rhs.mEffect))
 Terrain::Terrain(
 	Renderer &renderer, 
 	Image &&heightmapData,
-	Texture2D *verticalTexture,
-	Texture2D *horizontalTexture) :
+	Texture2D *slopeTexture,
+	Texture2D *flatTexture) :
 mNumSelectedNodes(0),
 mPatchGridSize(32),
 mPatchGridVB(nullptr),
 mPatchGridIB(nullptr),
 mHeightmapData(heightmapData),
-mHeightmapTexture(nullptr),
+mHeightmapTexture(nullptr),	
+mSlopeTexture(slopeTexture),
+mFlatTexture(flatTexture),
 mHeightmapVerticalScale(100.f),
 mHeightmapSize(heightmapData.getImageView(0, 0).size()),
 mNumLodLevels(0)
@@ -193,6 +195,8 @@ void Terrain::renderSelection(RenderContext const &renderContext)
 	renderer.setNamedConstantFloat("heightmapScale", mHeightmapVerticalScale);
 	renderer.setTexture(0, mHeightmapTexture);
 	renderer.setTexture(1, mHeightmapNormalTexture);
+	renderer.setTexture(2, mSlopeTexture);
+	renderer.setTexture(3, mFlatTexture);
 	for (int i = 0; i < mSelectedNodes.size(); ++i) {
 		Node const &node = mSelectedNodes[i];
 		renderNode(renderContext, node);

@@ -14,8 +14,8 @@ public:
 	Terrain(
 		Renderer &renderer, 
 		Image &&heightmapData,
-		Texture2D *verticalTexture,
-		Texture2D *horizontalTexture);
+		Texture2D *slopeTexture,
+		Texture2D *flatTexture);
 
 	Terrain(const Terrain &) = delete;
 	Terrain &operator=(const Terrain &) = delete;
@@ -72,6 +72,8 @@ private:
 	ImageView<glm::vec3> mHeightmapNormalsView;
 	Texture2D *mHeightmapTexture; // unique_ptr
 	Texture2D *mHeightmapNormalTexture;	// owned
+	Texture2D *mSlopeTexture;
+	Texture2D *mFlatTexture;
 	// Heightmap vertical scale
 	float mHeightmapVerticalScale;
 	// Heightmap size in pixels
