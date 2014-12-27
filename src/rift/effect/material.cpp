@@ -1,12 +1,10 @@
 #include <material.hpp>
 
-void Material::setup(const RenderContext &context) const
+void Material::setup(Renderer &renderer) const
 {
-	auto &renderer = *context.renderer;
 	// setup effect
 	auto cs = mEffect->compileShader(renderer);
 	cs->setup(renderer);
-	renderer.setConstantBuffer(0, context.perFrameShaderParameters);
 
 	for (auto &p : mParameters)
 	{

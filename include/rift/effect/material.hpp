@@ -140,7 +140,7 @@ public:
 
 	// for each parameter, call setNamedConstantXXX
 	// for each sampler, call setTexture
-	void setup(const RenderContext &context) const;
+	void setup(Renderer &renderer) const;
 
 private:
 	struct Parameter

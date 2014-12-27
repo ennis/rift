@@ -60,9 +60,18 @@ public:
 		unsigned int numVertices,
 		const void *data);
 
-	VertexBuffer *getVertexBuffer(unsigned int id);
-	IndexBuffer *getIndexBuffer();
-	VertexLayout *getVertexLayout();
+	const std::array<VertexBuffer*,16> &getVertexBuffers() const {
+		return mVertexBuffers;
+	}
+	IndexBuffer *getIndexBuffer() const {
+		return mIndexBuffer;
+	}
+	VertexLayout *getVertexLayout() const {
+		return mVertexLayout;
+	}
+	PrimitiveType getPrimitiveType() const {
+		return mPrimitiveType;
+	}
 
 	void draw() const;
 	void drawPart(

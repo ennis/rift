@@ -127,21 +127,6 @@ void Mesh::updateIndices(
 	mRenderer->updateBuffer(mIndexBuffer, startIndex*mIndexStride, numIndices * mIndexStride, data);
 }
 
-VertexBuffer *Mesh::getVertexBuffer(unsigned int id) 
-{
-	return mVertexBuffers[id];
-}
-
-IndexBuffer *Mesh::getIndexBuffer()
-{
-	return mIndexBuffer;
-}
-
-VertexLayout *Mesh::getVertexLayout()
-{
-	return mVertexLayout;
-}
-
 void Mesh::draw() const
 {
 	if (mNumIndices == 0) {

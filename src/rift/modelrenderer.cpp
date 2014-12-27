@@ -9,9 +9,10 @@ void ModelRenderer::render(const RenderContext &context, const Transform &modelT
 		if (mMaterialMap[i] != nullptr) {
 			auto mat = mMaterialMap[i];
 			// setup material
-			mat->setup(context);
+			mat->setup(*context.renderer);
 		}
 		// setup model matrix
+		context.renderer->setConstantBuffer(0, context.perFrameShaderParameters);
 		context.renderer->setNamedConstantMatrix4("modelMatrix", modelTransform.toMatrix());
 		// draw part of mesh
 		const auto &mesh = mModel->getMesh();
