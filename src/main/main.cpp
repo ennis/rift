@@ -20,7 +20,6 @@
 #include <modelrenderer.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
-#include <boost/utility/in_place_factory.hpp>
 
 //============================================================================
 // Classe de base du jeu
