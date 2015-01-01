@@ -7,6 +7,7 @@ namespace
 	{
 		ERROR << "GLFW error: " << description;
 	}
+
 }
 
 Window::Window(
@@ -26,12 +27,14 @@ Window::Window(
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, options.glMinor);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 	mHandle = glfwCreateWindow(width, height, title, NULL, NULL);
 	if (!mHandle) {
 		ERROR << "Failed to create window";
 		return;
 	}
 	glfwMakeContextCurrent(mHandle);
+
 }
 
 bool Window::shouldClose()

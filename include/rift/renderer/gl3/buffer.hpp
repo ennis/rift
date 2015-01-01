@@ -33,9 +33,15 @@ public:
 	}
 
 private:
-	Buffer(GLuint id_, ResourceUsage usage_, GLenum bindingPoint_, std::size_t size_) :
-	id(id_), usage(usage_), bindingPoint(bindingPoint_), size(size_)
-	{}
+	Buffer(GLenum bindingPoint_, std::size_t size_, const void *data, ResourceUsage usage_, GLbitfield flags) :
+	usage(usage_), bindingPoint(bindingPoint_), size(size_)
+	{
+		gl::GenBuffers(1, &id);
+		gl::BindBuffer(bindingPoint, id);
+		// allocate immutable storage
+		gl::BufferStorage(bindingPoint, size, data, flags);
+		gl::BindBuffer(bindingPoint, 0);
+	}
 
 	GLuint id;
 	ResourceUsage usage;

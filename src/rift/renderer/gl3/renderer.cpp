@@ -282,7 +282,7 @@ VertexLayout *Renderer::createVertexLayout(
 }
 
 //=============================================================================
-VertexLayout *Renderer::createVertexLayout2(
+/*VertexLayout *Renderer::createVertexLayout2(
 	int numElements, 
 	const VertexElement2 *vertexElements)
 {
@@ -303,7 +303,7 @@ VertexLayout *Renderer::createVertexLayout2(
 		e.stride = offset[e.bufferSlot];
 	}
 	return layout;
-}
+}*/
 
 //=============================================================================
 Shader *Renderer::createShader(

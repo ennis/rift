@@ -11,7 +11,7 @@ os.execute("lua "..
 		"-spec=gl ".. 
 		"-version=4.4 "..
 		"-profile=core core_4_4 "..
-		"-exts EXT_direct_state_access ")
+		"-exts EXT_direct_state_access KHR_debug ")
 
 function use_gl()
 	dofile (thisDir.."opengl.lua")

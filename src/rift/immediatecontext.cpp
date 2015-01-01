@@ -48,14 +48,14 @@ mPrimitiveType(primitiveType)
 ImmediateContextFactory::ImmediateContextFactory(Renderer &renderer) : 
 mRenderer(&renderer)
 {
-	VertexElement2 elements[2] = {
+	/*VertexElement2 elements[2] = {
 		VertexElement2(0, ElementFormat::Float4),
 		VertexElement2(0, ElementFormat::Float4)
 	};
 	mLayout = mRenderer->createVertexLayout2(2, elements);
 	mShader = mRenderer->createShader(
 		loadShaderSource("resources/shaders/immediate/vert.glsl").c_str(),
-		loadShaderSource("resources/shaders/immediate/frag.glsl").c_str());
+		loadShaderSource("resources/shaders/immediate/frag.glsl").c_str());*/
 }
 
 ImmediateContextFactory::~ImmediateContextFactory()

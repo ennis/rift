@@ -32,6 +32,7 @@ layout(location = 1) in vec3 normals;
 out vec3 fPosition;
 out vec3 fNormal;
 out vec2 fTexcoord;
+out float altitude;
 
 //--- CODE ---------------------------
 float sampleHeight(vec2 coords)
@@ -79,6 +80,7 @@ void main()
     fNormal = normal;
     //fNormal = vec3(hp,hp,hp)/heightmapScale;
 	fTexcoord = pos / heightmapSize;
+	altitude = disp.y;
 }
 
 #endif
@@ -90,6 +92,7 @@ void main()
 in vec3 fPosition;
 in vec3 fNormal;
 in vec2 fTexcoord;
+in float altitude;
 
 //--- OUT ----------------------------
 out vec4 oColor;
@@ -122,12 +125,17 @@ void main()
 
 	float flatness = smoothstep(0.8, 0.85, abs(fNormal.y));
 	float dir = abs(atan(fNormal.z, fNormal.x) / 3.14159);
+	float snow = smoothstep(80, 90, altitude);
 
 	vec4 flatColor = texture(flatTex, fPosition.xz);
 	vec4 slopeColorX = texture(slopeTex, fPosition.yz);
 	vec4 slopeColorZ = texture(slopeTex, fPosition.xy);
 
-	vec4 final = mix(mix(slopeColorX, slopeColorZ, dir), flatColor, flatness);
+	vec4 final = mix(
+					mix(
+						mix(slopeColorX, slopeColorZ, dir), 
+						flatColor, flatness),
+					vec4(0.95f, 0.95f, 0.95f, 1.0f), snow);
 
 	oColor = PhongIllum(final, 
 				fNormal, // normal

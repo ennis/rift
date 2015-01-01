@@ -239,15 +239,6 @@ void RiftGame::render(float dt)
 		glm::vec4(1.0f),
 		glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
-	immediateContext->clear()
-		.addVertex(Vertex({ 0, 0, 0 }, { 0.0, 0.7, 1.0, 1.0 }))
-		.addVertex(Vertex({ 0, 1, 0 }, { 0.0, 0.7, 1.0, 1.0 }))
-		.addVertex(Vertex({ 0, 1, 1 }, { 1.0, 0.7, 1.0, 1.0 }))
-		.addVertex(Vertex({ 0, 1, 2 }, { 1.0, 0.7, 0.5, 1.0 }))
-		.addVertex(Vertex({ 0, 2, 2 }, { 1.0, 0.7, 0.1, 1.0 }))
-		.addVertex(Vertex({ 1, 2, 2 }, { 1.0, 0.5, 0.0, 1.0 }))
-		.render(rc);
-
 	/*auto ps = eff.compileShader(R, 0, nullptr);
 	ps->setup(R); 
 	R.setConstantBuffer(0, frameData);

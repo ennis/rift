@@ -31,18 +31,6 @@ struct VertexElement
     ElementFormat format = ElementFormat::Float;
 };
 
-// TODO alignment issues?
-struct VertexElement2
-{
-    VertexElement2() = default;
-    VertexElement2(int bufferSlot_, ElementFormat format_) :
-    bufferSlot(bufferSlot_),
-    format(format_)
-    {} 
-    int bufferSlot = 0;
-    ElementFormat format = ElementFormat::Float;
-};
-
 class RenderResource : public Resource
 {
 public:
@@ -256,8 +244,6 @@ public:
 
     // create a vertex layout for the input-assembler stage
     VertexLayout *createVertexLayout(int numElements, const VertexElement *vertexElements);
-    // simplified version
-    VertexLayout *createVertexLayout2(int numElements, const VertexElement2 *vertexElements);
 
     // create a shader from the specified sources
     Shader *createShader(const char *vertexShaderSource, const char *fragmentShaderSource);
