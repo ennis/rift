@@ -77,19 +77,17 @@ Image::~Image()
 }
 
 //====================================
-Texture2D *Image::convertToTexture2D(Renderer &renderer)
+Texture2D Image::convertToTexture2D(Renderer &renderer)
 {
-	auto tex = renderer.createTexture2D(getSize(), mNumMipLevels, mFormat, 0, nullptr);
+	auto tex = Texture2D(getSize(), mNumMipLevels, mFormat, nullptr);
 	for (unsigned int iMip = 0; iMip < mNumMipLevels; iMip++) {
-		renderer.updateTexture2D(
-			tex, 
+		tex.update(
 			iMip, 
 			glm::ivec2(0, 0), 
-			getSize(iMip), 
-			getDataSize(iMip), 
+			getSize(iMip),
 			getImageView(iMip).data());
 	}
-	return tex;
+	return std::move(tex);
 }
 
 //====================================

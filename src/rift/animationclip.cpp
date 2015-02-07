@@ -102,6 +102,7 @@ AnimationClip AnimationClip::loadFromFile(const char *fileName)
 	return clip;
 }
 
+// XXX move this into named constructor Pose::fromAnimationClip(float time)
 Pose AnimationClip::computePose(float time)
 {
 	std::vector<glm::vec3> positions;

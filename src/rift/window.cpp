@@ -25,9 +25,9 @@ Window::Window(
 	LOG << "Using GLFW :\n" << glfwGetVersionString();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, options.glMajor);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, options.glMinor);
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, gl::TRUE_);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, gl::TRUE_);
 	mHandle = glfwCreateWindow(width, height, title, NULL, NULL);
 	if (!mHandle) {
 		ERROR << "Failed to create window";

@@ -2,11 +2,11 @@
 #define GLOBJECT_HPP
 
 #include <utility>
-#include <renderer_common.hpp>
 #include <gl_common.hpp>
-#include <gl_core_4_4.hpp>
 
 // define move ctors
+// TODO use default move ctor generation
+// supposedly not working on VS2013
 #define GL_MOVEABLE_OBJECT_IMPL(ty) \
 	friend class Renderer;\
 	ty() = default; \
@@ -26,6 +26,7 @@
 		return (expr) == 0;\
 	}
 
+// TODO use pImpl for Renderer objects
 class GLAPIObject
 {
 

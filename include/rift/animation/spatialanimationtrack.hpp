@@ -16,6 +16,7 @@ public:
 		glm::vec3 scale;
 	};
 
+	// TODO pass by value
 	SpatialAnimationTrack(
 		std::vector<float> &&times, 
 		std::vector<Keyframe> &&keyframes) :

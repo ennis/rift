@@ -6,7 +6,8 @@ enum class PrimitiveType
     Point,
     Line,
     Triangle,
-    TriangleStrip
+    TriangleStrip,
+	Max
 };
 
 enum class ElementFormat : int
@@ -83,35 +84,45 @@ enum class ElementFormat : int
 enum class TextureFilter
 {
     Nearest = 0,
-    Linear
+    Linear,
+	Max
 };
 
-enum class TextureAddressMode
+enum class TextureAddressMode : int
 {
     Repeat = 0,
     Mirror,
-    Clamp
+    Clamp,
+	Max
 };
 
 enum class CullMode : int
 {
-    Front = 0,
+	None = 0,
+    Front,
     Back,
-    FrontAndBack
+    FrontAndBack,
+	Max
 };
 
 enum class PolygonFillMode : int
 {
     Fill = 0,
-    Wireframe
+    Wireframe,
+	Max
 };
 
-struct RenderState
+struct RasterizerDesc
 {
     CullMode cullMode;
     PolygonFillMode fillMode;
-    bool depthTestEnable;
-    bool depthWriteEnable;
+	bool depthClipEnable;
+};
+
+struct DepthStencilDesc
+{
+	bool depthTestEnable;
+	bool depthWriteEnable;
 };
 
 struct SamplerDesc
@@ -143,7 +154,7 @@ struct VertexElement2
 {
     unsigned int inputSlot;
     unsigned int offset;
-    ElementFormat format = ElementFormat::Float;
+    ElementFormat format;
 };
 
 enum class BufferUsage

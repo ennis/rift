@@ -1,9 +1,11 @@
 #ifndef IMAGE_HPP
 #define IMAGE_HPP
 
-#include <imageview.hpp>
+#include <texture.hpp>		// Texture2D etc.
+#include <imageview.hpp>	// BaseImageView, ImageView<T>
 #include <istream>
-#include <memory>
+#include <vector>	// vector
+#include <log.hpp>
 
 enum class ImageFileFormat
 {
@@ -17,7 +19,7 @@ enum class ImageFileFormat
 //=============================================================================
 // texture data
 // TODO 3D textures, texture arrays, cubemap textures
-class Image : public Resource 
+class Image  
 {
 public:
 	struct Subimage {
@@ -29,17 +31,21 @@ public:
 	static const int kMaxMipLevels = 32;
 	static const int kMaxFaces = 6;
 
+	// default ctor (empty image)
 	Image();
 	Image(ElementFormat format, glm::ivec3 size, unsigned int numMipLevels = 1, unsigned int numFaces = 1);
+	// copy
 	Image(Image const &rhs);
+	// move
 	Image(Image &&rhs);
 	~Image();
 
+	// move-assign
 	Image &operator=(Image &&rhs);
-
+	// delete current image and allocate a new one
 	void allocate(ElementFormat format, glm::ivec3 size, unsigned int numMipLevels = 1, unsigned int numFaces = 1);
 
-	ElementFormat format() const {
+	ElementFormat getFormat() const {
 		return mFormat;
 	}
 
@@ -78,7 +84,7 @@ public:
 			mip.size.x);
 	}
 	
-	Texture2D *convertToTexture2D(Renderer &renderer);
+	Texture2D convertToTexture2D(Renderer &renderer);
 
 	static Image loadFromFile(const char *filePath, ImageFileFormat format = ImageFileFormat::Autodetect);
 	static Image loadFromStream(std::istream &streamIn, ImageFileFormat format);

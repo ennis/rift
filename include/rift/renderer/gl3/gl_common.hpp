@@ -2,7 +2,7 @@
 #define GL_COMMON_HPP
 
 #include <renderer_common.hpp>
-//#include <gl_core_4_4.hpp>
+#include <gl_core_4_4.hpp>
 
 struct ElementFormatInfoGL {
 	// vertex element

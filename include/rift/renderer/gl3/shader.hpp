@@ -1,12 +1,27 @@
 #ifndef SHADER_HPP
 #define SHADER_HPP
 
-#include <common.hpp>
-#include <opengl.hpp>
+#include <globject.hpp>
 #include <string>
 
-GLuint compileShader(const char *shaderSource, GLenum type);
-void linkProgram(GLuint program);
+class Shader : public GLAPIObject
+{
+public:
+	GL_MOVEABLE_OBJECT_IMPL(Shader)
+	GL_IS_NULL_IMPL(id)
 
+	~Shader()
+	{//TODO
+	}
 
-#endif
+	Shader(std::string vsSource_, std::string psSource_);
+
+private:
+	void swap(Shader &&rhs);
+
+	GLuint id; 
+	std::string vsSource;
+	std::string psSource;
+};
+ 
+#endif /* end of include guard: SHADER_HPP */

@@ -4,13 +4,6 @@
 // test include
 #pragma include <scene.glsl>
 
-// paramètres communs aux vertex et fragment shaders
-// model matrix 
-uniform mat4 modelMatrix;
-uniform float shininess;
-uniform float eta;
-uniform float lightIntensity;
-
 //=============================================================
 // La macro _VERTEX_ est définie par le code qui va charger le shader (classe Effect)
 #ifdef _VERTEX_
@@ -31,7 +24,7 @@ out vec2 fTexcoord;
 //--- CODE ---------------------------
 void main() 
 {
-	vec4 modelPos = modelMatrix * vec4(position, 1.f);
+	vec4 modelPos = vec4(position, 1.f);
 	gl_Position = gRenderData.viewProjMatrix * modelPos;
 	fPosition = modelPos.xyz;
 	fNormal = normal;
@@ -57,15 +50,7 @@ const vec4 vertColor = vec4(0.9f, 0.9f, 0.1f, 1.0f);
 
 void main()
 {
-	oColor = PhongIllum(vertColor, 
-				fNormal, // normal
-				fPosition,	// position
-				0.2,	// ka
-				0.3,	// ks
-				0.4, 	// kd
-				lightIntensity, 
-				eta, 
-				shininess);
+	oColor = vertColor;
 }
 
 #endif

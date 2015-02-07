@@ -23,6 +23,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <initializer_list>
 
 namespace std {
 
@@ -91,11 +92,15 @@ class array_ref {
   /// @{
 
   /// \post <code>empty() == true</code>
-  constexpr array_ref() : ptr_(nullptr), length_(0) { }
-  constexpr array_ref(const array_ref&) = default;
+  /*constexpr*/ array_ref() : ptr_(nullptr), length_(0) { }
+  /*constexpr*/ array_ref(const array_ref&) = default;
   array_ref& operator=(const array_ref&) = default;
 
-  constexpr array_ref(const T* array, size_t length)
+  // ***
+  /*constexpr*/ array_ref(std::initializer_list<T> init)
+	  : ptr_(init.begin()), length_(init.size()) { }
+
+  /*constexpr*/ array_ref(const T* array, size_t length)
       : ptr_(array), length_(length) { }
 
   // Implicit conversion constructors
@@ -106,19 +111,19 @@ class array_ref {
       : ptr_(v.data()), length_(v.size()) { }
 
   template<size_t N>
-  constexpr array_ref(const T (&a)[N])
+  /*constexpr*/ array_ref(const T (&a)[N])
       : ptr_(a), length_(N) { }
 
   /// \todo Arguably, this conversion should be a std::array
   /// conversion operator.
   template<size_t N>
-  constexpr array_ref(const std::array<T, N> &a)
+  /*constexpr*/ array_ref(const std::array<T, N> &a)
       : ptr_(a.data()), length_(N) { }
 
   /// \todo See \c basic_string_ref::substr for interface
   /// questions. We want something like this on \c array_ref, but
   /// probably not with this name.
-  constexpr array_ref substr(size_type pos, size_type n = size_type(-1)) const {
+  /*constexpr*/ array_ref substr(size_type pos, size_type n = size_type(-1)) const {
     // Recursive implementation to satisfy constexpr.
     return (pos > size()     ? substr(size(), n)
           : n > size() - pos ? substr(pos, size() - pos)
@@ -128,10 +133,10 @@ class array_ref {
 
   /// \name iterators
   /// @{
-  constexpr const_iterator begin() const { return ptr_; }
-  constexpr const_iterator end() const { return ptr_ + length_; }
-  constexpr const_iterator cbegin() const { return begin(); }
-  constexpr const_iterator cend() const { return end(); }
+  /*constexpr*/ const_iterator begin() const { return ptr_; }
+  /*constexpr*/ const_iterator end() const { return ptr_ + length_; }
+  /*constexpr*/ const_iterator cbegin() const { return begin(); }
+  /*constexpr*/ const_iterator cend() const { return end(); }
   const_reverse_iterator rbegin() const {
     return const_reverse_iterator(end());
   }
@@ -144,30 +149,30 @@ class array_ref {
 
   /// \name capacity
   /// @{
-  constexpr size_type size() const { return length_; }
-  constexpr size_type max_size() const {
+  /*constexpr*/ size_type size() const { return length_; }
+  /*constexpr*/ size_type max_size() const {
     return numeric_limits<size_type>::max() / sizeof(T);
   }
-  constexpr bool empty() const { return length_ == 0; }
+  /*constexpr*/ bool empty() const { return length_ == 0; }
   /// @}
 
   /// \name element access
   /// @{
-  constexpr const T& operator[](size_t i) const { return ptr_[i]; }
-  constexpr const T& at(size_t i) const {
+  /*constexpr*/ const T& operator[](size_t i) const { return ptr_[i]; }
+  /*constexpr*/ const T& at(size_t i) const {
     // This makes at() constexpr as long as the argument is within the
     // bounds of the array_ref.
     return i >= size() ? throw out_of_range("at() argument out of range")
                        : ptr_[i];
   }
 
-  constexpr const T& front() const { return ptr_[0]; }
-  constexpr const T& back() const { return ptr_[length_-1]; }
+  /*constexpr*/ const T& front() const { return ptr_[0]; }
+  /*constexpr*/ const T& back() const { return ptr_[length_-1]; }
 
   /// \returns A pointer such that [<code>data()</code>,<code>data() +
   /// size()</code>) is a valid range. For a non-empty array_ref,
   /// <code>data() == &front()</code>.
-  constexpr const T* data() const { return ptr_; }
+  /*constexpr*/ const T* data() const { return ptr_; }
   /// @}
 
   /// \name Outgoing conversion operators
@@ -250,18 +255,18 @@ class array_ref {
 /// @{
 
 template<typename T>
-constexpr array_ref<T> make_array_ref(const T* array, size_t length) {
+/*constexpr*/ array_ref<T> make_array_ref(const T* array, size_t length) {
   return array_ref<T>(array, length);
 }
 
 template<typename T, size_t N>
-constexpr array_ref<T> make_array_ref(const T (&a)[N]) {
+/*constexpr*/ array_ref<T> make_array_ref(const T (&a)[N]) {
   return array_ref<T>(a);
 }
 
 template<typename T>
 array_ref<T> make_array_ref(const vector<T>& v) {
-  return array_ref<int>(v);
+	return array_ref<T>(v);
 }
 
 /// @}

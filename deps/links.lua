@@ -11,13 +11,13 @@ os.execute("lua "..
 		"-spec=gl ".. 
 		"-version=4.4 "..
 		"-profile=core core_4_4 "..
-		"-exts EXT_direct_state_access KHR_debug ")
+		"-exts EXT_direct_state_access EXT_texture_compression_s3tc ")
 
 function use_gl()
 	dofile (thisDir.."opengl.lua")
 	links {"glfw3", "glew32"}
 	includedirs {thisDir.."include/GL"}
-	--files {thisDir.."include/gl_core_4_4.cpp"}
+	files {thisDir.."include/gl_core_4_4.cpp"}
 end
 
 function use_assimp()

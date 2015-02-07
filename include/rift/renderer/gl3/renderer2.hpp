@@ -13,54 +13,134 @@
 #include <texture.hpp>
 // RenderTarget
 #include <rendertarget.hpp>
+// Sampler
+#include <sampler.hpp>
 // Window class
 #include <window.hpp> 
+// Shader
+#include <shader.hpp>
 
 #include <array_ref.hpp>
+#include <memory>
 
-
+//==================================================================
+// TODO extract interface
+// move API-specific code in pImpl
 class Renderer
 {
 public:
 	Renderer(Window &window_);
+	~Renderer();
 
-	Texture2D createTexture2D(
-		glm::ivec2 size,
-		unsigned int numMipLevels,
-		ElementFormat pixelFormat,
-		const void* data);
+	const RenderTarget *getScreenRenderTarget() const;
+	const RenderTarget *getScreenDepthRenderTarget() const;
 
-	TextureCubeMap createTextureCubeMap(
-		glm::ivec2 size,
-		unsigned int numMipLevels,
-		ElementFormat pixelFormat,
-		const void* faceData[6]);
+	//============= STATES =============
 
-	VertexLayout createVertexLayout(std::array_ref<VertexElement2> vertexElements);
+	void setVertexBuffer(
+		int slot,
+		const Buffer *buffer,
+		int offset,
+		int strides
+		);
 
-	Buffer createBuffer(
-		std::size_t size, 
-		ResourceUsage resourceUsage,
-		BufferUsage bufferUsage,
-		const void* initialData);
+	void setIndexBuffer(
+		const Buffer *indexBuffer,
+		ElementFormat format
+		);
 
-	RenderTarget createRenderTarget2D(Texture2D *texture2D, unsigned int mipLevel);
-	RenderTarget createRenderTarget2D(TextureCubeMap *cubeMap, unsigned int mipLevel, unsigned int face);
-	RenderTarget createRenderTargetCubeMap(TextureCubeMap *cubeMap, unsigned int mipLevel);
+	void setInputLayout(
+		const VertexLayout *layout
+		);
 
+	void setConstantBuffer(
+		int slot,
+		const Buffer* buffer
+		);
+
+	void setShader(
+		const Shader *shader
+		);
+
+	void setRasterizerState(
+		RasterizerDesc desc
+		);
+
+	void setDepthStencilState(
+		DepthStencilDesc desc
+		);
+
+	void setTexture(
+		int texunit,
+		const Texture *texture
+		);
+
+	void setSamplerState(
+		int texUnit,
+		const SamplerDesc &samplerDesc
+		);
+
+	//=============  RENDER TARGET COMMANDS =============
+
+	// issue a clear color command
+	void clearColor(
+		float r,
+		float g,
+		float b,
+		float a
+		);
+
+	// issue a clear depth command
+	void clearDepth(
+		float z
+		);
+
+	// set the color & depth render targets
 	void setRenderTargets(
-		std::array_ref<RenderTarget*> colorTargets,
-		RenderTarget *depthStencilTarget);
+		std::array_ref<const RenderTarget*> colorTargets,
+		const RenderTarget *depthStencilTarget
+		);
 
-	// XXX all functions related to pipeline state (not. shaders) do not really make sense
-	// The pipeline state interface should be hidden, all definitions should be contained
-	// in an effect file, and the states should be set by an API-specific backend
+	void setViewports(
+		std::array_ref<Viewport2> viewports
+		);
+
+	//============= DRAW COMMANDS =============
+
+	// submit vertices for rendering
+	void draw(
+		PrimitiveType primitiveType,
+		int startVertex,
+		int numVertices
+		);
+
+	void drawIndexed(
+		PrimitiveType primitiveType,
+		int startIndex,
+		int numIndices,
+		int baseVertex
+		);
+
+	void drawIndexedInstanced(
+		PrimitiveType primitiveType,
+		int baseInstance,
+		int numInstances,
+		int startIndex,
+		int numIndices,
+		int baseVertex
+		);
+
+	//============= SUBMIT =============
+
+	// return submission index
+	int createSubmission();
+
+	// submit
+	void submit(int submissionId);
 
 private:
-	void setDebugCallback();
-
-	Window *window;
-	GLuint fbo;
+	class RendererImpl;
+	std::unique_ptr<RendererImpl> impl;
 };
 
  

@@ -1,9 +1,10 @@
 #ifndef RENDERABLE_HPP
 #define RENDERABLE_HPP
 
+#include <scene.hpp>
 #include <entity.hpp>
-#include <renderer.hpp>
-#include <camera.hpp>
+#include <renderer2.hpp>
+#include <renderqueue.hpp>
 
 enum RenderableFlags
 {
@@ -12,6 +13,7 @@ enum RenderableFlags
 	RF_Sky = (1 << 2),
 	RF_Opaque = (1 << 3),
 	RF_Transparent = (1 << 4),
+	// Static: no need to call render more than once
 	RF_Static = (1 << 5),
 	RF_Terrain = (1 << 6)
 };
@@ -26,52 +28,27 @@ enum class RenderPass
 	Shadow
 };
 
-struct PerFrameShaderParameters
-{
-	glm::mat4 viewMatrix;
-	glm::mat4 projMatrix;
-	glm::mat4 viewProjMatrix;
-	glm::vec4 eyePos;	// in world space
-	glm::vec4 lightDir;
-	glm::vec2 viewportSize;
-};
-
-struct RenderContext
-{
-	Renderer *renderer;
-	Camera *camera;
-	glm::mat4 viewMatrix;
-	glm::mat4 projMatrix;
-	RenderPass renderPass;
-	PerFrameShaderParameters pfsp;
-	ConstantBuffer *perFrameShaderParameters;
-};
-
 
 // Renderable objects
 // These objects have a render method
 class Renderable : public IComponent<CID_Renderable>
 {
 public:
-	Renderable(Renderer &renderer) : mRenderer(renderer)
+	Renderable(uint64_t flags_ = 0) : flags(flags_)
 	{}
 
-	virtual void render(RenderContext const &context) = 0;
-	virtual void update(float dt) override {};
+	virtual void render(
+			const RenderQueues &renderQueues, 
+			const SceneData &data) = 0;
 
 	uint64_t getFlags() const
 	{
-		return mFlags;
-	}
-
-	Renderer &getRenderer() const 
-	{
-		return mRenderer;
+		return flags;
 	}
 
 protected:
-	uint64_t mFlags;
-	Renderer &mRenderer;
+	uint64_t flags;
+	// could add an ID here, for submission caching
 };
 
 #endif

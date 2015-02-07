@@ -1,8 +1,7 @@
 #ifndef SCENEMANAGER_HPP
 #define SCENEMANAGER_HPP
 
-#include <submission.hpp>
-#include <renderqueue.hpp>
+#include <scene.hpp>
 #include <camera.hpp>
 #include <mesh.hpp>
 
@@ -19,17 +18,6 @@
 class SceneManager
 {
 public:
-	// données partagées entre les shaders
-	struct FrameData
-	{
-		glm::mat4 viewMatrix;
-		glm::mat4 projMatrix;
-		glm::mat4 viewProjMatrix;
-		glm::vec4 eyePos;	// in world space
-		glm::vec4 lightDir;
-		glm::vec2 viewportSize;
-	};
-
 	// non default constructible
 	SceneManager(Renderer &renderer, const Camera &camera);
 	// noncopyable
@@ -44,28 +32,17 @@ public:
 	// background color
 	SceneManager &setBackgroundColor(const glm::vec4& color);
 	
-	// submit mesh for rendering
-	SceneManager &draw(
-		const Mesh &mesh, 
-		unsigned int startVertex, 
-		unsigned int startIndex, 
-		unsigned int numIndices,
-		const Material &material,
-		const Transform &transform);
 
-	// raw submission
-	SceneManager &draw(const Submission &submission);
-
-	// render and flush render queues
+	// render
 	void render();
 
 private:
-	RenderQueue mRenderQueue;
-	FrameData mFrameData;
-	glm::vec4 mBackgroundColor;
-	ConstantBuffer *mFrameDataCB = nullptr;
-	const Camera *mCamera = nullptr;
-	Renderer *mRenderer = nullptr;
+	//RenderQueues renderQueues;
+	glm::vec4 backgroundColor;
+	SceneData sceneData;
+	Buffer sceneDataCB;
+	const Camera *camera = nullptr;
+	Renderer *renderer = nullptr;
 };
 
  

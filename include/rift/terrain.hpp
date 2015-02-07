@@ -1,7 +1,8 @@
 #ifndef TERRAIN_HPP
 #define TERRAIN_HPP
 
-#include <renderer.hpp>
+#include <renderer2.hpp>	// Renderer
+#include <buffer.hpp>	// Buffer
 #include <renderable.hpp>
 #include <image.hpp>
 #include <effect.hpp>
@@ -61,17 +62,17 @@ private:
 	int mPatchGridSize;
 	int mPatchNumVertices;
 	int mPatchNumIndices;
-	VertexBuffer *mPatchGridVB; // unique_ptr
-	IndexBuffer *mPatchGridIB; // unique_ptr
-	VertexLayout *mVertexLayout;
+	Buffer mPatchGridVB; 
+	Buffer mPatchGridIB; 
+	VertexLayout mVertexLayout;
 	// Terrain heightmap data & texture
 	Image mHeightmapData;
 	ImageView<uint16_t> mHeightmapView;
 	// Terrain normal map
 	Image mHeightmapNormals;
 	ImageView<glm::vec3> mHeightmapNormalsView;
-	Texture2D *mHeightmapTexture; // unique_ptr
-	Texture2D *mHeightmapNormalTexture;	// owned
+	Texture2D mHeightmapTexture; 
+	Texture2D mHeightmapNormalTexture;
 	Texture2D *mSlopeTexture;
 	Texture2D *mFlatTexture;
 	// Heightmap vertical scale
@@ -84,7 +85,7 @@ private:
 	static const int kMaxLodLevel = 16;
 	std::array<float,kMaxLodLevel> mLodRanges;
 	Effect mEffect;
-	CompiledShader *mShader;
+	Shader *mShader;
 };
 
 #endif

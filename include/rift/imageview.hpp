@@ -1,8 +1,8 @@
 #ifndef IMAGEVIEW_HPP
 #define IMAGEVIEW_HPP
 
-#include <common.hpp>
-#include <renderer.hpp>
+#include <common.hpp>	// glm
+#include <renderer_common.hpp>	// ElementFormat
 
 //=============================================================================
 // Unused

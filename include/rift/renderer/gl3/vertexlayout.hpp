@@ -10,19 +10,6 @@ public:
 	GL_MOVEABLE_OBJECT_IMPL(VertexLayout)
 	GL_IS_NULL_IMPL(vao)
 
-	void swap(VertexLayout &&rhs)
-	{
-		std::swap(vao, rhs.vao);
-	}
-
-	~VertexLayout()
-	{
-		if (vao) {
-			gl::DeleteVertexArrays(1, &vao);
-		}
-	}
-
-private:
 	VertexLayout(std::array_ref<VertexElement2> elements_) :
 	elements(elements_.vec())
 	{
@@ -36,10 +23,12 @@ private:
 			const auto& attrib = elements[attribindex];
 			const auto& fmt = getElementFormatInfoGL(attrib.format);
 			if (gl::exts::var_EXT_direct_state_access) {
+				gl::EnableVertexArrayAttribEXT(vao, attribindex);
 				gl::VertexArrayVertexAttribFormatEXT(vao, attribindex, fmt.size, fmt.type, fmt.normalize, attrib.offset);
 				gl::VertexArrayVertexAttribBindingEXT(vao, attribindex, attrib.inputSlot);
 			}
 			else {
+				gl::EnableVertexAttribArray(attribindex);
 				gl::VertexAttribFormat(attribindex, fmt.size, fmt.type, fmt.normalize, attrib.offset);
 				gl::VertexAttribBinding(attribindex, attrib.inputSlot);
 			}
@@ -49,8 +38,21 @@ private:
 		}
 	}
 
+	void swap(VertexLayout &&rhs)
+	{
+		std::swap(vao, rhs.vao);
+	}
+
+	~VertexLayout()
+	{
+		if (vao) {
+			gl::DeleteVertexArrays(1, &vao);
+		}
+	}
+
+private:
 	std::vector<VertexElement2> elements;
-	GLuint vao;
+	GLuint vao = 0;
 };
 
  

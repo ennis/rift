@@ -646,11 +646,3 @@ void Image::loadDDS(std::istream &streamIn)
 	mData.resize(dataSize);
 	streamIn.read(reinterpret_cast<char*>(mData.data()), dataSize);
 }
-
-//=============================================================================
-Texture2D *loadTexture2D_DDS(Renderer &renderer, const char *ddsFilePath)
-{
-	Image ddsFile;
-	ddsFile.loadFromFile(ddsFilePath);
-	return ddsFile.convertToTexture2D(renderer);
-}

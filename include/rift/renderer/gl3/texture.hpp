@@ -49,7 +49,29 @@ protected:
 class Texture2D : public Texture
 {
 public:
-	GL_MOVEABLE_OBJECT_IMPL(Texture2D)
+	GL_MOVEABLE_OBJECT_IMPL(Texture2D);
+
+	Texture2D(
+		glm::ivec2 size_,
+		unsigned int numMipLevels_,
+		ElementFormat pixelFormat_,
+		const void *data = nullptr) : Texture(gl::TEXTURE_2D, numMipLevels_, pixelFormat_), size(size_)
+	{
+		gl::GenTextures(1, &id);
+		const auto &pf = getElementFormatInfoGL(pixelFormat);
+		if (gl::exts::var_EXT_direct_state_access) {
+			gl::TextureStorage2DEXT(id, gl::TEXTURE_2D, numMipLevels, pf.internalFormat, size.x, size.y);
+		}
+		else {
+			gl::BindTexture(gl::TEXTURE_2D, id);
+			gl::TexStorage2D(gl::TEXTURE_2D, numMipLevels, pf.internalFormat, size.x, size.y);
+		}
+
+		if (data)
+		{
+			update(0, { 0, 0 }, size, data);
+		}
+	}
 
 	void swap(Texture2D &&rhs)
 	{
@@ -95,31 +117,28 @@ public:
 		}
 	}
 
-
 private:
-	Texture2D(
-		glm::ivec2 size_,
-		unsigned int numMipLevels_,
-		ElementFormat pixelFormat_) : Texture(gl::TEXTURE_2D, numMipLevels_, pixelFormat_), size(size_)
-	{
-		gl::GenTextures(1, &id);
-		const auto &pf = getElementFormatInfoGL(pixelFormat);
-		if (gl::exts::var_EXT_direct_state_access) {
-			gl::TextureStorage2DEXT(id, gl::TEXTURE_2D, numMipLevels, pf.internalFormat, size.x, size.y);
-		}
-		else {
-			gl::BindTexture(gl::TEXTURE_2D, id);
-			gl::TexStorage2D(gl::TEXTURE_2D, numMipLevels, pf.internalFormat, size.x, size.y);
-		}
-	}
-
 	glm::ivec2 size;
 };
 
 class Texture1D : public Texture
 {
 public:
-	GL_MOVEABLE_OBJECT_IMPL(Texture1D);
+	Texture1D(
+		unsigned int size_,
+		unsigned int numMipLevels_,
+		ElementFormat pixelFormat_) : Texture(gl::TEXTURE_1D, numMipLevels_, pixelFormat_), size(size_)
+	{
+		gl::GenTextures(1, &id);
+		const auto &pf = getElementFormatInfoGL(pixelFormat);
+		if (gl::exts::var_EXT_direct_state_access) {
+			gl::TextureStorage1DEXT(id, gl::TEXTURE_1D, numMipLevels, pf.internalFormat, size);
+		}
+		else {
+			gl::BindTexture(gl::TEXTURE_1D, id);
+			gl::TexStorage1D(gl::TEXTURE_1D, numMipLevels, pf.internalFormat, size);
+		}
+	}
 
 	void swap(Texture1D &&rhs)
 	{
@@ -147,29 +166,34 @@ public:
 	}
 
 private:
-	Texture1D(
-		unsigned int size_,
-		unsigned int numMipLevels_,
-		ElementFormat pixelFormat_) : Texture(gl::TEXTURE_1D, numMipLevels_, pixelFormat_), size(size_)
-	{
-		gl::GenTextures(1, &id);
-		const auto &pf = getElementFormatInfoGL(pixelFormat);
-		if (gl::exts::var_EXT_direct_state_access) {
-			gl::TextureStorage1DEXT(id, gl::TEXTURE_1D, numMipLevels, pf.internalFormat, size);
-		}
-		else {
-			gl::BindTexture(gl::TEXTURE_1D, id);
-			gl::TexStorage1D(gl::TEXTURE_1D, numMipLevels, pf.internalFormat, size);
-		}
-	}
-
 	unsigned int size;
 };
 
 class TextureCubeMap : public Texture
 {
 public:
-	GL_MOVEABLE_OBJECT_IMPL(TextureCubeMap);
+
+
+	TextureCubeMap(
+		glm::ivec2 size_,
+		unsigned int numMipLevels_,
+		ElementFormat pixelFormat_,
+		const void* faceData[6]) : Texture(gl::TEXTURE_CUBE_MAP, numMipLevels_, pixelFormat_), size(size_)
+	{
+		gl::GenTextures(1, &id);
+		const auto &pf = getElementFormatInfoGL(pixelFormat);
+		if (gl::exts::var_EXT_direct_state_access) {
+			gl::TextureStorage2DEXT(id, gl::TEXTURE_CUBE_MAP, numMipLevels, pf.internalFormat, size.x, size.y);
+		}
+		else {
+			gl::BindTexture(gl::TEXTURE_CUBE_MAP, id);
+			gl::TexStorage2D(gl::TEXTURE_CUBE_MAP, numMipLevels, pf.internalFormat, size.x, size.y);
+		}
+
+		for (int i = 0; i < 6; ++i) {
+			update(i, 0, { 0, 0 }, size, faceData[i]);
+		}
+	}
 
 	void swap(TextureCubeMap &&rhs)
 	{
@@ -216,22 +240,6 @@ public:
 	}
 
 private:
-	TextureCubeMap(
-		glm::ivec2 size_,
-		unsigned int numMipLevels_,
-		ElementFormat pixelFormat_) : Texture(gl::TEXTURE_CUBE_MAP, numMipLevels_, pixelFormat_), size(size_)
-	{
-		gl::GenTextures(1, &id);
-		const auto &pf = getElementFormatInfoGL(pixelFormat);
-		if (gl::exts::var_EXT_direct_state_access) {
-			gl::TextureStorage2DEXT(id, gl::TEXTURE_CUBE_MAP, numMipLevels, pf.internalFormat, size.x, size.y);
-		}
-		else {
-			gl::BindTexture(gl::TEXTURE_CUBE_MAP, id);
-			gl::TexStorage2D(gl::TEXTURE_CUBE_MAP, numMipLevels, pf.internalFormat, size.x, size.y);
-		}
-	}
-
 	glm::ivec2 size;
 };
  

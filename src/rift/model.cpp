@@ -1,6 +1,7 @@
 #include <model.hpp>
 #include <serialization.hpp>
 #include <glm/gtc/packing.hpp>
+#include <fstream>
 
 Model::Model(Renderer &renderer, const char *filePath, unsigned int hints) 
 {
@@ -38,7 +39,7 @@ void Model::optimize()
 	using namespace glm;
 
 	// TODO skinning
-	Mesh::Buffer buf[] = { { ResourceUsage::Static } };
+	Mesh::BufferDesc buf[] = { { ResourceUsage::Static } };
 	Mesh::Attribute attribs[] = {
 		{ 0, ElementFormat::Float3 },
 		{ 0, ElementFormat::Snorm10x3_1x2 },
@@ -67,10 +68,9 @@ void Model::optimize()
 
 		// create optimized mesh
 	mMesh.allocate(
-		*mRenderer,
 		PrimitiveType::Triangle,
-		5, attribs,
-		1, buf,
+		attribs,
+		buf,
 		nv,
 		&ptr,
 		getNumIndices(),
@@ -139,13 +139,11 @@ namespace serialization {
 }}
 
 
-Model Model::loadFromFile(Renderer &renderer, const char *filePath, unsigned int hints)
+void Model::loadFromFile(Renderer &renderer, const char *filePath, unsigned int hints)
 {
 	using namespace rift::serialization;
 
-	Model m;
-
-	m.mRenderer = &renderer;
+	mRenderer = &renderer;
 
 	std::ifstream fileIn(filePath, std::ios::in | std::ios::binary);
 	Unpacker unpacker(fileIn);
@@ -153,7 +151,7 @@ Model Model::loadFromFile(Renderer &renderer, const char *filePath, unsigned int
 	unsigned int numSubmeshes, numBones, numVertices, numIndices, format;
 	unpacker.unpack(numSubmeshes);
 	assert(numSubmeshes < 65536);
-	m.mSubmeshes.reserve(numSubmeshes);
+	mSubmeshes.reserve(numSubmeshes);
 	for (unsigned int i = 0; i < numSubmeshes; ++i) {
 		Submesh sm;
 		unpacker.unpack(sm.startVertex);
@@ -161,12 +159,12 @@ Model Model::loadFromFile(Renderer &renderer, const char *filePath, unsigned int
 		unpacker.unpack(sm.numVertices);
 		read_u16le(fileIn, sm.numIndices);
 		read_u8(fileIn, sm.bone);
-		m.mSubmeshes.push_back(sm);
+		mSubmeshes.push_back(sm);
 	}
 
 	read_u8(fileIn, numBones);
 	assert(numBones < 256);
-	m.mBones.reserve(numBones);
+	mBones.reserve(numBones);
 	for (unsigned int i = 0; i < numBones; ++i) {
 		Bone b;
 		std::string name;
@@ -174,7 +172,7 @@ Model Model::loadFromFile(Renderer &renderer, const char *filePath, unsigned int
 		unpacker.unpack(b.transform);
 		unpacker.unpack(b.invBindPose); 
 		read_u8(fileIn, b.parent);
-		m.mBones.push_back(b);
+		mBones.push_back(b);
 	}
 
 	unpacker.unpack(numVertices);
@@ -184,14 +182,14 @@ Model Model::loadFromFile(Renderer &renderer, const char *filePath, unsigned int
 	assert(numIndices < 40*1024*1024);
 	read_u8(fileIn, format);
 
-	m.mPositions.reserve(numVertices);
-	m.mNormals.reserve(numVertices);
-	m.mTangents.reserve(numVertices);
-	m.mBitangents.reserve(numVertices);
-	m.mTexcoords.reserve(numVertices);
-	m.mBoneIDs.reserve(numVertices);
-	m.mBoneWeights.reserve(numVertices);
-	m.mIndices.reserve(numIndices);
+	mPositions.reserve(numVertices);
+	mNormals.reserve(numVertices);
+	mTangents.reserve(numVertices);
+	mBitangents.reserve(numVertices);
+	mTexcoords.reserve(numVertices);
+	mBoneIDs.reserve(numVertices);
+	mBoneWeights.reserve(numVertices);
+	mIndices.reserve(numIndices);
 
 	// unpack data
 	// type 0/1 - non-interleaved attributes
@@ -201,35 +199,35 @@ Model Model::loadFromFile(Renderer &renderer, const char *filePath, unsigned int
 		for (unsigned int i = 0; i < numVertices; ++i) {
 			glm::vec3 v;
 			unpacker.unpack(v);
-			m.mPositions.push_back(v);
+			mPositions.push_back(v);
 		}
 
 		// ==== mNormals ====
 		for (unsigned int i = 0; i < numVertices; ++i) {
 			glm::vec3 v;
 			unpacker.unpack(v);
-			m.mNormals.push_back(v);
+			mNormals.push_back(v);
 		}
 
 		// ==== mTangents ====
 		for (unsigned int i = 0; i < numVertices; ++i) {
 			glm::vec3 v;
 			unpacker.unpack(v);
-			m.mTangents.push_back(v);
+			mTangents.push_back(v);
 		}
 
 		// ==== bitangents ====
 		for (unsigned int i = 0; i < numVertices; ++i) {
 			glm::vec3 v;
 			unpacker.unpack(v);
-			m.mBitangents.push_back(v);
+			mBitangents.push_back(v);
 		}
 
 		// ==== mTexcoords ====
 		for (unsigned int i = 0; i < numVertices; ++i) {
 			glm::vec2 v;
 			unpacker.unpack(v);
-			m.mTexcoords.push_back(v);
+			mTexcoords.push_back(v);
 		}
 
 		if (format == 1) {
@@ -237,20 +235,20 @@ Model Model::loadFromFile(Renderer &renderer, const char *filePath, unsigned int
 			for (unsigned int i = 0; i < numVertices; ++i) {
 				glm::u8vec4 v;
 				unpacker.unpack(v);
-				m.mBoneIDs.push_back(v);
+				mBoneIDs.push_back(v);
 			}
 
 			// ==== bone weights ====
 			for (unsigned int i = 0; i < numVertices; ++i) {
 				glm::vec4 v;
 				unpacker.unpack(v);
-				m.mBoneWeights.push_back(v);
+				mBoneWeights.push_back(v);
 			}
 		}
 		for (unsigned int i = 0; i < numIndices; ++i) {
 			unsigned short ix;
 			unpacker.unpack16(ix);
-			m.mIndices.push_back(ix);
+			mIndices.push_back(ix);
 		}
 	}
 	else if (format == 2) {
@@ -263,15 +261,13 @@ Model Model::loadFromFile(Renderer &renderer, const char *filePath, unsigned int
 	}
 
 	// build bone tree
-	auto nb = m.mBones.size();
+	auto nb = mBones.size();
 	for (unsigned int i = 0; i < nb; ++i) {
-		int p = m.mBones[i].parent;
+		int p = mBones[i].parent;
 		// p == 255 means root node
 		if (p != 255) {
 			assert(p < nb);
-			m.mBones[p].children.push_back(i);
+			mBones[p].children.push_back(i);
 		}
 	}
-
-	return m;
 }

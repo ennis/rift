@@ -1,7 +1,7 @@
 #ifndef MODEL_HPP
 #define MODEL_HPP
 
-#include <renderer.hpp>
+#include <renderer2.hpp>
 #include <mesh.hpp>
 
 namespace ModelLoadHint
@@ -126,7 +126,7 @@ public:
 	 * @param filePath Chemin du fichier à charger
 	 * @param hints Inutilisé
 	 */
-	static Model loadFromFile(Renderer &renderer, const char *filePath, unsigned int hints = 0);
+	void loadFromFile(Renderer &renderer, const char *filePath, unsigned int hints = 0);
 
 	unsigned int getNumVertices() const {
 		return static_cast<unsigned int>(mPositions.size());

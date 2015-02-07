@@ -1,7 +1,7 @@
 #ifndef FONT_HPP
 #define FONT_HPP
 
-#include <renderer.hpp>
+#include <renderer2.hpp>
 #include <image.hpp>
 #include <unordered_map>
 
@@ -67,23 +67,21 @@ public:
 			return false;
 		}
 	}
-	Image const &getTextureData(unsigned int page) const {
-		assert(page < mNumGlyphPages);
-		return mGlyphPages[page].data;
+	const Image &getTextureData(unsigned int page) const 
+	{
+		return data;
 	}
-	Texture *getTexture(unsigned int page) {
-		assert(page < mNumGlyphPages);
-		return mGlyphPages[page].tex;
-	} 
+
+	const Texture2D &getTexture() const
+	{
+		return tex;
+	}
+
 private:
 	Metrics mMetrics;
 	// number of pages
-	unsigned int mNumGlyphPages = 0;
-	static const unsigned int kMaxGlyphPages = 8;
-	struct GlyphPage {
-		Image data;
-		Texture *tex;
-	} mGlyphPages[kMaxGlyphPages];
+	Image data;
+	Texture2D tex;
 	// glyph map
 	std::unordered_map<char32_t, Glyph> mGlyphs;
 	// TODO kerning map

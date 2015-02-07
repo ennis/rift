@@ -1,26 +1,40 @@
 #ifndef SKY_HPP
 #define SKY_HPP
 
-#include <renderer.hpp>
+#include <renderer2.hpp>
 #include <renderable.hpp>
+#include <effect.hpp>
 #include <mesh.hpp>
+#include <material.hpp>
+#include <uniform.hpp>
 
-class Sky
+class Sky : public Renderable
 {
 public:
-	Sky(Renderer &renderer);
-	virtual ~Sky();
+	Sky(Renderer &renderer_);
+	~Sky();
 
 	void setTimeOfDay(float hour);
+	void render(
+		const RenderQueues &renderQueues, 
+		const SceneData &data) override;
 
-	void render(RenderContext const &renderContext);
+private:
+	struct SkyParams
+	{
+		glm::vec3 sunDirection;
+		glm::vec3 color;
+	};
 
-protected:
-	Renderer &mRenderer;
-	float mTimeOfDay;
-	// unique_ptr OR resource_ptr
-	Shader *mSkyShader;
-	Mesh mSkybox;
+	Renderer *renderer;
+	float timeOfDay;
+	Effect skyEffect;
+	Shader *skyShader;
+	
+	UniformValue<SkyParams> params;
+	UniformBuffer<SceneData> sceneParams;
+	
+	Mesh skybox;
 };
 
 #endif

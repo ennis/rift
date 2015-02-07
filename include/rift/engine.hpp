@@ -3,7 +3,7 @@
 
 #include <window.hpp>
 #include <AntTweakBar.h>
-#include <renderer.hpp>
+#include <renderer2.hpp>
 
 class Game;
 
@@ -11,7 +11,7 @@ class Engine
 {
 public:
 	Renderer &getRenderer() {
-		return mRenderer;
+		return *mRenderer;
 	}
 
 	Window &getWindow() {
@@ -43,7 +43,7 @@ private:
 	void init();
 	void mainLoop();
 
-	Renderer mRenderer;
+	std::unique_ptr<Renderer> mRenderer;
 	Window &mWindow;
 	Game *mGame;
 	TwBar *mMainBar;
