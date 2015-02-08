@@ -99,18 +99,18 @@ void Mesh::allocate(
 void Mesh::update(
 	unsigned int buffer,
 	unsigned int startVertex,
-	unsigned int numVertices, 
+	unsigned int numVertices,
 	const void *data)
 {
 	mVertexBuffers[buffer].update(startVertex*mStrides[buffer], numVertices*mStrides[buffer], data);
 }
 
 void Mesh::updateIndices(
-	unsigned int startIndex, 
+	unsigned int indexOffset,
 	unsigned int numIndices,
 	const void *data)
 {
-	mIndexBuffer.update(startIndex * mIndexStride, numIndices * mIndexStride, data);
+	mIndexBuffer.update(indexOffset * mIndexStride, numIndices * mIndexStride, data);
 }
 
 void Mesh::draw(Renderer &renderer) const
@@ -133,8 +133,8 @@ void Mesh::prepareDraw(Renderer &renderer) const
 
 void Mesh::drawPart(
 	Renderer &renderer,
-	int baseVertex,
-	int numVertices) const
+	unsigned int baseVertex,
+	unsigned int numVertices) const
 {
 	prepareDraw(renderer);
 	renderer.draw(mPrimitiveType, baseVertex, numVertices);
@@ -142,16 +142,16 @@ void Mesh::drawPart(
 
 void Mesh::drawPart(
 	Renderer &renderer,
-	int baseVertex,
-	int startIndex,
-	int numIndices) const
+	unsigned int baseVertex,
+	unsigned int indexOffset,
+	unsigned int numIndices) const
 {
 	assert(mNumIndices != 0);
 	prepareDraw(renderer);
 	renderer.setIndexBuffer(&mIndexBuffer, ElementFormat::Uint16);
 	renderer.drawIndexed(
 		mPrimitiveType,
-		startIndex,
+		indexOffset,
 		numIndices,
 		baseVertex);
 }

@@ -227,7 +227,7 @@ Shader *Effect::compileShader(
 
 	std::ostringstream shader_name;
 	shader_name << mID << '/'
-		<< std::setw(16) << std::hex << hash << std::dec << '/';
+		<< std::setw(16) << std::setfill('0') << std::hex << hash << std::dec << '/';
 	// log keywords
 	for (const auto &k : additionalKeywords) {
 		shader_name << k.define;
@@ -265,7 +265,10 @@ Shader *Effect::compileShader(
 	return cs.get();
 }
 
-void Effect::loadFromFile(const char *combinedSourcePath, std::initializer_list<Effect::Keyword> keywords)
+void Effect::loadFromFile(
+	const char *combinedSourcePath, 
+	std::initializer_list<Effect::Keyword> keywords
+	)
 {
 	mVertexShader = loadShaderSource(combinedSourcePath);
 	mCombinedSource = true;
@@ -275,7 +278,11 @@ void Effect::loadFromFile(const char *combinedSourcePath, std::initializer_list<
 	mID = sCurrentID++;
 }
 
-void Effect::loadFromFile(const char *vsPath, const char *fsPath, std::initializer_list<Effect::Keyword> keywords)
+void Effect::loadFromFile(
+	const char *vsPath, 
+	const char *fsPath, 
+	std::initializer_list<Effect::Keyword> keywords
+	)
 {
 	mVertexShader = loadShaderSource(vsPath);
 	mFragmentShader = loadShaderSource(fsPath);

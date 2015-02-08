@@ -3,14 +3,14 @@
 
 namespace
 {
-	inline uint64_t makeSortKey(int submission, int bucket)
+	inline uint64_t makeSortKey(unsigned int submission, unsigned int bucket)
 	{
 		return (static_cast<uint64_t>(bucket) << 32) | submission;
 	}
 
-	inline int getBucketId(uint64_t sortKey)
+	inline unsigned int getBucketId(uint64_t sortKey)
 	{
-		return static_cast<int>(sortKey >> 32);
+		return static_cast<unsigned int>(sortKey >> 32);
 	}
 }
 
@@ -19,7 +19,7 @@ RenderQueue::RenderQueue(Renderer &renderer_) : renderer(&renderer_)
 
 }
 
-RenderQueue &RenderQueue::submit(int submission, int bucket)
+RenderQueue &RenderQueue::submit(unsigned int submission, unsigned int bucket)
 {
 	auto key = makeSortKey(submission, bucket);
 	renderItems.push_back({ key, submission });
@@ -28,7 +28,7 @@ RenderQueue &RenderQueue::submit(int submission, int bucket)
 
 // issue a clear color command at the beginning of the bucket
 RenderQueue &RenderQueue::clearColor(
-	int bucket,
+	unsigned int bucket,
 	float r,
 	float g,
 	float b,
@@ -46,7 +46,7 @@ RenderQueue &RenderQueue::clearColor(
 
 // issue a clear depth command at the beginning of the bucket
 RenderQueue &RenderQueue::clearDepth(
-	int bucket,
+	unsigned int bucket,
 	float z
 	)
 {
@@ -58,7 +58,7 @@ RenderQueue &RenderQueue::clearDepth(
 
 // set the color & depth render targets
 RenderQueue &RenderQueue::setRenderTargets(
-	int bucket,
+	unsigned int bucket,
 	std::array_ref<const RenderTarget*> colorTargets,
 	const RenderTarget *depthStencilTarget
 	)
@@ -72,7 +72,7 @@ RenderQueue &RenderQueue::setRenderTargets(
 }
 
 RenderQueue &RenderQueue::setViewports(
-	int bucket,
+	unsigned int bucket,
 	std::array_ref<Viewport2> viewports
 	)
 {

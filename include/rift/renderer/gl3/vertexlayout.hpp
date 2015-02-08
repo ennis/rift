@@ -1,53 +1,38 @@
 #ifndef VERTEXLAYOUT_HPP
 #define VERTEXLAYOUT_HPP
 
-#include <globject.hpp>
+#include <gl_common.hpp>
 #include <array_ref.hpp>
+#include <utility>	// move
 
-class VertexLayout : public GLAPIObject
+class VertexLayout
 {
 public:
-	GL_MOVEABLE_OBJECT_IMPL(VertexLayout)
-	GL_IS_NULL_IMPL(vao)
-
-	VertexLayout(std::array_ref<VertexElement2> elements_) :
-	elements(elements_.vec())
-	{
-		// create VAO
-		gl::GenVertexArrays(1, &vao);
-		if (!gl::exts::var_EXT_direct_state_access) {
-			gl::BindVertexArray(vao);
-		}
-		for (unsigned int attribindex = 0; attribindex < elements.size(); ++attribindex)
-		{
-			const auto& attrib = elements[attribindex];
-			const auto& fmt = getElementFormatInfoGL(attrib.format);
-			if (gl::exts::var_EXT_direct_state_access) {
-				gl::EnableVertexArrayAttribEXT(vao, attribindex);
-				gl::VertexArrayVertexAttribFormatEXT(vao, attribindex, fmt.size, fmt.type, fmt.normalize, attrib.offset);
-				gl::VertexArrayVertexAttribBindingEXT(vao, attribindex, attrib.inputSlot);
-			}
-			else {
-				gl::EnableVertexAttribArray(attribindex);
-				gl::VertexAttribFormat(attribindex, fmt.size, fmt.type, fmt.normalize, attrib.offset);
-				gl::VertexAttribBinding(attribindex, attrib.inputSlot);
-			}
-		}
-		if (!gl::exts::var_EXT_direct_state_access) {
-			gl::BindVertexArray(0);
-		}
+	friend class Renderer;
+	VertexLayout() = default;
+	VertexLayout(VertexLayout &&rhs) {
+		*this = std::move(rhs);
 	}
-
-	void swap(VertexLayout &&rhs)
-	{
-		std::swap(vao, rhs.vao);
+	VertexLayout &operator=(VertexLayout&& rhs) {
+		vao = rhs.vao;
+		elements = std::move(rhs.elements);
+		rhs.vao = 0;
+		return *this;
 	}
+	VertexLayout(const VertexLayout&) = delete;
+	VertexLayout &operator=(const VertexLayout&) = delete;
+
+	VertexLayout(std::array_ref<VertexElement2> elements_);
 
 	~VertexLayout()
 	{
 		if (vao) {
 			gl::DeleteVertexArrays(1, &vao);
 		}
+	}
+
+	bool isNull() const {
+		return vao == 0;
 	}
 
 private:

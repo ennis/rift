@@ -40,9 +40,9 @@ private:
 	Entity *cameraEntity;
 	Shader *shader;
 	SceneData sceneData;
-	std::vector<int> subs;
-	std::unique_ptr<Effect> effect;
-	std::unique_ptr<Model> model;
+	std::vector<unsigned int> subs;
+	Effect effect;
+	Model model;
 	std::unique_ptr<RenderQueue> rq;
 	std::unique_ptr<Buffer> CBSceneData;
 };
@@ -66,12 +66,12 @@ void RiftGame::init()
 
 	// Effect test
 	// load from file
-	effect = std::make_unique<Effect>("resources/shaders/default.glsl");
-	shader = effect->compileShader(R, {});
+	effect = Effect("resources/shaders/default.glsl");
+	shader = effect.compileShader(R, { { "USE_SHADOWS", "" } });
 	// test loading of animated mesh
-	model = std::make_unique<Model>(R, "resources/models/post.model");
+	model = Model(R, "resources/models/post.model");
 	// create an optimized static mesh and send it to the GPU
-	model->optimize();
+	model.optimize();
 
 
 	CBSceneData = std::make_unique<Buffer>(sizeof(SceneData), ResourceUsage::Dynamic, BufferUsage::ConstantBuffer, nullptr);
@@ -81,8 +81,8 @@ void RiftGame::init()
 	rq->clearColor(0, 0.25f, 0.25f, 0.2f, 0.0f);
 	rq->clearDepth(0, 1000.f);
 	rq->setRenderTargets(0, { R.getScreenRenderTarget() }, R.getScreenDepthRenderTarget());
-	const auto &mesh = model->getMesh();
-	const auto &sm = model->getSubmeshes();
+	const auto &mesh = model.getMesh();
+	const auto &sm = model.getSubmeshes();
 	for (const auto &s : sm) {
 		R.setShader(shader);
 		R.setConstantBuffer(0, CBSceneData.get());

@@ -1,86 +1,56 @@
 #ifndef BUFFER_HPP
 #define BUFFER_HPP
 
-#include <globject.hpp>
+#include <gl_common.hpp>
+#include <utility>	// move
 
-namespace
-{
-	GLenum bufferUsageToBindingPoint(BufferUsage bufferUsage)
-	{
-		switch (bufferUsage)
-		{
-		case BufferUsage::VertexBuffer:
-			return gl::ARRAY_BUFFER;
-		case BufferUsage::IndexBuffer:
-			return gl::ELEMENT_ARRAY_BUFFER;
-		case BufferUsage::ConstantBuffer:
-			return gl::UNIFORM_BUFFER;
-		case BufferUsage::Unspecified:
-		default:
-			return gl::ARRAY_BUFFER;
-		}
-	}
-}
-
-class Buffer : public GLAPIObject
+class Buffer 
 {
 public:
-	GL_MOVEABLE_OBJECT_IMPL(Buffer)
-	GL_IS_NULL_IMPL(id)
-
-	void swap(Buffer &&rhs) 
-	{
-		std::swap(id, rhs.id);
-		std::swap(usage, rhs.usage);
-		std::swap(bindingPoint, rhs.bindingPoint);
-		std::swap(size, rhs.size);
+	friend class Renderer;
+	Buffer() = default;
+	Buffer(Buffer &&rhs) {
+		*this = std::move(rhs);
 	}
+	Buffer &operator=(Buffer&& rhs) {
+		id = rhs.id;
+		usage = rhs.usage;
+		size = rhs.size;
+		bindingPoint = rhs.bindingPoint;
+		// reset object
+		rhs.id = 0;
+		rhs.size = 0;
+		return *this;
+	}
+	Buffer(const Buffer&) = delete;
+	Buffer &operator=(const Buffer&) = delete;
 
-	~Buffer()
+	Buffer::~Buffer()
 	{
 		if (id) {
 			gl::DeleteBuffers(1, &id);
 		}
 	}
 
-	void update(std::size_t offset, std::size_t size, const void *data)
-	{
-		if (gl::exts::var_EXT_direct_state_access) {
-			gl::NamedBufferSubDataEXT(id, offset, size, data);
-		}
-		else {
-			gl::BindBuffer(bindingPoint, id);
-			gl::BufferSubData(bindingPoint, offset, size, data);
-		}
-	}
+	void update(
+		std::size_t offset, 
+		std::size_t size, 
+		const void *data
+		);
 
-
-	Buffer(std::size_t size,
+	Buffer(
+		std::size_t size,
 		ResourceUsage resourceUsage,
 		BufferUsage bufferUsage,
-		const void* initialData) : Buffer(bufferUsageToBindingPoint(bufferUsage), size, initialData, resourceUsage, 0)
-	{
+		const void* initialData
+		);
+
+	bool isNull() const {
+		return id == 0;
 	}
 
 private:
-	Buffer(GLenum bindingPoint_, std::size_t size_, const void *data, ResourceUsage usage_, GLbitfield flags) :
-		usage(usage_), bindingPoint(bindingPoint_), size(size_)
-	{
-		gl::GenBuffers(1, &id);
-		gl::BindBuffer(bindingPoint, id);
-		// allocate immutable storage
-		/*if (usage_ == ResourceUsage::Dynamic)
-			gl::BufferStorage(bindingPoint, size, data, gl::DYNAMIC_STORAGE_BIT);
-		else
-			gl::BufferStorage(bindingPoint, size, data, 0);*/
-		if (usage_ == ResourceUsage::Dynamic)
-			gl::BufferData(bindingPoint, size, data, gl::STREAM_DRAW);
-		else
-			gl::BufferData(bindingPoint, size, data, gl::STATIC_DRAW);
-		gl::BindBuffer(bindingPoint, 0);
-	}
-
-	GLuint id = -1;
+	GLuint id = 0;
 	ResourceUsage usage;
 	GLenum bindingPoint;
 	std::size_t size;

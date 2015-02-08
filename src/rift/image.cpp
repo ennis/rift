@@ -14,13 +14,23 @@ Image::Image() :
 }
 
 //====================================
-Image::Image(ElementFormat format, glm::ivec3 size, unsigned int numMipLevels, unsigned int numFaces)
+Image::Image(
+	ElementFormat format, 
+	glm::ivec3 size, 
+	unsigned int numMipLevels, 
+	unsigned int numFaces
+	)
 {
 	allocate(format, size, numMipLevels, numFaces);
 }
 
 //====================================
-void Image::allocate(ElementFormat format, glm::ivec3 size, unsigned int numMipLevels, unsigned int numFaces)
+void Image::allocate(
+	ElementFormat format, 
+	glm::ivec3 size, 
+	unsigned int numMipLevels,
+	unsigned int numFaces
+	)
 {
 	mFormat = format;
 	mNumMipLevels = numMipLevels;
@@ -77,7 +87,7 @@ Image::~Image()
 }
 
 //====================================
-Texture2D Image::convertToTexture2D(Renderer &renderer)
+Texture2D Image::convertToTexture2D()
 {
 	auto tex = Texture2D(getSize(), mNumMipLevels, mFormat, nullptr);
 	for (unsigned int iMip = 0; iMip < mNumMipLevels; iMip++) {

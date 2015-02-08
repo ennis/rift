@@ -1,14 +1,31 @@
 #ifndef TEXTURE_HPP
 #define TEXTURE_HPP
 
-#include <globject.hpp>
+#include <gl_common.hpp>
 #include <glm/glm.hpp>
+#include <utility>	// move
 
-class Texture : GLAPIObject
+class Texture 
 {
 public:
 	friend class Renderer;
-	GL_IS_NULL_IMPL(id)
+	Texture() = default;
+	Texture(const Texture&) = delete;
+	Texture &operator=(const Texture&) = delete;
+	Texture(Texture &&rhs)
+	{
+		*this = std::move(rhs);
+	}
+
+	Texture &operator=(Texture &&rhs)
+	{
+		id = rhs.id;
+		bindingPoint = rhs.bindingPoint;
+		numMipLevels = rhs.numMipLevels;
+		pixelFormat = rhs.pixelFormat;
+		rhs.id = 0;
+		return *this;
+	}
 
 	~Texture()
 	{
@@ -22,17 +39,11 @@ public:
 		return pixelFormat;
 	}
 
-protected:
-
-	void swap(Texture &&rhs)
-	{
-		std::swap(id, rhs.id);
-		std::swap(bindingPoint, rhs.bindingPoint);
-		std::swap(numMipLevels, rhs.numMipLevels);
-		std::swap(pixelFormat, rhs.pixelFormat);
+	bool isNull() const {
+		return id == 0;
 	}
 
-	Texture() = default;
+protected:
 
 	Texture(GLenum bindingPoint_, unsigned int numMipLevels_, ElementFormat pixelFormat_) :
 		bindingPoint(bindingPoint_),
@@ -42,80 +53,45 @@ protected:
 
 	GLuint id = 0;
     GLenum bindingPoint;
-    unsigned int numMipLevels;
+	unsigned int numMipLevels;
     ElementFormat pixelFormat;
 };
 
 class Texture2D : public Texture
 {
 public:
-	GL_MOVEABLE_OBJECT_IMPL(Texture2D);
+	friend class Renderer;
+	Texture2D() = default;
+	Texture2D(const Texture2D&) = delete;
+	Texture2D &operator=(const Texture2D&) = delete;
+	Texture2D(Texture2D &&rhs)
+	{
+		*this = std::move(rhs);
+	}
+
+	Texture2D &operator=(Texture2D &&rhs) {
+		size = rhs.size;
+		Texture::operator=(std::move(rhs));
+		return *this;
+	}
 
 	Texture2D(
 		glm::ivec2 size_,
 		unsigned int numMipLevels_,
 		ElementFormat pixelFormat_,
-		const void *data = nullptr) : Texture(gl::TEXTURE_2D, numMipLevels_, pixelFormat_), size(size_)
-	{
-		gl::GenTextures(1, &id);
-		const auto &pf = getElementFormatInfoGL(pixelFormat);
-		if (gl::exts::var_EXT_direct_state_access) {
-			gl::TextureStorage2DEXT(id, gl::TEXTURE_2D, numMipLevels, pf.internalFormat, size.x, size.y);
-		}
-		else {
-			gl::BindTexture(gl::TEXTURE_2D, id);
-			gl::TexStorage2D(gl::TEXTURE_2D, numMipLevels, pf.internalFormat, size.x, size.y);
-		}
-
-		if (data)
-		{
-			update(0, { 0, 0 }, size, data);
-		}
-	}
-
-	void swap(Texture2D &&rhs)
-	{
-		Texture::swap(std::move(rhs));
-		std::swap(size, rhs.size);
-	}
+		const void *data = nullptr
+		);
 
 	const glm::ivec2 &getSize() const {
 		return size;
 	}
 
-	void update(unsigned int mipLevel, glm::ivec2 offset, glm::ivec2 size, const void *data)
-	{
-		const auto &pf = getElementFormatInfoGL(pixelFormat);
-		if (gl::exts::var_EXT_direct_state_access)
-		{
-			gl::TextureSubImage2DEXT(
-				id, 
-				gl::TEXTURE_2D, 
-				mipLevel, 
-				offset.x, 
-				offset.y, 
-				size.x, 
-				size.y, 
-				pf.externalFormat, 
-				pf.type, 
-				data);
-		}
-		else
-		{
-			gl::BindTexture(gl::TEXTURE_2D, id);
-			gl::TexSubImage2D(
-				gl::TEXTURE_2D,
-				mipLevel,
-				offset.x,
-				offset.y,
-				size.x,
-				size.y,
-				pf.externalFormat,
-				pf.type,
-				data);
-			gl::BindTexture(gl::TEXTURE_2D, 0);
-		}
-	}
+	void update(
+		unsigned int mipLevel,
+		glm::ivec2 offset, 
+		glm::ivec2 size, 
+		const void *data
+		);
 
 private:
 	glm::ivec2 size;
@@ -124,46 +100,37 @@ private:
 class Texture1D : public Texture
 {
 public:
+	friend class Renderer;
+	Texture1D() = delete;
+	Texture1D(const Texture1D&) = delete;
+	Texture1D &operator=(const Texture1D&) = delete;
+	Texture1D(Texture1D &&rhs) 
+	{
+		*this = std::move(rhs);
+	}
+	Texture1D &operator=(Texture1D &&rhs) 
+	{
+		size = rhs.size;
+		Texture::operator=(std::move(rhs));
+		return *this;
+	}
+
 	Texture1D(
 		unsigned int size_,
 		unsigned int numMipLevels_,
-		ElementFormat pixelFormat_) : Texture(gl::TEXTURE_1D, numMipLevels_, pixelFormat_), size(size_)
-	{
-		gl::GenTextures(1, &id);
-		const auto &pf = getElementFormatInfoGL(pixelFormat);
-		if (gl::exts::var_EXT_direct_state_access) {
-			gl::TextureStorage1DEXT(id, gl::TEXTURE_1D, numMipLevels, pf.internalFormat, size);
-		}
-		else {
-			gl::BindTexture(gl::TEXTURE_1D, id);
-			gl::TexStorage1D(gl::TEXTURE_1D, numMipLevels, pf.internalFormat, size);
-		}
-	}
+		ElementFormat pixelFormat_
+		);
 
-	void swap(Texture1D &&rhs)
-	{
-		Texture::swap(std::move(rhs));
-		std::swap(size, rhs.size);
-	}
-
-	unsigned int getSize() const {
+	int getSize() const {
 		return size;
 	}
 
-	void update(unsigned int mipLevel, int offset, unsigned int size, const void *data)
-	{
-		const auto &pf = getElementFormatInfoGL(pixelFormat);
-		if (gl::exts::var_EXT_direct_state_access)
-		{
-			gl::TextureSubImage1DEXT(id, gl::TEXTURE_1D, mipLevel, offset, size, pf.externalFormat, pf.type, data);
-		}
-		else 
-		{
-			gl::BindTexture(bindingPoint, id);
-			gl::TexSubImage1D(bindingPoint, mipLevel, offset, size, pf.externalFormat, pf.type, data);
-			gl::BindTexture(bindingPoint, 0);
-		}
-	}
+	void update(
+		unsigned int mipLevel,
+		unsigned int offset,
+		unsigned int size,
+		const void *data
+		);
 
 private:
 	unsigned int size;
@@ -172,72 +139,35 @@ private:
 class TextureCubeMap : public Texture
 {
 public:
-
+	friend class Renderer;
+	TextureCubeMap() = delete;
+	TextureCubeMap(const TextureCubeMap&) = delete;
+	TextureCubeMap &operator=(const TextureCubeMap&) = delete;
+	TextureCubeMap(TextureCubeMap &&rhs)
+	{
+		*this = std::move(rhs);
+	}
+	TextureCubeMap &operator=(TextureCubeMap &&rhs)
+	{
+		size = rhs.size;
+		Texture::operator=(std::move(rhs));
+		return *this;
+	}
 
 	TextureCubeMap(
 		glm::ivec2 size_,
 		unsigned int numMipLevels_,
 		ElementFormat pixelFormat_,
-		const void* faceData[6]) : Texture(gl::TEXTURE_CUBE_MAP, numMipLevels_, pixelFormat_), size(size_)
-	{
-		gl::GenTextures(1, &id);
-		const auto &pf = getElementFormatInfoGL(pixelFormat);
-		if (gl::exts::var_EXT_direct_state_access) {
-			gl::TextureStorage2DEXT(id, gl::TEXTURE_CUBE_MAP, numMipLevels, pf.internalFormat, size.x, size.y);
-		}
-		else {
-			gl::BindTexture(gl::TEXTURE_CUBE_MAP, id);
-			gl::TexStorage2D(gl::TEXTURE_CUBE_MAP, numMipLevels, pf.internalFormat, size.x, size.y);
-		}
-
-		for (int i = 0; i < 6; ++i) {
-			update(i, 0, { 0, 0 }, size, faceData[i]);
-		}
-	}
-
-	void swap(TextureCubeMap &&rhs)
-	{
-		Texture::swap(std::move(rhs));
-		std::swap(size, rhs.size);
-	}
+		const void* faceData[6]
+		);
 
 	void update(
-		unsigned int face, 
-		unsigned int mipLevel, 
-		glm::ivec2 offset, 
-		glm::ivec2 size, 
-		const void *data)
-	{
-		const auto &pf = getElementFormatInfoGL(pixelFormat);
-		if (gl::exts::var_EXT_direct_state_access)
-		{
-			gl::TextureSubImage2DEXT(
-				id, 
-				gl::TEXTURE_CUBE_MAP_POSITIVE_X+face, 
-				mipLevel, 
-				offset.x, 
-				offset.y, 
-				size.x, 
-				size.y, 
-				pf.externalFormat, 
-				pf.type, 
-				data);
-		}
-		else
-		{
-			gl::BindTexture(gl::TEXTURE_CUBE_MAP, id);
-			gl::TexSubImage2D(gl::TEXTURE_CUBE_MAP_POSITIVE_X+face, 
-				mipLevel, 
-				offset.x, 
-				offset.y, 
-				size.x, 
-				size.y, 
-				pf.externalFormat, 
-				pf.type, 
-				data);
-			gl::BindTexture(gl::TEXTURE_CUBE_MAP, 0);
-		}
-	}
+		unsigned int face,
+		unsigned int mipLevel,
+		glm::ivec2 offset,
+		glm::ivec2 size,
+		const void *data
+		);
 
 private:
 	glm::ivec2 size;

@@ -9,7 +9,7 @@ class Mesh
 {
 public:
 	struct Attribute {
-		int inputSlot;
+		unsigned int inputSlot;
 		ElementFormat elementFormat;
 	};
 
@@ -52,7 +52,7 @@ public:
 		const void *data);
 
 	void updateIndices(
-		unsigned int startIndex, 
+		unsigned int indexOffset, 
 		unsigned int numVertices,
 		const void *data);
 
@@ -75,15 +75,15 @@ public:
 
 	void drawPart(
 		Renderer &renderer,
-		int baseVertex,
-		int numVertices
+		unsigned int baseVertex,
+		unsigned int numVertices
 		) const;
 
 	void drawPart(
 		Renderer &renderer,
-		int baseVertex,
-		int startIndex, 
-		int numIndices
+		unsigned int baseVertex,
+		unsigned int indexOffset,
+		unsigned int numIndices
 		) const;
 
 	unsigned int getNumVertices() const {
@@ -101,7 +101,7 @@ private:
 	Buffer mIndexBuffer;	
 	VertexLayout mVertexLayout;	
 	PrimitiveType mPrimitiveType;
-	std::array<int, 16> mStrides;
+	std::array<unsigned int, 16> mStrides;
 	unsigned int mIndexStride = 0;
 	unsigned int mNumBuffers = 0;
 	unsigned int mNumVertices = 0;

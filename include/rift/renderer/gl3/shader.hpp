@@ -3,18 +3,37 @@
 
 #include <globject.hpp>
 #include <string>
+#include <utility>	// move
 
-class Shader : public GLAPIObject
+class Shader 
 {
 public:
-	GL_MOVEABLE_OBJECT_IMPL(Shader)
-	GL_IS_NULL_IMPL(id)
+	friend class Renderer;
+	Shader() = default;
+	Shader(const Shader&) = delete;
+	Shader &operator=(const Shader&) = delete;
+	Shader(Shader &&rhs)
+	{
+		*this = std::move(rhs);
+	}
+	Shader &operator=(Shader&& rhs)
+	{
+		id = rhs.id;
+		rhs.id = 0;
+		return *this;
+	}
 
 	~Shader()
-	{//TODO
+	{
+		gl::DeleteProgram(id);
 	}
 
 	Shader(std::string vsSource_, std::string psSource_);
+
+	bool isNull() const
+	{
+		return id == 0;
+	}
 
 private:
 	void swap(Shader &&rhs);
