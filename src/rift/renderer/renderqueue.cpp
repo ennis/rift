@@ -1,5 +1,6 @@
 #include <renderqueue.hpp>
 #include <algorithm>	// std::sort
+#include <log.hpp>
 
 namespace
 {
@@ -11,6 +12,16 @@ namespace
 	inline unsigned int getBucketId(uint64_t sortKey)
 	{
 		return static_cast<unsigned int>(sortKey >> 32);
+	}
+
+	void debugViewport(const Viewport2& vp)
+	{
+		LOG << "\tx       =" << vp.topLeftX << "\n"
+			<< "\ty       =" << vp.topLeftY << "\n"
+			<< "\tw       =" << vp.width << "\n"
+			<< "\th       =" << vp.height << "\n"
+			<< "\tmindepth=" << vp.minDepth << "\n"
+			<< "\tmaxdepth=" << vp.maxDepth;
 	}
 }
 
@@ -81,6 +92,30 @@ RenderQueue &RenderQueue::setViewports(
 	for (int i = 0; i < viewports.size(); ++i)
 		buckets[bucket].viewports[i] = viewports[i];
 	return *this;
+}
+
+void RenderQueue::debugPrint()
+{
+	LOG << "RenderQueue " << this;
+	for (unsigned int i = 0; i < kMaxBuckets; ++i) {
+		const auto &b = buckets[i];
+		LOG << "Bucket #" << i << "\n"
+			<< "color=" << b.clearColor << "\n"
+			<< "depth=" << b.clearDepth << "\n"
+			<< "rt[0]=" << b.colorTargets[0] << "\n"
+			<< "rt[1]=" << b.colorTargets[1] << "\n"
+			<< "rt[2]=" << b.colorTargets[2] << "\n"
+			<< "rt[3]=" << b.colorTargets[3] << "\n";
+		for (int i = 0; i < kMaxViewports; ++i) {
+			LOG << "Viewport #" << i << ':';
+			debugViewport(b.viewports[i]);
+		}
+	}
+
+	for (const auto &ri : renderItems) 
+	{
+		LOG << "RenderItem SK=" << ri.sortKey << " SB=" << ri.submissionId;
+	}
 }
 
 RenderQueue &RenderQueue::flush()

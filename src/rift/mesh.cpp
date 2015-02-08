@@ -30,7 +30,6 @@ Mesh::Mesh(Mesh &&rhs)
 
 Mesh::~Mesh()
 {
-	// TODO destroy
 }
 
 Mesh &Mesh::operator=(Mesh &&rhs)
@@ -74,7 +73,7 @@ void Mesh::allocate(
 		mStrides[e.inputSlot] += getElementFormatSize(e.format);
 	}
 	mVertexLayout = VertexLayout(std::make_array_ref<VertexElement2>(elements, attributes.size()));
-	for (int ib = 0; ib < mNumBuffers; ++ib) {
+	for (unsigned int ib = 0; ib < mNumBuffers; ++ib) {
 		mVertexBuffers.push_back(
 			Buffer(
 				mStrides[ib] * mNumVertices, 
@@ -126,7 +125,7 @@ void Mesh::draw(Renderer &renderer) const
 void Mesh::prepareDraw(Renderer &renderer) const
 {
 	renderer.setInputLayout(&mVertexLayout);
-	for (int ib = 0; ib < mNumBuffers; ++ib) {
+	for (unsigned int ib = 0; ib < mNumBuffers; ++ib) {
 		renderer.setVertexBuffer(ib, &mVertexBuffers[ib], 0, mStrides[ib]);
 	}
 }

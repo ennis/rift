@@ -114,6 +114,13 @@ namespace
 		return primitiveTypeToGLenum_[static_cast<int>(type)];
 	}
 
+	void debugPrintTexture(const Texture *tex)
+	{
+		if (tex)
+			LOG << tex << " (" << getElementFormatName(tex->getPixelFormat()) << ")";
+		else
+			LOG << "(NULL)";
+	}
 
 	enum class DrawCommand
 	{
@@ -211,9 +218,9 @@ public:
 		current.cmd = DrawCommand::Draw;
 		current.primitiveType = PrimitiveType::Triangle;
 		current.instanceCount = 0;
-		current.startVertex = 0;
+		current.baseVertex = 0;
 		current.numVertices = 0;
-		current.startIndex = 0;
+		current.indexOffset = 0;
 		current.numIndices = 0;
 	}
 
@@ -273,14 +280,6 @@ public:
 		assert(slot < kMaxConstantBufferBindings);
 		current.CB[slot] = buffer;
 	}
-
-	/*void setConstantBuffers(
-		int firstInputSlot,
-		std::array_ref<const Buffer*> buffers
-		)
-	{
-
-	}*/
 
 	void setTexture(
 		int texunit,
@@ -363,6 +362,7 @@ public:
 			for (int i = 0; i < colorTargets.size(); ++i)
 			{
 				auto rt = colorTargets[i];
+				assert(rt != nullptr);
 				if (rt->layer != -1)
 					// bind all layers
 					gl::FramebufferTexture(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0 + i, rt->texture->id, rt->mipLevel);
@@ -401,7 +401,7 @@ public:
 			viewports[0].height
 		};
 		gl::Viewport(viewports[0].topLeftX, viewports[0].topLeftY, viewports[0].width, viewports[0].height);
-		//gl::DepthRangeIndexed(0, viewports[0].minDepth, viewports[0].maxDepth);
+		gl::DepthRangeIndexed(0, viewports[0].minDepth, viewports[0].maxDepth);
 		//gl::DepthRangeIndexed(0, 0.0f, 1.0f);
 
 		// TODO more than 1 viewport
@@ -421,38 +421,38 @@ public:
 
 	// submit vertices for rendering
 	void draw(
-		PrimitiveType primitiveType_,
-		int startVertex_,
-		int numVertices_
+		PrimitiveType primitiveType,
+		int baseVertex,
+		int numVertices
 		)
 	{
 		current.cmd = DrawCommand::Draw;
-		current.primitiveType = primitiveType_;
-		current.startVertex = startVertex_;
-		current.numVertices = numVertices_;
+		current.primitiveType = primitiveType;
+		current.baseVertex = baseVertex;
+		current.numVertices = numVertices;
 	}
 
 	void drawIndexed(
-		PrimitiveType primitiveType_,
-		int startIndex_,
-		int numIndices_,
-		int baseVertex_
+		PrimitiveType primitiveType,
+		int indexOffset,
+		int numIndices,
+		int baseVertex
 		)
 	{
 		current.cmd = DrawCommand::DrawIndexed;
-		current.primitiveType = primitiveType_;
-		current.startVertex = baseVertex_;
-		current.startIndex = startIndex_;
-		current.numIndices = numIndices_;
+		current.primitiveType = primitiveType;
+		current.baseVertex = baseVertex;
+		current.indexOffset = indexOffset;
+		current.numIndices = numIndices;
 	}
 
 	void drawIndexedInstanced(
 		PrimitiveType primitiveType_,
 		int baseInstance_,
 		int numInstances_,
-		int startIndex_,
+		int indexOffset,
 		int numIndices_,
-		int baseVertex_
+		int baseVertex
 		)
 	{
 		current.cmd = DrawCommand::DrawIndexedInstanced;
@@ -468,8 +468,30 @@ public:
 			current.VB, current.offsets, current.strides, current.IB, current.vertexLayout,
 			current.CB, current.textures, current.samplers, current.shader, current.rasterizerState,
 			current.depthStencilState, current.cmd, current.primitiveType, current.instanceCount,
-			current.startVertex, current.numVertices, current.startIndex, current.numIndices
+			current.baseVertex, current.numVertices, current.indexOffset, current.numIndices
 		};
+
+		LOG << "Submission #" << submissions.size();
+		LOG << "VB[0]=" << current.VB[0];
+		LOG << "VB[1]=" << current.VB[1];
+		LOG << "VB[2]=" << current.VB[2];
+		LOG << "VB[3]=" << current.VB[3];
+		LOG << "IB   =" << current.IB;
+		LOG << "CB[0]=" << current.CB[0];
+		LOG << "CB[1]=" << current.CB[1];
+		LOG << "CB[2]=" << current.CB[2];
+		LOG << "CB[3]=" << current.CB[3];
+		LOG << "cmd  =" << static_cast<int>(current.cmd);
+		LOG << "ic   =" << current.instanceCount;
+		LOG << "bv   =" << current.baseVertex;
+		LOG << "nv   =" << current.numVertices;
+		LOG << "io   =" << current.indexOffset;
+		LOG << "ni   =" << current.numIndices;
+		LOG << "tx[0]=" << current.textures[0]; debugPrintTexture(current.textures[0]);
+		LOG << "tx[1]=" << current.textures[1]; debugPrintTexture(current.textures[1]);
+		LOG << "tx[2]=" << current.textures[2]; debugPrintTexture(current.textures[2]);
+		LOG << "tx[3]=" << current.textures[3]; debugPrintTexture(current.textures[3]);
+
 		submissions.push_back(sub);
 		setDefaultState();
 		return submissions.size() - 1;
@@ -529,8 +551,8 @@ public:
 			gl::Enable(gl::CULL_FACE);
 			gl::CullFace(cullModeToGLenum(item.rasterizerState.cullMode));
 		}
-		//gl::PolygonMode(gl::FRONT_AND_BACK, fillModeToGLenum(item.rasterizerState.fillMode)); 
-		gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+		gl::PolygonMode(gl::FRONT_AND_BACK, fillModeToGLenum(item.rasterizerState.fillMode)); 
+		//gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
 		// TODO depth clip enable
 
 		// TODO Depth stencil
@@ -596,9 +618,9 @@ private:
 		DrawCommand cmd;
 		PrimitiveType primitiveType;
 		int instanceCount;
-		int startVertex;
+		int baseVertex;
 		int numVertices;
-		int startIndex;
+		int indexOffset;
 		int numIndices;
 	} current;
 
@@ -706,33 +728,33 @@ void Renderer::setSamplerState(
 
 void Renderer::draw(
 	PrimitiveType primitiveType,
-	int startVertex,
+	int baseVertex,
 	int numVertices
 	)
 {
-	impl->draw(primitiveType, startVertex, numVertices);
+	impl->draw(primitiveType, baseVertex, numVertices);
 }
 
 void Renderer::drawIndexed(
 	PrimitiveType primitiveType,
-	int startIndex,
+	int indexOffset,
 	int numIndices,
 	int baseVertex
 	)
 {
-	impl->drawIndexed(primitiveType, startIndex, numIndices, baseVertex);
+	impl->drawIndexed(primitiveType, indexOffset, numIndices, baseVertex);
 }
 
 void Renderer::drawIndexedInstanced(
 	PrimitiveType primitiveType,
 	int baseInstance,
 	int numInstances,
-	int startIndex,
+	int indexOffset,
 	int numIndices,
 	int baseVertex
 	)
 {
-	impl->drawIndexedInstanced(primitiveType, baseInstance, numInstances, startIndex, numIndices, baseVertex);
+	impl->drawIndexedInstanced(primitiveType, baseInstance, numInstances, indexOffset, numIndices, baseVertex);
 }
 
 void Renderer::clearColor(

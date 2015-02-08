@@ -110,13 +110,13 @@ public:
 	// submit vertices for rendering
 	void draw(
 		PrimitiveType primitiveType,
-		int startVertex,
+		int baseVertex,
 		int numVertices
 		);
 
 	void drawIndexed(
 		PrimitiveType primitiveType,
-		int startIndex,
+		int indexOffset,
 		int numIndices,
 		int baseVertex
 		);
@@ -125,7 +125,7 @@ public:
 		PrimitiveType primitiveType,
 		int baseInstance,
 		int numInstances,
-		int startIndex,
+		int indexOffset,
 		int numIndices,
 		int baseVertex
 		);

@@ -6,6 +6,7 @@
 #include <effect.hpp>
 #include <mesh.hpp>
 #include <uniform.hpp>
+#include <renderqueue.hpp>
 
 class Sky
 {
@@ -14,7 +15,7 @@ public:
 	~Sky();
 
 	void setTimeOfDay(float hour);
-	void render(Renderer &renderer, const SceneData &sceneData);
+	void render(RenderQueue &rq, const SceneData &sceneData);
 
 private:
 	struct SkyParams

@@ -98,9 +98,17 @@ void RiftGame::init()
 		R.setShader(shader);
 		CBSceneData.bind(R);
 		CBPerObj.bind(R);
+		R.setRasterizerState({ CullMode::None, PolygonFillMode::Wireframe, false });
 		mesh.drawPart(R, s.startVertex, s.startIndex, s.numIndices);
 		subs.push_back(R.createSubmission());
 	}
+
+	/*SubmissionBuilder()
+		.setShader(shader)
+		.setCB(CBSceneData)
+		.setCB(CBPerObj)
+		.drawMesh(...)
+		.setBucket(ScenePass::Opaque);*/
 
 	sky = std::make_unique<Sky>(R, CBSceneData.getBuffer());
 }
@@ -111,7 +119,7 @@ void RiftGame::render(float dt)
 	// rendu de la scene
 	Renderer &R = Engine::instance().getRenderer();
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
-	rq->setViewports(0, { { 0.f, 0.f, float(win_size.x), float(win_size.y) } });
+	rq->setViewports(0, { { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
 
 	// update scene data buffer
 	auto cam = cameraEntity->getComponent<Camera>();
@@ -129,10 +137,15 @@ void RiftGame::render(float dt)
 
 	for (auto sub : subs)
 		rq->submit(sub, 0);
+	// render sky
+	sky->render(*rq, sceneData);
+
+	if (glfwGetKey(Engine::instance().getWindow().getHandle(), GLFW_KEY_H)) {
+		rq->debugPrint();
+	}
+
 	rq->flush();
 
-	// render sky
-	sky->render(R, sceneData);
 
 	// render tweak bar
 	//TwDraw();

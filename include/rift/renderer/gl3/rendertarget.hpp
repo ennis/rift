@@ -1,17 +1,25 @@
 #ifndef RENDERTARGET_HPP
 #define RENDERTARGET_HPP
 
-#include <globject.hpp>
+#include <gl_common.hpp>
 #include <texture.hpp>
 
-class RenderTarget : public GLAPIObject
+class RenderTarget
 {
 public:
-	GL_MOVEABLE_OBJECT_IMPL(RenderTarget)
-	GL_IS_NULL_IMPL(texture)
+	friend class Renderer;
+	RenderTarget() = default;
+	RenderTarget(RenderTarget &&rhs) { *this = std::move(rhs); }
+	RenderTarget &operator=(RenderTarget &&rhs) {
+		swap(std::move(rhs));
+		return *this;
+	}
+	RenderTarget(const RenderTarget &) = delete;
+	RenderTarget &operator=(const RenderTarget &rhs) = delete;
 
 	void swap(RenderTarget &&rhs)
 	{
+		std::swap(format, rhs.format);
 		std::swap(texture, rhs.texture);
 		std::swap(mipLevel, rhs.mipLevel);
 		std::swap(layer, rhs.layer);
@@ -19,12 +27,10 @@ public:
 
 	// TODO query format
 	// TODO special object for screen RT
-
 	ElementFormat getPixelFormat() const 
 	{
 		return format;
 	}
-
 
 	static RenderTarget createRenderTarget2D(Texture2D *texture2D, unsigned int mipLevel) 
 	{
