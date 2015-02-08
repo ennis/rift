@@ -2,22 +2,19 @@
 #define SKY_HPP
 
 #include <renderer2.hpp>
-#include <renderable.hpp>
+#include <scene.hpp>
 #include <effect.hpp>
 #include <mesh.hpp>
-#include <material.hpp>
 #include <uniform.hpp>
 
-class Sky : public Renderable
+class Sky
 {
 public:
-	Sky(Renderer &renderer_);
+	Sky(Renderer &renderer, Buffer *cbSceneData);
 	~Sky();
 
 	void setTimeOfDay(float hour);
-	void render(
-		const RenderQueues &renderQueues, 
-		const SceneData &data) override;
+	void render(Renderer &renderer, const SceneData &sceneData);
 
 private:
 	struct SkyParams
@@ -26,13 +23,13 @@ private:
 		glm::vec3 color;
 	};
 
-	Renderer *renderer;
+	int submission;
 	float timeOfDay;
 	Effect skyEffect;
 	Shader *skyShader;
 	
-	UniformValue<SkyParams> params;
-	UniformBuffer<SceneData> sceneParams;
+	ConstantValue<SkyParams> params;
+	ConstantBuffer sceneParams;
 	
 	Mesh skybox;
 };

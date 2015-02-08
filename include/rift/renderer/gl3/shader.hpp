@@ -37,6 +37,10 @@ public:
 
 	// get cbuffer location
 	int getBufferLocation(const char *buffer);
+	unsigned int getProgram() 
+	{
+		return id;
+	}
 
 private:
 	GLuint id; 

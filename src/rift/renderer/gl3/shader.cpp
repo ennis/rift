@@ -85,6 +85,5 @@ psSource(std::move(psSource_))
 int Shader::getBufferLocation(const char *buffer)
 {
 	unsigned int blockIndex = gl::GetUniformBlockIndex(id, buffer);
-	gl::UniformBlockBinding(id, blockIndex, blockIndex);
 	return blockIndex;
 }

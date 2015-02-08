@@ -3,11 +3,8 @@
 
 #include <effect.hpp>
 
-
 // Interface for working with shader paramters (uniforms)
 // target: uniform location (var or buffer binding)
-
-// base class: contains common code for binding and type checking?
 class Uniform
 {
 public:
@@ -38,39 +35,34 @@ protected:
 
 // target: uniform var or buffer; contains: copy of value
 template <typename T>
-class ConstantBuffer : public Uniform
+class ConstantValue : public Uniform
 {
 public:
-	ConstantBuffer() = default;
+	ConstantValue() = default;
 
-	ConstantBuffer(Shader &shader, const char *name) :
+	ConstantValue(Shader &shader, const char *name) :
 		Uniform(shader, name),
 		cb(sizeof(T), ResourceUsage::Dynamic, BufferUsage::ConstantBuffer, nullptr)
 	{
+		// assign a buffer binding point (none assigned yet)
+		gl::UniformBlockBinding(shader.getProgram(), bufferLocation, bufferLocation);
 	}
 
-	ConstantBuffer(ConstantBuffer &&rhs)
+	ConstantValue(ConstantValue &&rhs)
 	{
 		*this = std::move(rhs);
 	}
 
-	ConstantBuffer &operator=(ConstantBuffer &&rhs)
+	ConstantValue &operator=(ConstantValue &&rhs)
 	{
-		value = std::move(rhs.value);
 		cb = std::move(rhs.cb);
 		Uniform::operator=(std::move(rhs));
 		return *this;
 	}
 
-	// returns a mutable reference to the value
-	T& get() 
+	void update(const T &data)
 	{
-		return value;
-	}
-
-	void update()
-	{
-		cb.update(0, sizeof(T), &value);
+		cb.update(0, sizeof(T), &data);
 	}
 
 	void bind(Renderer &renderer)
@@ -79,10 +71,40 @@ public:
 			renderer.setConstantBuffer(bufferLocation, &cb);
 	}
 
+	Buffer *getBuffer()
+	{
+		return &cb;
+	}
+
 private:
-	T value;
 	Buffer cb;
 };
 
+class ConstantBuffer : public Uniform
+{
+public:
+	ConstantBuffer() = default;
+	ConstantBuffer(ConstantBuffer &&rhs) { *this = std::move(rhs); }
+	ConstantBuffer &operator=(ConstantBuffer &&rhs) {
+		cb = std::move(rhs.cb);
+		Uniform::operator=(std::move(rhs));
+		return *this;
+	}
+
+	ConstantBuffer(Shader &shader, const char *name, Buffer *buf) : Uniform(shader, name), cb(buf)
+	{
+		// assign a buffer binding point (none assigned yet)
+		gl::UniformBlockBinding(shader.getProgram(), bufferLocation, bufferLocation);
+	}
+
+	void bind(Renderer &renderer)
+	{
+		if (bufferLocation != -1)
+			renderer.setConstantBuffer(bufferLocation, cb);
+	}
+
+private:
+	Buffer *cb = nullptr;
+};
  
 #endif /* end of include guard: UNIFORM_HPP */

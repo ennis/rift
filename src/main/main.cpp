@@ -15,6 +15,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
 #include <uniform.hpp>
+#include <sky.hpp>
 
 //============================================================================
 // Classe de base du jeu
@@ -42,16 +43,19 @@ private:
 	{
 		glm::mat4 modelMatrix;
 		glm::vec4 objectColor;
-	};
+	} perObj;
+
+	SceneData sceneData;
 
 	Entity *cameraEntity;
 	Shader *shader;
-	ConstantBuffer<SceneData> sceneData;
-	ConstantBuffer<PerObject> perObj;
+	ConstantValue<SceneData> CBSceneData;
+	ConstantValue<PerObject> CBPerObj;
 	std::vector<unsigned int> subs;
 	Effect effect;
 	Model model;
 	std::unique_ptr<RenderQueue> rq;
+	std::unique_ptr<Sky> sky;
 };
 
 //============================================================================
@@ -80,8 +84,8 @@ void RiftGame::init()
 	// create an optimized static mesh and send it to the GPU
 	model.optimize();
 
-	sceneData = ConstantBuffer<SceneData>(*shader, "SceneData");
-	perObj = ConstantBuffer<PerObject>(*shader, "PerObject");
+	CBSceneData = ConstantValue<SceneData>(*shader, "SceneData");
+	CBPerObj = ConstantValue<PerObject>(*shader, "PerObject");
 
 	// create submission for each submesh
 	rq = std::make_unique<RenderQueue>(R);
@@ -92,11 +96,13 @@ void RiftGame::init()
 	const auto &sm = model.getSubmeshes();
 	for (const auto &s : sm) {
 		R.setShader(shader);
-		sceneData.bind(R);
-		perObj.bind(R);
+		CBSceneData.bind(R);
+		CBPerObj.bind(R);
 		mesh.drawPart(R, s.startVertex, s.startIndex, s.numIndices);
 		subs.push_back(R.createSubmission());
 	}
+
+	sky = std::make_unique<Sky>(R, CBSceneData.getBuffer());
 }
 
 
@@ -109,22 +115,24 @@ void RiftGame::render(float dt)
 
 	// update scene data buffer
 	auto cam = cameraEntity->getComponent<Camera>();
-	auto &sd = sceneData.get();
-	sd.eyePos = glm::vec4(cameraEntity->getTransform().position, 1.0f);
-	sd.projMatrix = cam->getProjectionMatrix();
-	sd.viewMatrix = cam->getViewMatrix();
-	sd.viewProjMatrix = sd.projMatrix * sd.viewMatrix;
-	sd.viewportSize = win_size;
-	sceneData.update();
+	sceneData.eyePos = glm::vec4(cameraEntity->getTransform().position, 1.0f);
+	sceneData.projMatrix = cam->getProjectionMatrix();
+	sceneData.viewMatrix = cam->getViewMatrix();
+	sceneData.viewProjMatrix = sceneData.projMatrix * sceneData.viewMatrix;
+	sceneData.viewportSize = win_size;
+	CBSceneData.update(sceneData);
 
 	// update per-model buffer
-	perObj.get().modelMatrix = glm::mat4(1.0f);
-	perObj.get().objectColor = glm::vec4(1.0f);
-	perObj.update();
+	perObj.modelMatrix = glm::mat4(1.0f);
+	perObj.objectColor = glm::vec4(1.0f);
+	CBPerObj.update(perObj);
 
 	for (auto sub : subs)
 		rq->submit(sub, 0);
 	rq->flush();
+
+	// render sky
+	sky->render(R, sceneData);
 
 	// render tweak bar
 	//TwDraw();
