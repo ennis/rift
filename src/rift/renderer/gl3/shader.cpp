@@ -79,11 +79,12 @@ vsSource(std::move(vsSource_)),
 psSource(std::move(psSource_))
 {
 	id = glslCreateProgram(vsSource.c_str(), psSource.c_str());
+	// assign block bindings (binding = index for each buffer)
 }
 
-void Shader::swap(Shader &&rhs)
+int Shader::getBufferLocation(const char *buffer)
 {
-	std::swap(id, rhs.id);
-	std::swap(vsSource, rhs.vsSource);
-	std::swap(psSource, rhs.psSource);
+	unsigned int blockIndex = gl::GetUniformBlockIndex(id, buffer);
+	gl::UniformBlockBinding(id, blockIndex, blockIndex);
+	return blockIndex;
 }

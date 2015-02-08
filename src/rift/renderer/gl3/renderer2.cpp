@@ -270,6 +270,7 @@ public:
 		const Buffer* buffer
 		)
 	{
+		assert(slot < kMaxConstantBufferBindings);
 		current.CB[slot] = buffer;
 	}
 
@@ -514,7 +515,7 @@ public:
 		// TODO multi-bind
 		// Constant buffers
 		for (int i = 0; i < item.CB.size(); ++i) {
-			if (item.CB[i])
+			if (item.CB[i]) 
 				gl::BindBufferRange(gl::UNIFORM_BUFFER, i, item.CB[i]->id, 0, item.CB[i]->size);
 			else 
 				gl::BindBufferRange(gl::UNIFORM_BUFFER, i, 0, 0, 0);

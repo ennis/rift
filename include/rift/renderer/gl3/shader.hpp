@@ -1,7 +1,7 @@
 #ifndef SHADER_HPP
 #define SHADER_HPP
 
-#include <globject.hpp>
+#include <gl_common.hpp>
 #include <string>
 #include <utility>	// move
 
@@ -35,9 +35,10 @@ public:
 		return id == 0;
 	}
 
-private:
-	void swap(Shader &&rhs);
+	// get cbuffer location
+	int getBufferLocation(const char *buffer);
 
+private:
 	GLuint id; 
 	std::string vsSource;
 	std::string psSource;

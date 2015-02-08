@@ -6,7 +6,7 @@
 // !!! Les données doivent être agencées en mémoire de la même façon 
 // dans le fichier .cpp et dans le shader : i.e. les types doivent correspondre
 // et les variables doivent être définies dans le même ordre 
-layout(binding = 0, std140) uniform RenderData {
+layout(std140) uniform SceneData {
 	mat4 viewMatrix;
 	mat4 projMatrix;
 	mat4 viewProjMatrix;	// = projMatrix*viewMatrix
