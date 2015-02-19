@@ -4,12 +4,7 @@
 #endif
 
 #include <glm/glm.hpp>
-#include <GL/glew.h>
+#include <gl_core_4_4.hpp>
 
-#ifdef __APPLE__
-#include <OpenGL/gl.h>
-#else
-#include <GL/GL.h>
-#endif
 
 #include <GLFW/glfw3.h>

@@ -1,47 +1,43 @@
 #ifndef Mesh_HPP
 #define Mesh_HPP
 
-#include <renderer.hpp>
+#include <renderer2.hpp>
 #include <array>
+#include <array_ref.hpp>
 
 class Mesh
 {
 public:
 	struct Attribute {
-		unsigned int buffer;
+		unsigned int inputSlot;
 		ElementFormat elementFormat;
 	};
 
-	struct Buffer {
+	struct BufferDesc {
 		ResourceUsage usage;
 	};
 
 	Mesh() = default;
 	Mesh(
-		Renderer &renderer,
 		PrimitiveType primitiveType,
-		unsigned int numAttributes,
-		Mesh::Attribute attributes[],
-		unsigned int numBuffers,
-		Mesh::Buffer buffers[],
+		std::array_ref<Mesh::Attribute> attributes,
+		std::array_ref<Mesh::BufferDesc> buffers,
 		unsigned int numVertices,
 		const void *initialVertices[],
 		unsigned int numIndices,
 		ElementFormat indexFormat,
 		ResourceUsage indexUsage,
 		const void *initialIndices);
+
 	Mesh(Mesh const &rhs) = delete;
 	Mesh(Mesh &&rhs);
 	~Mesh();
 	Mesh &operator=(Mesh &&rhs);
 
 	void allocate(
-		Renderer &renderer,
 		PrimitiveType primitiveType,
-		unsigned int numAttributes,
-		Mesh::Attribute attributes[],
-		unsigned int numBuffers,
-		Mesh::Buffer buffers[],
+		std::array_ref<Mesh::Attribute> attributes,
+		std::array_ref<Mesh::BufferDesc> buffers,
 		unsigned int numVertices,
 		const void *initialVertices[],
 		unsigned int numIndices,
@@ -56,41 +52,56 @@ public:
 		const void *data);
 
 	void updateIndices(
-		unsigned int startIndex, 
+		unsigned int indexOffset, 
 		unsigned int numVertices,
 		const void *data);
 
-	VertexBuffer *getVertexBuffer(unsigned int id);
-	IndexBuffer *getIndexBuffer();
-	VertexLayout *getVertexLayout();
+	std::array_ref<Buffer> getVertexBuffers() const {
+		return mVertexBuffers;
+	}
+	const Buffer &getIndexBuffer() const {
+		return mIndexBuffer;
+	}
+	const VertexLayout &getVertexLayout() const {
+		return mVertexLayout;
+	}
+	PrimitiveType getPrimitiveType() const {
+		return mPrimitiveType;
+	}
 
-	void draw();
+	void draw(
+		Renderer &renderer
+		) const;
+
 	void drawPart(
+		Renderer &renderer,
 		unsigned int baseVertex,
-		unsigned int numVertices);
+		unsigned int numVertices
+		) const;
+
 	void drawPart(
+		Renderer &renderer,
 		unsigned int baseVertex,
-		unsigned int startIndex, 
-		unsigned int numIndices);
+		unsigned int indexOffset,
+		unsigned int numIndices
+		) const;
 
 	unsigned int getNumVertices() const {
 		return mNumVertices;
 	}
+
 	unsigned int getNumIndices() const {
 		return mNumIndices;
 	}
 
 private:
+	void prepareDraw(Renderer &renderer) const;
 
-	void prepareDraw();
-
-	Renderer *mRenderer = nullptr;	// borrowed ref
-	// TODO usage-agnostic buffer class
-	std::array<VertexBuffer*, 16> mVertexBuffers;	// owned
-	IndexBuffer *mIndexBuffer = nullptr;	// owned
-	VertexLayout *mVertexLayout = nullptr;	// owned
+	std::vector<Buffer> mVertexBuffers;	
+	Buffer mIndexBuffer;	
+	VertexLayout mVertexLayout;	
 	PrimitiveType mPrimitiveType;
-	std::array<unsigned int, 16> mStride;
+	std::array<unsigned int, 16> mStrides;
 	unsigned int mIndexStride = 0;
 	unsigned int mNumBuffers = 0;
 	unsigned int mNumVertices = 0;

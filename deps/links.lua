@@ -2,10 +2,22 @@ libdirs { "lib/", "lib/boost/ "}
 includedirs { "include/" }
 local thisDir = os.getcwd().."/";
 
+-- generate an opengl header
+-- TODO maybe we could execute the script directly from premake
+os.execute("lua "..
+		thisDir.."glLoadGen_2_0_2/LoadGen.lua "..
+		thisDir.."include/core_4_4 "..
+		"-style=func_cpp "..
+		"-spec=gl ".. 
+		"-version=4.4 "..
+		"-profile=core core_4_4 "..
+		"-exts EXT_direct_state_access EXT_texture_compression_s3tc ")
+
 function use_gl()
 	dofile (thisDir.."opengl.lua")
 	links {"glfw3", "glew32"}
 	includedirs {thisDir.."include/GL"}
+	files {thisDir.."include/gl_core_4_4.cpp"}
 end
 
 function use_assimp()

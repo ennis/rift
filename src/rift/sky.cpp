@@ -1,15 +1,7 @@
 #include <sky.hpp>
-#include <effect.hpp>
 
-Sky::Sky(Renderer &renderer) : 
-	mRenderer(renderer),
-	mTimeOfDay(0.f), 
-	mSkybox()
+Sky::Sky(Renderer &renderer, Buffer *cbSceneData) 
 {
-	mSkyShader = renderer.createShader(
-		loadShaderSource("resources/shaders/sky/vert.glsl").c_str(),
-		loadShaderSource("resources/shaders/sky/frag.glsl").c_str());
-
 	static const float skycubeVertices[] = {
 		-10.0f, 10.0f, -10.0f,
 		-10.0f, -10.0f, -10.0f,
@@ -54,31 +46,43 @@ Sky::Sky(Renderer &renderer) :
 		10.0f, -10.0f, 10.0f
 	};
 
+	skyEffect = Effect("resources/shaders/sky.glsl");
+	skyShader = skyEffect.compileShader(renderer, {});
+	params = ConstantValue<SkyParams>(*skyShader, "CBSkyParams");
+	sceneParams = ConstantBuffer(*skyShader, "SceneData", cbSceneData);
+
 	Mesh::Attribute attribs[] = { { 0, ElementFormat::Float3 } };
-	Mesh::Buffer buffers[] = { { ResourceUsage::Static } };
+	Mesh::BufferDesc buffers[] = { { ResourceUsage::Static } };
 	const void *init[] = { skycubeVertices };
-	mSkybox = Mesh(renderer, PrimitiveType::Triangle, 1, attribs, 1, buffers, 36, init, 0, ElementFormat::Max, ResourceUsage::Static, nullptr);
+	skybox = Mesh(PrimitiveType::Triangle, attribs, buffers, 36, init, 0, ElementFormat::Max, ResourceUsage::Static, nullptr);
+
+	renderer.setShader(skyShader);
+	params.bind(renderer);
+	sceneParams.bind(renderer);
+	skybox.draw(renderer);
+	submission = renderer.createSubmission();
 }
 
 Sky::~Sky()
 {
-	mSkyShader->release();
 }
 
 void Sky::setTimeOfDay(float hour)
 {
-	mTimeOfDay = hour;
+	timeOfDay = hour;
 }
 
-void Sky::render(RenderContext const &context) 
+void Sky::render(
+	RenderQueue &rq, 
+	const SceneData &sceneData
+	)
 {
 	using namespace glm;
-	float sunAngle = mTimeOfDay / 24.0f * 2 * 3.14159f;
+	float sunAngle = timeOfDay / 24.0f * 2 * 3.14159f;
 	vec3 sunDirection = vec3(cosf(sunAngle), sinf(sunAngle), 0);
-	context.renderer->setShader(mSkyShader);
-	context.renderer->setConstantBuffer(0, context.perFrameShaderParameters);
-	context.renderer->setNamedConstantFloat3("uSunDirection", sunDirection);
-	context.renderer->setNamedConstantFloat3("uSunColor", glm::vec3(1.0f, 1.0f, 1.0f));
-	mSkybox.draw();
+	vec3 sunColor = vec3(1.0f, 1.0f, 1.0f);
+
+	params.update({ sunDirection, sunColor });
+	rq.submit(submission, 0);
 }
 

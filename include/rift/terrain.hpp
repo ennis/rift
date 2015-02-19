@@ -1,26 +1,39 @@
 #ifndef TERRAIN_HPP
 #define TERRAIN_HPP
 
-#include <renderer.hpp>
+#include <renderer2.hpp>	// Renderer
+#include <buffer.hpp>	// Buffer
 #include <renderable.hpp>
 #include <image.hpp>
+#include <effect.hpp>
+
+#include <array>
 
 class Terrain
 {
 public:
-	// TODO reference
-	Terrain(Renderer &renderer, Image &&heightmapData);
+	Terrain(
+		Renderer &renderer, 
+		Image &&heightmapData,
+		Texture2D *slopeTexture,
+		Texture2D *flatTexture);
+
+	Terrain(const Terrain &) = delete;
+	Terrain &operator=(const Terrain &) = delete;
+	// move-constructible
+	Terrain(Terrain &&rhs);
+	// nonmoveable
+	Terrain &operator=(Terrain &&rhs) = delete;
 	~Terrain();
 
-	void render(RenderContext const &renderContext);
+	void render(const RenderContext &renderContext);
+	float getHeight(const glm::ivec2 &position);
 
 private:
-	Renderer &mRenderer;
+	void initHeightmap(Renderer &renderer);
+	void initEffect(Renderer &renderer);
+	void initGrid(Renderer &renderer);
 
-	void init();
-	void initHeightmap();
-	void initShader();
-	void initGrid();
 	void calculateLodRanges();
 
 	struct Node
@@ -29,8 +42,8 @@ private:
 		int x, y, size, lod;
 	};
 
-	void renderSelection(RenderContext const &renderContext);
-	void renderNode(RenderContext const &renderContext, Node const &node);
+	void renderSelection(const RenderContext &renderContext);
+	void renderNode(const RenderContext &renderContext, const Node &node);
 
 	void nodeLodSelect(
 		Node const &node, 
@@ -42,38 +55,37 @@ private:
 	void addNodeToSelection(Node const &node);
 	void clearNodeSelection();
 
-
 	// Selected nodes
-	static const int kMaxNodes = 8192;
-	Node mSelectedNodes[kMaxNodes];
+	std::vector<Node> mSelectedNodes;
 	int mNumSelectedNodes;
-
 	// Patch data
 	int mPatchGridSize;
 	int mPatchNumVertices;
 	int mPatchNumIndices;
-	VertexBuffer *mPatchGridVB; // unique_ptr
-	IndexBuffer *mPatchGridIB; // unique_ptr
-	VertexLayout *mVertexLayout;
-
+	Buffer mPatchGridVB; 
+	Buffer mPatchGridIB; 
+	VertexLayout mVertexLayout;
 	// Terrain heightmap data & texture
 	Image mHeightmapData;
 	ImageView<uint16_t> mHeightmapView;
-	Texture2D *mHeightmapTexture; // unique_ptr
-
+	// Terrain normal map
+	Image mHeightmapNormals;
+	ImageView<glm::vec3> mHeightmapNormalsView;
+	Texture2D mHeightmapTexture; 
+	Texture2D mHeightmapNormalTexture;
+	Texture2D *mSlopeTexture;
+	Texture2D *mFlatTexture;
 	// Heightmap vertical scale
 	float mHeightmapVerticalScale;
 	// Heightmap size in pixels
 	glm::ivec2 mHeightmapSize;
 	int mLog2HeightmapSize;
-
 	// LOD ranges
 	int mNumLodLevels;
 	static const int kMaxLodLevel = 16;
-	float mLodRanges[kMaxLodLevel];
-
-	// shader
-	Shader *mShader; // unique_ptr
+	std::array<float,kMaxLodLevel> mLodRanges;
+	Effect mEffect;
+	Shader *mShader;
 };
 
 #endif

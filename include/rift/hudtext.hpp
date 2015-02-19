@@ -1,7 +1,7 @@
 #ifndef HUDTEXT_HPP
 #define HUDTEXT_HPP
 
-#include <renderer.hpp>
+#include <renderer2.hpp>
 #include <font.hpp>
 #include <renderable.hpp>
 #include <mesh.hpp>
@@ -11,6 +11,7 @@ class HUDTextRenderer
 public:
 	HUDTextRenderer() = default;
 	HUDTextRenderer(Renderer &renderer);
+	HUDTextRenderer(const HUDTextRenderer &rhs) = delete;
 	
 	~HUDTextRenderer();
 	

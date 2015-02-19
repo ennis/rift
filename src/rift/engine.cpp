@@ -1,8 +1,10 @@
 #include <engine.hpp>
+#include <log.hpp>
 #include <clock.hpp>
 #include <entity.hpp>
-#include <opengl.hpp>
+#include <gl_common.hpp>
 #include <game.hpp>
+#include <map>
 
 Engine *Engine::gEngine = nullptr;
 
@@ -48,7 +50,6 @@ namespace
 			// ...
 		}
 	}
-
 }
 
 Engine::Engine(Window &window) : 
@@ -60,16 +61,16 @@ mWindow(window)
 
 void Engine::init()
 {
-	// init GLEW
-	glewExperimental = true;
-	GLenum err = glewInit();
-	if (GLEW_OK != err) {
-		ERROR << "glewInit failed: " << glewGetErrorString(err);
-		return;
+	// init glLoadGen
+	if (!gl::sys::LoadFunctions()) {
+		// TODO better error message
+		ERROR << "GL init failed";
 	}
-	LOG << "Using GLEW " << glewGetString(GLEW_VERSION);
-	LOG << "OpenGL version: " << glGetString(GL_VERSION);
-	LOG << "GLSL version: " << glGetString(GL_SHADING_LANGUAGE_VERSION);
+
+	LOG << "OpenGL version: " << gl::GetString(gl::VERSION);
+	LOG << "GLSL version: " << gl::GetString(gl::SHADING_LANGUAGE_VERSION);
+
+	mRenderer = std::make_unique<Renderer>(mWindow);
 	
 	// init anttweakbar
 	TwInit(TW_OPENGL_CORE, NULL);
@@ -84,9 +85,6 @@ void Engine::init()
 	glfwSetKeyCallback(winHandle, GLFWKeyHandler);
 	glfwSetMouseButtonCallback(winHandle, GLFWMouseButtonHandler);
 	glfwSetScrollCallback(winHandle, GLFWScrollHandler);
-	
-	// initialize the renderer
-	mRenderer.initialize();
 }
 
 void Engine::run(Game &game)

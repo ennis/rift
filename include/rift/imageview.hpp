@@ -1,8 +1,8 @@
 #ifndef IMAGEVIEW_HPP
 #define IMAGEVIEW_HPP
 
-#include <common.hpp>
-#include <renderer.hpp>
+#include <common.hpp>	// glm
+#include <renderer_common.hpp>	// ElementFormat
 
 //=============================================================================
 // Unused
@@ -45,13 +45,13 @@ public:
 	mStride(stride)
 	{}
 	template <typename pixel_type>
-	pixel_type &at(int x, int y)
+	pixel_type &at(unsigned int x, unsigned int y)
 	{
 		// XXX not type-safe (verify size of pixel_type before)
 		return *((pixel_type*)mData + y * mStride + x);
 	}
 	template <typename pixel_type>
-	pixel_type at(int x, int y) const
+	pixel_type at(unsigned int x, unsigned int y) const
 	{
 		// XXX not type-safe (verify size of pixel_type before)
 		return *((const pixel_type*)mData + y * mStride + x);
@@ -75,7 +75,7 @@ protected:
 	ElementFormat mFormat;
 	glm::ivec2 mSize;
 	// stride in number of pixels
-	int mStride;
+	unsigned int mStride;
 };
 
 //=============================================================================
@@ -86,13 +86,13 @@ class ImageView : public BaseImageView
 public:
 	ImageView() : BaseImageView()
 	{}
-	ImageView(void *data, ElementFormat format, glm::ivec2 size, int stride) : 
+	ImageView(void *data, ElementFormat format, glm::ivec2 size, unsigned int stride) :
 	BaseImageView(data, format, size, stride)
 	{}
-	pixel_type &operator()(int x, int y) {
+	pixel_type &operator()(unsigned int x, unsigned int y) {
 		return at<pixel_type>(x, y);
 	}
-	pixel_type operator()(int x, int y) const {
+	pixel_type operator()(unsigned int x, unsigned int y) const {
 		return at<pixel_type>(x, y);
 	}
 };

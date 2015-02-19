@@ -6,7 +6,7 @@
 // !!! Les données doivent être agencées en mémoire de la même façon 
 // dans le fichier .cpp et dans le shader : i.e. les types doivent correspondre
 // et les variables doivent être définies dans le même ordre 
-layout(binding = 0, std140) uniform RenderData {
+layout(std140) uniform SceneData {
 	mat4 viewMatrix;
 	mat4 projMatrix;
 	mat4 viewProjMatrix;	// = projMatrix*viewMatrix
@@ -34,7 +34,7 @@ vec4 PhongIllum(
 	float eta, 
 	float shininess)
 {
-	vec4 Ln = normalize(-gRenderData.lightDir),
+	vec4 Ln = normalize(gRenderData.lightDir),
          Nn = normalize(vec4(normal, 0.0)),
          Vn = normalize(gRenderData.eyePos - vec4(position, 1.0f));
     vec4 H = normalize(Ln + Vn);
@@ -46,7 +46,7 @@ vec4 PhongIllum(
     vec4 Rn = reflect(-Ln, Nn);
     vec4 specular = ks * albedo * pow(max(dot(Rn, Vn), 0.0), shininess) * lightIntensity;
     specular *= fresnel(eta, dot(H, Vn));
-	//return  ambient + diffuse + specular;
+	return vec4((ambient + diffuse + specular).xyz, 1.0);
 	// TEST
-	return vec4(position, 1.0f);
+	//return vec4(position, 1.0f);
 }

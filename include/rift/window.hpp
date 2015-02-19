@@ -1,7 +1,9 @@
 #ifndef WINDOW_HPP
 #define WINDOW_HPP
 
-#include <opengl.hpp>
+// must include gl_core_4_4 before glfw3
+#include <gl_core_4_4.hpp>
+#include <GLFW/glfw3.h>
 
 struct ContextOptions
 {

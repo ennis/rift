@@ -14,11 +14,28 @@ Image::Image() :
 }
 
 //====================================
-Image::Image(ElementFormat format, glm::ivec3 size, unsigned int numMipLevels, unsigned int numFaces) :
-mFormat(format),
-mNumMipLevels(numMipLevels),
-mNumFaces(numFaces)
+Image::Image(
+	ElementFormat format, 
+	glm::ivec3 size, 
+	unsigned int numMipLevels, 
+	unsigned int numFaces
+	)
 {
+	allocate(format, size, numMipLevels, numFaces);
+}
+
+//====================================
+void Image::allocate(
+	ElementFormat format, 
+	glm::ivec3 size, 
+	unsigned int numMipLevels,
+	unsigned int numFaces
+	)
+{
+	mFormat = format;
+	mNumMipLevels = numMipLevels;
+	mNumFaces = numFaces;
+
 	auto elemsize = getElementFormatSize(format);
 	std::size_t len = size.x * size.y * size.z * elemsize * numFaces * numMipLevels;
 	std::size_t offset = 0;
@@ -70,19 +87,17 @@ Image::~Image()
 }
 
 //====================================
-Texture2D *Image::convertToTexture2D(Renderer &renderer)
+Texture2D Image::convertToTexture2D()
 {
-	auto tex = renderer.createTexture2D(getSize(), mNumMipLevels, mFormat, 0, nullptr);
+	auto tex = Texture2D(getSize(), mNumMipLevels, mFormat, nullptr);
 	for (unsigned int iMip = 0; iMip < mNumMipLevels; iMip++) {
-		renderer.updateTexture2D(
-			tex, 
+		tex.update(
 			iMip, 
 			glm::ivec2(0, 0), 
-			getSize(iMip), 
-			getDataSize(iMip), 
+			getSize(iMip),
 			getImageView(iMip).data());
 	}
-	return tex;
+	return std::move(tex);
 }
 
 //====================================

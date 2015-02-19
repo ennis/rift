@@ -7,11 +7,13 @@ using Assimp;
 using System.IO;
 using System.Xml.Serialization;
 using System.Diagnostics;
+using System.Windows.Forms;
 
 namespace modelconverter
 {
     class Program
     {
+        [STAThread]
         static void Main(string[] args)
         {
             var options = new ProgramOptions();
@@ -19,7 +21,15 @@ namespace modelconverter
             {
                 //Console.WriteLine("Error reading arguments");
                 return;
-            }            
+            }
+            if (options.InputFiles.Count == 0)
+            {
+                var ofd = new OpenFileDialog();
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    options.InputFiles.Add(ofd.FileName);
+                }
+            }
             options.OutputDirectory = options.OutputDirectory ?? Path.GetDirectoryName(options.InputFiles[0]);
             options.ModelName = options.ModelName ?? Path.GetFileNameWithoutExtension(options.InputFiles[0]);
             AssimpContext importer = new AssimpContext();

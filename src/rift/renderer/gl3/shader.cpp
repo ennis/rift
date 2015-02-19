@@ -1,56 +1,89 @@
 #include <shader.hpp>
 #include <log.hpp>
-#include <gl3error.hpp>
 
-GLuint compileShader(const char *shaderSource, GLenum type)
+namespace
 {
-	GLuint obj = glCreateShader(type);
-	const char *shaderSources[1] = { shaderSource };
-	GLCHECK(glShaderSource(obj, 1, shaderSources, NULL));
-	GLCHECK(glCompileShader(obj));
+	GLuint glslCompileShader(const char *shaderSource, GLenum type)
+	{
+		GLuint obj = gl::CreateShader(type);
+		const char *shaderSources[1] = { shaderSource };
+		gl::ShaderSource(obj, 1, shaderSources, NULL);
+		gl::CompileShader(obj);
 
-	GLint status = GL_TRUE;
-	GLint logsize = 0;
+		GLint status = gl::TRUE_;
+		GLint logsize = 0;
 
-	glGetShaderiv(obj, GL_COMPILE_STATUS, &status);
-	glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &logsize);
-	if (status != GL_TRUE) {
-		ERROR << "Compile error:";
-		if (logsize != 0) {
-			char *logbuf = new char[logsize];
-			glGetShaderInfoLog(obj, logsize, &logsize, logbuf);
-			ERROR << logbuf;
-			delete[] logbuf;
-			GLCHECK(glDeleteShader(obj));
+		gl::GetShaderiv(obj, gl::COMPILE_STATUS, &status);
+		gl::GetShaderiv(obj, gl::INFO_LOG_LENGTH, &logsize);
+		if (status != gl::TRUE_) {
+			ERROR << "Compile error:";
+			if (logsize != 0) {
+				char *logbuf = new char[logsize];
+				gl::GetShaderInfoLog(obj, logsize, &logsize, logbuf);
+				ERROR << logbuf;
+				delete[] logbuf;
+				gl::DeleteShader(obj);
+			}
+			else {
+				ERROR << "<no log>";
+			}
+			throw std::runtime_error("shader compilation failed");
 		}
-		else {
-			ERROR << "<no log>";
-		}
-		throw std::runtime_error("shader compilation failed");
+
+		return obj;
 	}
 
-	return obj;
+	void glslLinkProgram(GLuint program)
+	{
+		GLint status = gl::TRUE_;
+		GLint logsize = 0;
+
+		gl::LinkProgram(program);
+		gl::GetProgramiv(program, gl::LINK_STATUS, &status);
+		gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &logsize);
+		if (status != gl::TRUE_) {
+			ERROR << "Link error:";
+			if (logsize != 0) {
+				char *logbuf = new char[logsize];
+				gl::GetProgramInfoLog(program, logsize, &logsize, logbuf);
+				ERROR << logbuf;
+				delete[] logbuf;
+			}
+			else {
+				ERROR << "<no log>";
+			}
+			throw std::runtime_error("link failed");
+		}
+	}
+
+	// creates a shader program from vertex and fragment shader source files
+	GLuint glslCreateProgram(const char *vertexShaderSource, const char *fragmentShaderSource)
+	{
+		GLuint vs_obj = glslCompileShader(vertexShaderSource, gl::VERTEX_SHADER);
+		GLuint fs_obj = glslCompileShader(fragmentShaderSource, gl::FRAGMENT_SHADER);
+		GLuint program_obj = gl::CreateProgram();
+		gl::AttachShader(program_obj, vs_obj);
+		gl::AttachShader(program_obj, fs_obj);
+		glslLinkProgram(program_obj);
+		// once the program is linked, no need to keep the shader objects
+		gl::DetachShader(program_obj, vs_obj);
+		gl::DetachShader(program_obj, fs_obj);
+		gl::DeleteShader(vs_obj);
+		gl::DeleteShader(fs_obj);
+		return program_obj;
+	}
 }
 
-void linkProgram(GLuint program)
+Shader::Shader(std::string vsSource_, std::string psSource_) :
+vsSource(std::move(vsSource_)),
+psSource(std::move(psSource_))
 {
-	GLint status = GL_TRUE;
-	GLint logsize = 0;
+	id = glslCreateProgram(vsSource.c_str(), psSource.c_str());
+	// assign block bindings (binding = index for each buffer)
+}
 
-	GLCHECK(glLinkProgram(program));
-	glGetProgramiv(program, GL_LINK_STATUS, &status);
-	glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logsize);
-	if (status != GL_TRUE) {
-		ERROR << "Link error:";
-		if (logsize != 0) {
-			char *logbuf = new char[logsize];
-			glGetProgramInfoLog(program, logsize, &logsize, logbuf);
-			ERROR << logbuf;
-			delete[] logbuf;
-		}
-		else {
-			ERROR << "<no log>";
-		}
-		throw std::runtime_error("link failed");
-	}
+int Shader::getBufferLocation(const char *buffer)
+{
+	unsigned int blockIndex = gl::GetUniformBlockIndex(id, buffer);
+	return blockIndex;
 }
