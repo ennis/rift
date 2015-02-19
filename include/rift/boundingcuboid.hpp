@@ -14,10 +14,14 @@ public:
 
 	bool isColliding(BoundingVolume* target);
 
-	void render(RenderContext const &renderContext);
+	void render(RenderContext const &renderContext, bool isColliding);
+
+	//Return the closest point of the cube to the point origin
+	glm::vec3 closestPoint(glm::vec3 origin);
 
 private:
 	glm::vec3 _dimensions;
+
 	Mesh _mesh;
 };
 

@@ -1,5 +1,4 @@
 project "test_mesh"
-	links "librift"
 	kind "ConsoleApp"
 	location "../../build/test_mesh"
 	language "C++"
@@ -7,6 +6,7 @@ project "test_mesh"
 		"**.cpp"
 	}
 	includedirs { "../../include/**" }
+	use_librift()
 	use_gl()
 	use_assimp()
 	use_anttweakbar()

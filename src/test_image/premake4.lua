@@ -1,5 +1,5 @@
 project "test_image"
-	links "librift"
+	use_librift()
 	kind "ConsoleApp"
 	location "../../build/test_image"
 	language "C++"

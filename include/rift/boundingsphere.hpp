@@ -13,7 +13,7 @@ public:
 
 	bool isColliding(BoundingVolume* target);
 
-	void render(RenderContext const &renderContext);
+	void render(RenderContext const &renderContext, bool isColliding);
 
 private:
 	float _radius;

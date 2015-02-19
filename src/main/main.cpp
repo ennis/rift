@@ -18,6 +18,8 @@
 #include <skinnedmodelrenderer.hpp>
 #include <animationclip.hpp>
 #include <boundingcuboid.hpp>
+#include <boundingsphere.hpp>
+#include <boundingcapsule.hpp>
 #include <boost/filesystem.hpp>
 
 //============================================================================
@@ -60,6 +62,11 @@ private:
 	TwBar *tweakBar = nullptr;
 
 	BoundingCuboid *cuboid_test1, *cuboid_test2;
+	bool cube_colliding = false;
+	BoundingSphere *sphere_test1, *sphere_test2;
+	bool sphere_colliding = false;
+	BoundingCapsule *capsule_test1, *capsule_test2;
+	bool capsule_colliding = false;
 
 	float twSunDirection[3];
 	float twTimeOfDay;
@@ -156,7 +163,12 @@ void RiftGame::init()
 	//collisions
 	cuboid_test1 = new BoundingCuboid(glm::vec3(0,0,0),glm::vec3(1,1,1));
 	cuboid_test2 = new BoundingCuboid(glm::vec3(2, 2, 2), glm::vec3(1, 1, 1));
+	//cuboid_test2 = new BoundingCuboid(glm::vec3(0.5, 0.5, 0.5), glm::vec3(1, 1, 1));
 
+	sphere_test1 = new BoundingSphere(glm::vec3(5, 0, 0), 1);
+	sphere_test2 = new BoundingSphere(glm::vec3(7, 0, 0), 1);
+	capsule_test1 = new BoundingCapsule(glm::vec3(0, 3, 0), 1, 4);
+	capsule_test2 = new BoundingCapsule(glm::vec3(0, 6, 0), 1, 4);
 }
 
 
@@ -232,8 +244,12 @@ void RiftGame::render(float dt)
 	//animTest->applyPose(testPose);
 	animTest.draw(rc);
 
-	cuboid_test1->render(rc);
-	cuboid_test2->render(rc);
+	//cuboid_test1->render(rc,cube_colliding);
+	//cuboid_test2->render(rc,cube_colliding);
+	//sphere_test1->render(rc, sphere_colliding);
+	//sphere_test2->render(rc, sphere_colliding);
+	capsule_test1->render(rc, capsule_colliding);
+	//capsule_test2->render(rc, capsule_colliding);
 
 
 	// render tweak bar
@@ -254,7 +270,12 @@ void RiftGame::update(float dt)
 
 	//collision test
 	if (cuboid_test1->isColliding(cuboid_test2)){
-		std::cout << "collision" << std::endl;
+		//std::cout << "cube collision" << std::endl;
+		cube_colliding = true;
+	}
+	if (sphere_test1->isColliding(sphere_test2)){
+		//std::cout << "sphere collision" << std::endl;
+		sphere_colliding = true;
 	}
 
 	sky->setTimeOfDay(twTimeOfDay);
