@@ -157,6 +157,12 @@ struct VertexElement2
     ElementFormat format;
 };
 
+struct Attribute
+{
+    ElementFormat format;
+    ResourceUsage usage;
+};
+
 enum class BufferUsage
 {
 	Unspecified,
@@ -165,7 +171,37 @@ enum class BufferUsage
 	ConstantBuffer
 };
 
+struct Submesh {
+	// Index du premier vertex 
+	unsigned int startVertex;
+	// Index du premier index (dans la table des indices)
+	unsigned int startIndex;
+	// Nombre de vertices dans la sous-mesh
+	unsigned int numVertices;
+	// Nombre d'indices
+	unsigned int numIndices;
+};
+
 const char *getElementFormatName(ElementFormat format);
 unsigned int getElementFormatSize(ElementFormat format);
+
+
+template <typename ImplementationType>
+class RendererObject
+{
+public:
+    using Impl = ImplementationType;
+    
+    Impl &getImpl() {
+        return impl;
+    }
+
+    const Impl &getImpl() const {
+        return impl;
+    }
+
+protected:
+    Impl impl;
+};
 
 #endif /* end of include guard: RENDERER_COMMON_HPP */

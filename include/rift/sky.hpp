@@ -18,20 +18,11 @@ public:
 	void render(RenderQueue &rq, const SceneData &sceneData);
 
 private:
-	struct SkyParams
-	{
-		glm::vec3 sunDirection;
-		glm::vec3 color;
-	};
 
-	int submission;
 	float timeOfDay;
-	Effect skyEffect;
-	Shader *skyShader;
-	
-	ConstantValue<SkyParams> params;
-	ConstantBuffer sceneParams;
-	
+	Effect skyEffect;	
+	BaseParameter CBParams;
+	BaseParameter CBSceneData;
 	Mesh skybox;
 };
 

@@ -1,11 +1,11 @@
 #ifndef IMAGE_HPP
 #define IMAGE_HPP
 
-#include <texture.hpp>		// Texture2D etc.
 #include <imageview.hpp>	// BaseImageView, ImageView<T>
 #include <istream>
 #include <vector>	// vector
 #include <log.hpp>
+#include <gl4/renderer.hpp>
 
 enum class ImageFileFormat
 {

@@ -112,7 +112,7 @@ void Mesh::updateIndices(
 	mIndexBuffer.update(indexOffset * mIndexStride, numIndices * mIndexStride, data);
 }
 
-void Mesh::draw(Renderer &renderer) const
+void Mesh::draw(DrawCommand &outCmd) const
 {
 	if (mNumIndices == 0) {
 		drawPart(renderer, 0, mNumVertices);
@@ -122,7 +122,7 @@ void Mesh::draw(Renderer &renderer) const
 	}
 }
 
-void Mesh::prepareDraw(Renderer &renderer) const
+void Mesh::prepareDraw(DrawCommand &outCmd) const
 {
 	renderer.setInputLayout(&mVertexLayout);
 	for (unsigned int ib = 0; ib < mNumBuffers; ++ib) {
@@ -131,16 +131,16 @@ void Mesh::prepareDraw(Renderer &renderer) const
 }
 
 void Mesh::drawPart(
-	Renderer &renderer,
+	DrawCommand &outCmd,
 	unsigned int baseVertex,
 	unsigned int numVertices) const
 {
-	prepareDraw(renderer);
+	prepareDraw(outCmd);
 	renderer.draw(mPrimitiveType, baseVertex, numVertices);
 }
 
 void Mesh::drawPart(
-	Renderer &renderer,
+	DrawCommand &outCmd,
 	unsigned int baseVertex,
 	unsigned int indexOffset,
 	unsigned int numIndices) const

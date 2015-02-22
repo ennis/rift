@@ -18,16 +18,6 @@ enum RenderableFlags
 	RF_Terrain = (1 << 6)
 };
 
-enum class RenderPass
-{
-	Sky,
-	Terrain,
-	Deferred,
-	Opaque,
-	Transparent,
-	Shadow
-};
-
 
 // Renderable objects
 // These objects have a render method
@@ -38,7 +28,7 @@ public:
 	{}
 
 	virtual void render(
-			const RenderQueues &renderQueues, 
+			RenderQueue &renderQueue, 
 			const SceneData &data) = 0;
 
 	uint64_t getFlags() const
@@ -49,6 +39,7 @@ public:
 protected:
 	uint64_t flags;
 	// could add an ID here, for submission caching
+	std::vector<int> cachedSubmissions;
 };
 
 #endif

@@ -1,8 +1,6 @@
 #ifndef SCENE_HPP
 #define SCENE_HPP
 
-#include <buffer.hpp>
-
 // données partagées entre les shaders
 struct SceneData
 {
@@ -14,6 +12,17 @@ struct SceneData
 	glm::vec2 viewportSize;
 };
 
+class SceneRenderer
+{
+public:
+	// render: Mesh (VB/IB/layout/draw command) + Effect + EffectParameters 
+	// SceneRenderer::doRender()
+	//		iterate over all Renderables (component SceneRenderCache)
+	//		call renderable->render(RenderQueue)
+	//		
+private:
+
+};
 
  
 #endif /* end of include guard: SCENE_HPP */

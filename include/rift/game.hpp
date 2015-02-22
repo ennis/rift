@@ -4,8 +4,6 @@
 #include <common.hpp>
 #include <engine.hpp>
 
-class Renderer;
-
 //==========================================
 // classe Game
 //

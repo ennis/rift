@@ -3,17 +3,13 @@
 
 #include <window.hpp>
 #include <AntTweakBar.h>
-#include <renderer2.hpp>
+#include <gl4/renderer.hpp>
 
 class Game;
 
 class Engine
 {
 public:
-	Renderer &getRenderer() {
-		return *mRenderer;
-	}
-
 	Window &getWindow() {
 		return mWindow;
 	}
@@ -43,7 +39,6 @@ private:
 	void init();
 	void mainLoop();
 
-	std::unique_ptr<Renderer> mRenderer;
 	Window &mWindow;
 	Game *mGame;
 	TwBar *mMainBar;
