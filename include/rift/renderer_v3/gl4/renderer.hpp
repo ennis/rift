@@ -20,6 +20,8 @@ namespace gl4
 	const int kMaxVertexBufferBindings = 16;
 	const int kMaxTextureUnits = 16;  
 
+	// TODO Rename impl -> handle
+
 	struct Texture2DImpl
 	{
 		GLuint id;

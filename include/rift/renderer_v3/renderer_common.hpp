@@ -191,6 +191,10 @@ class RendererObject
 {
 public:
     using Impl = ImplementationType;
+	RendererObject() = default;
+
+	RendererObject(Impl impl_) : impl(impl_)
+	{}
     
     Impl &getImpl() {
         return impl;

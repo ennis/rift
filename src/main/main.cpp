@@ -121,7 +121,7 @@ void RiftGame::init()
 		sm);
 
 	sceneDataParam = effect.getParameter("SceneData");
-	perObjParam = effect.getParameter("PerObj"); 
+	perObjParam = effect.getParameter("PerObject"); 
 
 	cbSceneData = ConstantBuffer(sizeof(SceneData));
 	cbPerObj = ConstantBuffer(sizeof(PerObject));

@@ -8,9 +8,9 @@ template <typename Backend>
 class ParameterBase : public RendererObject<typename Backend::ParameterImpl>
 {
 public:
-	ParameterBase();
+	ParameterBase() = default;
 	ParameterBase(const ParameterBase &) = delete;
-	ParameterBase(Impl impl_) : impl(impl_)
+	ParameterBase(Impl impl_) : RendererObject<typename Backend::ParameterImpl>(impl_)
 	{}
 	ParameterBase &operator=(const ParameterBase &) = delete;
 	ParameterBase(ParameterBase &&rhs) {
@@ -27,9 +27,6 @@ public:
 	int getSize() const {
 		// TODO
 	}
-
-private:
-	Impl impl;
 };
 
 
@@ -52,9 +49,6 @@ public:
 	~TextureParameterBase() {
 		Backend::getInstance().deleteEffectTextureParameter(impl);
 	}
-
-private:
-	Impl impl;
 };
 
 

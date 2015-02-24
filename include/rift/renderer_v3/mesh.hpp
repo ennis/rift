@@ -24,7 +24,9 @@ public:
 		std::swap(impl, rhs.impl);
 		return *this;
 	}
-	~MeshBase();
+	~MeshBase() {
+		Backend::getInstance().deleteMesh(impl);
+	}
 
 	MeshBase(
 		PrimitiveType primitiveType,

@@ -14,8 +14,6 @@ public:
 	// nullable
 	ParameterBlockBase() = default;
 	// ctor
-	ParameterBlockBase(Impl impl_) : impl(impl_)
-	{}
 	// noncopyable
 	ParameterBlockBase(const ParameterBlockBase<Backend> &) = delete;
 	ParameterBlockBase<Backend> &operator=(const ParameterBlockBase<Backend> &) = delete;
@@ -33,7 +31,7 @@ public:
 	}
 
 	ParameterBlockBase(EffectBase<Backend> &effect) :
-		impl(Backend::getInstance().createParameterBlock(effect.getImpl())) 
+		RendererObject<typename Backend::ParameterBlockImpl>(Backend::getInstance().createParameterBlock(effect.getImpl()))
 	{
 	}
 
@@ -60,9 +58,6 @@ public:
 			param.getImpl(),
 			texture.getImpl());
 	}*/
-
-private:
-	Impl impl;
 };
 
  

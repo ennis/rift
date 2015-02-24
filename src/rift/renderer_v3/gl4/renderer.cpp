@@ -6,6 +6,8 @@
 #include <string>
 #include <log.hpp>
 
+std::unique_ptr<Renderer> Renderer::instance;
+
 namespace std {
 	template <> struct hash<SamplerDesc>
 	{
@@ -258,6 +260,22 @@ Renderer::MeshImpl Renderer::createMesh(
 	return impl;
 }
 
+//=============================================================================
+//=============================================================================
+// Renderer::deleteMesh
+//=============================================================================
+//=============================================================================
+void Renderer::deleteMesh(
+	MeshImpl &mesh
+	)
+{
+	//if (gl::exts::var_EXT_direct_state_access) {
+	gl::DeleteBuffers(1, &mesh.vb);
+	gl::DeleteBuffers(1, &mesh.ib);
+	gl::DeleteVertexArrays(1, &mesh.vao);
+	//}
+}
+
 
 //=============================================================================
 //=============================================================================
@@ -287,10 +305,22 @@ Renderer::ParameterImpl Renderer::createEffectParameter(
 {
 	ParameterImpl impl;
 	impl.effect = &effect;
-	impl.location = gl::GetUniformLocation(effect.program, name);
+	impl.location = gl::GetUniformBlockIndex(effect.program, name);
 	impl.binding = impl.location;
 	gl::UniformBlockBinding(effect.program, impl.location, impl.location);
 	return impl;
+}
+
+//=============================================================================
+//=============================================================================
+// Renderer::deleteEffectParameter
+//=============================================================================
+//=============================================================================
+void Renderer::deleteEffectParameter(
+	ParameterImpl &impl
+	)
+{
+	// Nothing to do
 }
 
 //=============================================================================
@@ -374,6 +404,40 @@ void Renderer::setConstantBuffer(
 
 //=============================================================================
 //=============================================================================
+// Renderer::updateConstantBuffer
+//=============================================================================
+//=============================================================================
+void Renderer::updateConstantBuffer(
+	ConstantBufferImpl &impl,
+	int offset,
+	int size,
+	const void *data
+	)
+{
+	if (gl::exts::var_EXT_direct_state_access) {
+		gl::NamedBufferSubDataEXT(impl.ubo, offset, size, data);
+	}
+	else {
+		gl::BindBuffer(gl::UNIFORM_BUFFER, impl.ubo);
+		gl::BufferSubData(gl::UNIFORM_BUFFER, offset, size, data);
+		gl::BindBuffer(gl::UNIFORM_BUFFER, 0);
+	}
+}
+
+//=============================================================================
+//=============================================================================
+// Renderer::deleteConstantBuffer
+//=============================================================================
+//=============================================================================
+void Renderer::deleteConstantBuffer(
+	ConstantBufferImpl &impl
+	)
+{
+	gl::DeleteBuffers(1, &impl.ubo);
+}
+
+//=============================================================================
+//=============================================================================
 // Renderer::setTextureParameter
 //=============================================================================
 //=============================================================================
@@ -434,7 +498,7 @@ void Renderer::clearDepth(
 // Renderer::setViewports
 //=============================================================================
 //=============================================================================
-void setViewports(
+void Renderer::setViewports(
 	std::array_ref<Viewport2> viewports
 	)
 {
@@ -476,7 +540,7 @@ void Renderer::setRenderTargets(
 	assert(colorTargets.size() <= 8);
 
 	// hmmm...
-	if (colorTargets[0] == &screen_rt)
+	if (!colorTargets[0] || (colorTargets[0] == &screen_rt))
 	{
 		gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
 	}
