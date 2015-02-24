@@ -12,7 +12,11 @@ public:
 	// nullable
 	ConstantBufferBase() = default;
 	// ctor
-	ConstantBufferBase(Impl impl_) : impl(impl_)
+	ConstantBufferBase(Impl impl_) : 
+		RendererObject<
+			typename Backend::ConstantBufferImpl
+		>
+		(impl_)
 	{}
 	// noncopyable
 	ConstantBufferBase(const ConstantBufferBase<Backend> &) = delete;
@@ -30,7 +34,11 @@ public:
 		Backend::getInstance().deleteConstantBuffer(impl);
 	}
 
-	ConstantBufferBase(int size, const void *initialData = nullptr) : impl(Backend::getInstance().createConstantBuffer(size, initialData))
+	ConstantBufferBase(int size, const void *initialData = nullptr) : 
+		RendererObject<
+			typename Backend::ConstantBufferImpl
+		>
+		(Backend::getInstance().createConstantBuffer(size, initialData))
 	{
 	}
 
@@ -43,8 +51,6 @@ public:
 		Backend::getInstance().updateConstantBuffer(impl, offset, size, data);
 	}
 
-private:
-	Impl impl;
 };
 
  

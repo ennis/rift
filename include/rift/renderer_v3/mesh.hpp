@@ -11,7 +11,7 @@ public:
 	// nullable
 	MeshBase() = default;
 	// ctor
-	MeshBase(Impl impl_) : impl(impl_)
+	MeshBase(Impl impl_) : RendererObject<typename Backend::MeshImpl>(impl_)
 	{}
 	// noncopyable
 	MeshBase(const MeshBase<Backend> &) = delete;
@@ -47,9 +47,6 @@ public:
 			submeshes
 			);
 	}
-
-private:
-	Impl impl;
 };
 
  

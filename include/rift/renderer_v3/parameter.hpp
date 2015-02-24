@@ -36,7 +36,7 @@ class TextureParameterBase : public RendererObject<typename Backend::TexturePara
 public:
 	TextureParameterBase();
 	TextureParameterBase(const TextureParameterBase &) = delete;
-	TextureParameterBase(Impl impl_) : impl(impl_)
+	TextureParameterBase(Impl impl_) : RendererObject<typename Backend::TextureParameterImpl>(impl_)
 	{}
 	TextureParameterBase &operator=(const TextureParameterBase &) = delete;
 	TextureParameterBase(TextureParameterBase &&rhs) {

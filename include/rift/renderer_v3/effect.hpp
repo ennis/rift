@@ -11,7 +11,7 @@ public:
 	// nullable
 	EffectBase() = default;
 	// ctor
-	EffectBase(Impl impl_) : impl(impl_)
+	EffectBase(Impl impl_) : public RendererObject<typename Backend::EffectImpl>(impl_)
 	{}
 	// noncopyable
 	EffectBase(const EffectBase<Backend> &) = delete;
@@ -33,7 +33,7 @@ public:
 		const char *includePath,
 		RasterizerDesc rasterizerState,
 		DepthStencilDesc depthStencilState
-		) : impl(
+		) : RendererObject<typename Backend::EffectImpl>(
 			Backend::getInstance().createEffect(
 				combinedShaderSource, 
 				includePath, 
@@ -46,9 +46,6 @@ public:
 	ParameterBase<Backend> getParameter(const char *name) {
 		return ParameterBase<Backend>(Backend::getInstance().createEffectParameter(impl, name));
 	}
-
-private:
-	Impl impl;
 };
 
 #endif /* end of include guard: EFFECT_HPP */

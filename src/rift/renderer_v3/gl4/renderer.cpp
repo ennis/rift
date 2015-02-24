@@ -396,7 +396,7 @@ void Renderer::setConstantBuffer(
 	const ConstantBufferImpl &constantBuffer
 	)
 {
-	assert(param.size == constantBuffer.size);
+	//assert(param.size == constantBuffer.size);
 	paramBlock.ubo[param.binding] = constantBuffer.ubo;
 	paramBlock.ubo_offsets[param.binding] = 0;
 	paramBlock.ubo_sizes[param.binding] = constantBuffer.size;
@@ -674,6 +674,7 @@ void Renderer::drawItem(const RenderItem &item)
 	const auto &sm = item.mesh->submeshes[item.submesh];
 
 	if (item.mesh->ibsize != 0) {
+		gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, item.mesh->ib);
 		gl::DrawElementsBaseVertex(
 			item.mesh->mode, 
 			sm.numIndices,
@@ -729,6 +730,7 @@ void Renderer::submitRenderQueue(
 void Renderer::initialize()
 {
 	instance = std::make_unique<Renderer>();
+	setDebugCallback();
 }
 
 //=============================================================================

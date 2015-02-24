@@ -12,7 +12,7 @@ public:
 	// nullable
 	Texture2DBase() = default;
 	// ctor
-	Texture2DBase(Impl impl_) : impl(impl_)
+	Texture2DBase(Impl impl_) : RendererObject<typename Backend::Texture2DImpl>(impl_)
 	{}
 	// noncopyable
 	Texture2DBase(const Texture2DBase<Backend> &) = delete;
@@ -35,7 +35,7 @@ public:
 		int numMipLevels,
 		ElementFormat pixelFormat,
 		const void *data) :
-		impl(
+		RendererObject<typename Backend::Texture2DImpl>(
 			Backend::getInstance().createTexture2D(
 				size, 
 				numMipLevels,
@@ -54,8 +54,6 @@ public:
 		// TODO
 	}
 
-private:
-	Impl impl;
 };
 
  

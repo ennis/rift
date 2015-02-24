@@ -108,7 +108,7 @@ void RiftGame::init()
 	};
 
 	Submesh sm[] = {
-		{ 0, 8, 0, 36 }
+		{ 0, 0, 8, 36 }
 	};
 
 	mesh = Mesh(
@@ -166,6 +166,7 @@ void RiftGame::render(float dt)
 	}
 
 	R.submitRenderQueue(renderQueue.getImpl());
+	renderQueue.clear();
 
 	// render tweak bar
 	//TwDraw();

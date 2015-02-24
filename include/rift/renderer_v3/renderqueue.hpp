@@ -11,7 +11,7 @@ public:
 	// nullable
 	RenderQueueBase() = default;
 	// ctor
-	RenderQueueBase(Impl impl_) : impl(impl_)
+	RenderQueueBase(Impl impl_) : RendererObject<typename Backend::RenderQueueImpl>(impl_)
 	{}
 	// noncopyable
 	RenderQueueBase(const RenderQueueBase<Backend> &) = delete;
@@ -45,8 +45,10 @@ public:
 			sortHint);
 	}
 
-private:
-	Impl impl;
+	void clear()
+	{
+		Backend::getInstance().clearRenderQueue(impl);
+	}
 };
 
  
