@@ -327,6 +327,46 @@ void Texture2D::update(
 	}
 }
 
+RenderTarget RenderTarget::createRenderTarget2D(
+	Texture2D &texture2D,
+	int mipLevel
+	)
+{
+	RenderTarget r;
+	r.type = RenderTarget::kRenderToTexture2D;
+	r.layer = 0;
+	r.mipLevel = mipLevel;
+	r.u.texture_2d = &texture2D;
+	return r;
+}
+
+RenderTarget RenderTarget::createRenderTarget2DFace(
+	TextureCubeMap &cubeMap,
+	int mipLevel,
+	int face
+	)
+{
+	RenderTarget r;
+	r.type = RenderTarget::kRenderToCubeMapLayer;
+	r.layer = face;
+	r.mipLevel = mipLevel;
+	r.u.texture_cubemap = &cubeMap;
+	return r;
+}
+
+RenderTarget RenderTarget::createRenderTargetCubeMap(
+	TextureCubeMap &cubeMap,
+	int mipLevel
+	)
+{
+	RenderTarget r;
+	r.type = RenderTarget::kRenderToCubeMap;
+	r.layer = 0;
+	r.mipLevel = mipLevel;
+	r.u.texture_cubemap = &cubeMap;
+	return r;
+}
+
 //=============================================================================
 //=============================================================================
 // Renderer::createEffectParameter
