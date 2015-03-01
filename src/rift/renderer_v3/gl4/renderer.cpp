@@ -270,7 +270,22 @@ Texture2D::Texture2D(
 	format(pixelFormat_),
 	glformat(getElementFormatInfoGL(pixelFormat_).internalFormat)
 {
+	GLuint tex;
+	gl::GenTextures(1, &tex);
+	const auto &pf = getElementFormatInfoGL(pixelFormat_);
+	if (gl::exts::var_EXT_direct_state_access) {
+		gl::TextureStorage2DEXT(tex, gl::TEXTURE_2D, numMipLevels_, pf.internalFormat, size.x, size.y);
+	}
+	else {
+		gl::BindTexture(gl::TEXTURE_2D, tex);
+		gl::TexStorage2D(gl::TEXTURE_2D, numMipLevels_, pf.internalFormat, size.x, size.y);
+		gl::BindTexture(gl::TEXTURE_2D, 0);
+	}
+	
+	id = util::unique_resource<GLuint, Texture2D::Deleter>(tex);
 
+	if (data_)
+		update(0, { 0, 0 }, size, data_);
 }
 
 void Texture2D::update(
@@ -280,7 +295,36 @@ void Texture2D::update(
 	const void *data
 	)
 {
-
+	const auto &pf = getElementFormatInfoGL(format);
+	if (gl::exts::var_EXT_direct_state_access)
+	{
+		gl::TextureSubImage2DEXT(
+			id.get(),
+			gl::TEXTURE_2D,
+			mipLevel,
+			offset.x,
+			offset.y,
+			size.x,
+			size.y,
+			pf.externalFormat,
+			pf.type,
+			data);
+	}
+	else
+	{
+		gl::BindTexture(gl::TEXTURE_2D, id.get());
+		gl::TexSubImage2D(
+			gl::TEXTURE_2D,
+			mipLevel,
+			offset.x,
+			offset.y,
+			size.x,
+			size.y,
+			pf.externalFormat,
+			pf.type,
+			data);
+		gl::BindTexture(gl::TEXTURE_2D, 0);
+	}
 }
 
 //=============================================================================
