@@ -654,5 +654,6 @@ using TextureParameter = gl4::TextureParameter;
 using ConstantBuffer = gl4::ConstantBuffer;
 using RenderQueue = gl4::RenderQueue;
 using Mesh = gl4::Mesh;
+using RenderTarget = gl4::RenderTarget;
  
 #endif /* end of include guard: RENDERER_HPP */
