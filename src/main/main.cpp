@@ -72,7 +72,7 @@ void RiftGame::init()
 
 	// Effect 
 	effect = Effect(
-		loadShaderSource("resources/shaders/default.glsl").c_str(),
+		loadEffectSource("resources/shaders/default.glsl").c_str(),
 		"resources/shaders",
 		RasterizerDesc{},
 		DepthStencilDesc{});
@@ -120,8 +120,8 @@ void RiftGame::init()
 		cubeIndices,
 		sm);
 
-	sceneDataParam = effect.getParameter("SceneData");
-	perObjParam = effect.getParameter("PerObject"); 
+	sceneDataParam = effect.createParameter("SceneData");
+	perObjParam = effect.createParameter("PerObject");
 
 	cbSceneData = ConstantBuffer(sizeof(SceneData));
 	cbPerObj = ConstantBuffer(sizeof(PerObject));
@@ -165,7 +165,7 @@ void RiftGame::render(float dt)
 		//renderQueue.debugPrint();
 	}
 
-	R.submitRenderQueue(renderQueue.getImpl());
+	R.submitRenderQueue(renderQueue);
 	renderQueue.clear();
 
 	// render tweak bar

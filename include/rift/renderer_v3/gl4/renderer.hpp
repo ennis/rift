@@ -5,13 +5,9 @@
 #include <memory>
 
 #include <gl_common.hpp>
-#include <effect.hpp>
-#include <mesh.hpp>
-#include <renderqueue.hpp>
-#include <constant_buffer.hpp>
-#include <array_ref.hpp>
 #include <glm/glm.hpp>
-#include <texture.hpp>
+#include <array_ref.hpp>
+#include <unique_resource.hpp>
 
 namespace gl4
 {
@@ -20,23 +16,106 @@ namespace gl4
 	const int kMaxVertexBufferBindings = 16;
 	const int kMaxTextureUnits = 16;  
 
-	// TODO Rename impl -> handle
+	class Texture2D;
+	class TextureCubeMap;
+	class RenderTarget;
+	class RenderQueue;
+	class Effect;
+	class Parameter;
+	class ParameterBlock;
+	class ConstantBuffer;
+	class Renderer;
 
-	struct Texture2DImpl
+	// WORKAROUND for vs2013
+	// VS2013 does not support implicit generation of move constructors and move assignment operators
+	// so the unique_resource pattern and the 'rule of zero' (http://flamingdangerzone.com/cxx11/2012/08/15/rule-of-zero.html)
+	// is effectively useless
+
+	class Texture2D
 	{
-		GLuint id;
+		friend class Renderer;
+	public:
+		Texture2D() = default;
+
+		Texture2D(
+			glm::ivec2 size,
+			int numMipLevels,
+			ElementFormat pixelFormat,
+			const void *data
+			);
+
+		// VS2013
+		Texture2D(Texture2D &&rhs) : id(std::move(rhs.id)), size(rhs.size), format(rhs.format), glformat(rhs.glformat) {}
+		Texture2D &operator=(Texture2D &&rhs) {
+			id = std::move(rhs.id);
+			size = rhs.size;
+			format = rhs.format;
+			glformat = rhs.glformat;
+			return *this;
+		}
+		// -VS2013
+
+		void update(
+			int mipLevel,
+			glm::ivec2 offset,
+			glm::ivec2 size,
+			const void *data
+			);
+
+	//protected:
+		struct Deleter {
+			void operator()(GLuint id) {
+				gl::DeleteTextures(1, &id);
+			}
+		};
+
+		util::unique_resource<GLuint, Deleter> id;
 		glm::ivec2 size;
 		ElementFormat format;
 		GLenum glformat;
 	};
 
-	struct TextureCubeMapImpl
+	class TextureCubeMap
 	{
+		friend class Renderer;
+	public:
+		TextureCubeMap() = default;
+
+		TextureCubeMap(
+			glm::ivec2 size,
+			int numMipLevels,
+			ElementFormat pixelFormat,
+			const void* faceData[6]
+			);
+
+		// VS2013
+		TextureCubeMap(TextureCubeMap &&rhs)  {}
+		TextureCubeMap &operator=(TextureCubeMap &&rhs) {}
+		// -VS2013
+
+	//protected:
 
 	};
 
-	struct RenderTargetImpl
+	class RenderTarget
 	{
+		friend class Renderer;
+	public:
+		RenderTarget() = default;
+
+		// VS2013
+		RenderTarget(RenderTarget &&rhs) : format(rhs.format), u(rhs.u), type(rhs.type), mipLevel(rhs.mipLevel), layer(rhs.layer) {}
+		RenderTarget &operator=(RenderTarget &&rhs) {
+			format = rhs.format;
+			u = rhs.u;
+			type = rhs.type;
+			mipLevel = rhs.mipLevel;
+			layer = rhs.layer;
+			return *this;
+		}
+		// -VS2013
+
+
 		enum Type
 		{
 			kRenderToTexture2D,
@@ -44,24 +123,100 @@ namespace gl4
 			kRenderToCubeMapLayer
 		};
 
+		static RenderTarget createRenderTarget2D(
+			Texture2D &texture2D,
+			int mipLevel
+			);
+
+		static RenderTarget createRenderTarget2DFace(
+			TextureCubeMap &cubeMap,
+			int mipLevel,
+			int face
+			);
+
+		static RenderTarget createRenderTargetCubeMap(
+			TextureCubeMap &cubeMap,
+			int mipLevel
+			);
+
+
+	//protected:
 		ElementFormat format;
 		union {
-			Texture2DImpl *texture_2d;
-			TextureCubeMapImpl *texture_cubemap;
+			Texture2D *texture_2d;
+			TextureCubeMap *texture_cubemap;
 		} u;
 		Type type;
 		int mipLevel;
 		int layer;	// -1 if no face or texture is a cube map and is bound as a layered image
 	};
 	
-	struct MeshImpl
+	class Mesh
 	{
+		friend class Renderer;
+	public:
+
+		Mesh(PrimitiveType primitiveType,
+			std::array_ref<Attribute> layout,
+			int numVertices,
+			const void *vertexData,
+			int numIndices,
+			const void *indexData,
+			std::array_ref<Submesh> submeshes);
+
+		~Mesh()
+		{}
+
+		// VS2013
+		Mesh(Mesh &&rhs) :
+			mode(rhs.mode),
+			vb(std::move(rhs.vb)),
+			ib(std::move(rhs.ib)),
+			vao(std::move(rhs.vao)),
+			vbsize(rhs.vbsize),
+			ibsize(rhs.ibsize),
+			nbvertex(rhs.nbvertex),
+			nbindex(rhs.nbindex),
+			stride(rhs.stride),
+			index_format(rhs.index_format),
+			submeshes(std::move(rhs.submeshes))
+		{}
+		Mesh &operator=(Mesh &&rhs) {
+			mode = rhs.mode;
+			vb = std::move(rhs.vb);
+			ib = std::move(rhs.ib);
+			vao = std::move(rhs.vao);
+			vbsize = rhs.vbsize;
+			ibsize = rhs.ibsize;
+			nbvertex = rhs.nbvertex;
+			nbindex = rhs.nbindex;
+			stride = rhs.stride;
+			index_format = rhs.index_format;
+			submeshes = std::move(rhs.submeshes);
+			return *this;
+		}
+		// -VS2013
+
+	//protected:
+		Mesh() = default;
 		// TODO multiple buffers
 		// one for each update frequency
+		struct Deleter {
+			void operator()(GLuint id) {
+				gl::DeleteBuffers(1, &id);
+			}
+		};
+
+		struct VAODeleter {
+			void operator()(GLuint id) {
+				gl::DeleteVertexArrays(1, &id);
+			}
+		};
+
 		GLenum mode;
-		GLuint vb;
-		GLuint ib;
-		GLuint vao;
+		util::unique_resource<GLuint, Deleter> vb;
+		util::unique_resource<GLuint, Deleter> ib;
+		util::unique_resource<GLuint, VAODeleter> vao;
 		int vbsize;
 		int ibsize;
 		int nbvertex;
@@ -72,36 +227,62 @@ namespace gl4
 		std::vector<Submesh> submeshes;
 	};
 
-	struct EffectImpl
+	class Parameter
 	{
-		int cache_id;
-		// shader source code
-		std::string source;
-		GLuint program;
-		// XXX in source code?
-		RasterizerDesc rs_state;
-		DepthStencilDesc ds_state;
-		// TODO list of passes
-		// TODO list of parameters / uniforms?
+		friend class Renderer;
+		friend class ParameterBlock;
+	public:
+
+	//protected:
+		Parameter() = default;
+
+		const Effect * effect;
+		GLuint location = 0;
+		GLuint binding = 0;
+		int size = 0;	// in bytes
 	};
 
-	struct ParameterImpl
+	class TextureParameter
 	{
-		const EffectImpl *effect;
-		GLuint location;
-		GLuint binding;
-		int size;	// in bytes
+		friend class Renderer;
+		friend class ParameterBlock;
+	public:
+
+	//protected:
+		TextureParameter() = default;
+
+		const Effect *effect = nullptr;
+		GLuint location = 0;
+		GLuint texunit = 0;
 	};
 
-	struct TextureParameterImpl
+	class ParameterBlock
 	{
-		const EffectImpl *effect;
-		GLuint location;
-		GLuint texunit;
-	};
+		friend class Renderer;
+	public:
 
-	struct ParameterBlockImpl
-	{
+		ParameterBlock(Effect &effect);
+
+		void setParameter(
+			const Parameter &param,
+			const void *data
+			);
+
+		void setConstantBuffer(
+			const Parameter &param,
+			const ConstantBuffer &constantBuffer
+			);
+
+		/*void setTextureParameter(
+		const TextureParameter &param,
+		const Texture2D *texture,
+		const SamplerDesc &samplerDesc
+		);*/
+
+	//protected:
+		ParameterBlock() = default;
+
+		Effect * effect;
 		GLuint ubo[kMaxUniformBufferBindings];
 		GLintptr ubo_offsets[kMaxUniformBufferBindings];
 		GLintptr ubo_sizes[kMaxUniformBufferBindings];
@@ -109,24 +290,139 @@ namespace gl4
 		GLuint samplers[kMaxTextureUnits];
 	};
 
-	// 
-	struct ConstantBufferImpl
+	class Effect
 	{
-		GLuint ubo;
-		int size;
+		friend class Renderer;
+		friend class Parameter;
+		friend class TextureParameter;
+		friend class ParameterBlock;
+
+	public:
+		Effect(
+			const char *combinedSource,
+			const char *includePath,
+			RasterizerDesc rasterizerState,
+			DepthStencilDesc depthStencilState);
+
+		Effect(
+			const char *vsSource,
+			const char *psSource,
+			const char *includePath,
+			RasterizerDesc rasterizerState,
+			DepthStencilDesc depthStencilState);
+
+		// VS2013
+		Effect(Effect &&rhs) :
+			cache_id(rhs.cache_id),
+			source(std::move(rhs.source)),
+			program(std::move(rhs.program)),
+			rs_state(rhs.rs_state),
+			ds_state(rhs.ds_state)
+		{}
+		Effect &operator=(Effect &&rhs) {
+			cache_id = rhs.cache_id;
+			source = std::move(rhs.source);
+			program = std::move(rhs.program);
+			rs_state = rhs.rs_state;
+			ds_state = rhs.ds_state;
+			return *this;
+		}
+		// -VS2013
+
+		Parameter createParameter(
+			const char *name
+			);
+
+		TextureParameter createTextureParameter(
+			const char *name
+			);
+
+		ParameterBlock createParameterBlock();
+
+	//private:
+		Effect() = default;
+
+		struct Deleter {
+			void operator()(GLuint id) {
+				gl::DeleteProgram(id);
+			}
+		};
+
+		int cache_id;
+		// effect source code
+		std::string source;
+		util::unique_resource<GLuint, Deleter> program;
+		// XXX in source code?
+		RasterizerDesc rs_state;
+		DepthStencilDesc ds_state;
+		// TODO list of passes
+		// TODO list of parameters / uniforms?
+	};
+
+	// 
+	class ConstantBuffer
+	{
+		friend class Renderer;
+
+	public:
+
+		void update(
+			int offset,
+			int size,
+			const void *data
+			);
+
+		ConstantBuffer() = default;
+		ConstantBuffer(
+			int size,
+			const void *initialData = nullptr);
+
+		// VS2013
+		ConstantBuffer(ConstantBuffer &&rhs) : ubo(std::move(rhs.ubo)), size(rhs.size) {}
+		ConstantBuffer &operator=(ConstantBuffer &&rhs) {
+			ubo = std::move(rhs.ubo);
+			size = rhs.size;
+			return *this;
+		}
+		// -VS2013
+		
+	// protected:
+		struct Deleter {
+			void operator()(GLuint id) {
+				gl::DeleteBuffers(1, &id);
+			}
+		};
+
+		util::unique_resource<GLuint, Deleter> ubo;
+		int size = 0;
 	};
 
 	struct RenderItem
 	{
 		uint64_t sort_key;
-		const MeshImpl *mesh;
+		const Mesh *mesh;
 		int submesh;
-		const ParameterBlockImpl *param_block;
-		const EffectImpl *effect;
+		const ParameterBlock *param_block;
+		const Effect *effect;
 	};
 
-	struct RenderQueueImpl
+	class RenderQueue
 	{
+		friend class Renderer;
+	public:
+		void draw(
+			const Mesh &mesh,
+			int submeshIndex,
+			const Effect &effect,
+			const ParameterBlock &parameterBlock,
+			uint64_t sortHint
+			);
+
+		void clear();
+
+	//protected:
+		RenderQueue() = default;
+
 		std::vector<int> sort_list;
 		std::vector<RenderItem> items;
 	};
@@ -135,193 +431,51 @@ namespace gl4
 	{
 	public:
 		//================================
-		// Implementation-defined types
-		using Texture2DImpl = gl4::Texture2DImpl;
-		using TextureCubeMapImpl = gl4::TextureCubeMapImpl;
-		using RenderTargetImpl = gl4::RenderTargetImpl;
-		using ParameterImpl = gl4::ParameterImpl;
-		using TextureParameterImpl = gl4::TextureParameterImpl;
-		using EffectImpl = gl4::EffectImpl;
-		using ConstantBufferImpl = gl4::ConstantBufferImpl;
-		using RenderTargetImpl = gl4::RenderTargetImpl;
-		using MeshImpl = gl4::MeshImpl;
-		using ParameterBlockImpl = gl4::ParameterBlockImpl;
-		using RenderQueueImpl = gl4::RenderQueueImpl;
-
-		//================================
 		// Textures
-		Texture2DImpl createTexture2D(
+		Texture2D createTexture2D(
 			glm::ivec2 size,
 			int numMipLevels,
 			ElementFormat pixelFormat,
 			const void *data
 			);
 
-		void updateTexture2D(
-			Texture2DImpl &impl,
-			int mipLevel,
-			glm::ivec2 offset,
-			glm::ivec2 size,
-			const void *data
-			);
-
-		void deleteTexture2D(
-			Texture2DImpl &impl
-			);
-
-		TextureCubeMapImpl createTextureCubeMap(
+		TextureCubeMap createTextureCubeMap(
 			glm::ivec2 size,
 			int numMipLevels,
 			ElementFormat pixelFormat,
 			const void* faceData[6]
 			);
 
-		void deleteTextureCubeMap(
-			TextureCubeMapImpl &impl
-			);
-
-		//================================
-		// Meshes
-		MeshImpl createMesh(
-			PrimitiveType primitiveType,
-			std::array_ref<Attribute> layout,
-			int numVertices,
-			const void *vertexData,
-			int numIndices,
-			const void *indexData,
-			std::array_ref<Submesh> submeshes
-			);
-
-		void deleteMesh(
-			MeshImpl &mesh
-			);
-
-		//================================
-		// Effects
-
-		// returns an object describing an effect parameter
-		ParameterImpl createEffectParameter(
-			const EffectImpl &effect, 
-			const char *name
-			);
-
-		TextureParameterImpl createEffectTextureParameter(
-			const EffectImpl &effect,
-			const char *name
-			);
-
-		void deleteEffectParameter(
-			ParameterImpl &impl
-			);
-
-		void deleteEffectTextureParameter(
-			TextureParameterImpl &impl
-			);
-
-		ConstantBufferImpl createConstantBuffer(
-			int size,
-			const void *initialData
-			);
-
-		void updateConstantBuffer(
-			ConstantBufferImpl &impl,
-			int offset,
-			int size,
-			const void *data
-			);
-
-		void deleteConstantBuffer(
-			ConstantBufferImpl &impl
-			);
-
 		// TODO create from file / opaque archive?
-		EffectImpl createEffect(
-			const char *combinedShaderSource,
-			const char *includePath,
+		Effect createEffect(
+			const char *vsSource,
+			const char *psSource,
 			RasterizerDesc rasterizerState,
 			DepthStencilDesc depthStencilState
-			);
-
-		void deleteEffect(
-			EffectImpl &effect
-			);
-
-		//================================
-		// Parameter blocks
-		// TODO
-		ParameterBlockImpl createParameterBlock(
-			const EffectImpl &effect
-			//const PassImpl &pass
-			// TechniqueID / PassID
-			);
-
-		void setParameter(
-			ParameterBlockImpl &paramBlock,
-			const ParameterImpl &param,
-			const void *data
-			);
-
-		void setConstantBuffer(
-			ParameterBlockImpl &paramBlock,
-			const ParameterImpl &param,
-			const ConstantBufferImpl &constantBuffer
-			);
-
-		void setTextureParameter(
-			ParameterBlockImpl &paramBlock,
-			const TextureParameterImpl &param,
-			const Texture2DImpl *texture,
-			const SamplerDesc &samplerDesc
-			);
-
-		void deleteParameterBlock(
-			ParameterBlockImpl &impl
+			// TODO blend state
 			);
 
 		//================================
 		// Render targets
-		RenderTargetImpl createRenderTarget2D(
-			Texture2DImpl *texture2D, 
+		RenderTarget createRenderTarget2D(
+			Texture2D &texture2D, 
 			int mipLevel
 			);
 
-		RenderTargetImpl createRenderTarget2DFace(
-			TextureCubeMapImpl *cubeMap, 
+		RenderTarget createRenderTarget2DFace(
+			TextureCubeMap &cubeMap, 
 			int mipLevel, 
 			int face
 			);
 
-		RenderTargetImpl createRenderTargetCubeMap(
-			TextureCubeMapImpl *cubeMap, 
+		RenderTarget createRenderTargetCubeMap(
+			TextureCubeMap &cubeMap, 
 			int mipLevel
-			);
-
-		void deleteRenderTarget(
-			RenderTargetImpl &impl
 			);
 
 		//================================
 		// Render queues
-		RenderQueueImpl createRenderQueue(
-			// void
-			// TODO?
-			);
-
-		void clearRenderQueue(
-			RenderQueueImpl &impl
-			);
-
-		void deleteRenderQueue(
-			RenderQueueImpl &impl
-			);
-
-		void draw(
-			RenderQueueImpl &renderQueue,
-			const MeshImpl &mesh,
-			int submeshIndex,
-			const EffectImpl &effect,
-			const ParameterBlockImpl &parameterBlock,
-			uint64_t sortHint
+		RenderQueue createRenderQueue(
 			);
 
 		//================================
@@ -342,8 +496,8 @@ namespace gl4
 
 		// set the color & depth render targets
 		void setRenderTargets(
-			std::array_ref<const RenderTargetImpl*> colorTargets,
-			const RenderTargetImpl *depthStencilTarget
+			std::array_ref<const RenderTarget*> colorTargets,
+			const RenderTarget *depthStencilTarget
 			);
 
 		void setViewports(
@@ -351,7 +505,7 @@ namespace gl4
 			);
 
 		void submitRenderQueue(
-			RenderQueueImpl &renderQueue
+			RenderQueue &renderQueue
 			);
 
 		// TODO draw instanced
@@ -368,25 +522,24 @@ namespace gl4
 		void drawItem(const RenderItem &item);
 
 		GLuint fbo = 0;
-		RenderTargetImpl screen_rt;
-		RenderTargetImpl screen_depth_rt;
+		RenderTarget screen_rt;
+		RenderTarget screen_depth_rt;
 
 		static std::unique_ptr<Renderer> instance;
 	};
 }
 
 // TODO move this somewhere else (utils?)
-std::string loadShaderSource(const char *fileName);
+std::string loadEffectSource(const char *fileName);
 
-// instantiate RAII wrapper types
 using Renderer = gl4::Renderer;
-using Effect = EffectBase < gl4::Renderer >;
-using Texture2D = Texture2DBase < gl4::Renderer >;
-using BaseParameter = ParameterBase < gl4::Renderer >;
-using ConstantBuffer = ConstantBufferBase < gl4::Renderer >;
-using RenderQueue = RenderQueueBase < gl4::Renderer >;
-using Mesh = MeshBase < gl4::Renderer >;
-using Parameter = ParameterBase < gl4::Renderer >;
-using ParameterBlock = ParameterBlockBase < gl4::Renderer >;
+using Effect = gl4::Effect;
+using Texture2D = gl4::Texture2D; 
+using ParameterBlock = gl4::ParameterBlock;
+using Parameter = gl4::Parameter;
+using TextureParameter = gl4::TextureParameter;
+using ConstantBuffer = gl4::ConstantBuffer;
+using RenderQueue = gl4::RenderQueue;
+using Mesh = gl4::Mesh;
  
 #endif /* end of include guard: RENDERER_HPP */

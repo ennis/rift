@@ -149,7 +149,6 @@ namespace
 		return primitiveTypeToGLenum_[static_cast<int>(type)];
 	}
 
-
 	GLuint createBuffer(
 		GLenum bindingPoint,
 		int size, 
@@ -172,24 +171,24 @@ namespace
 // Renderer::createMesh
 //=============================================================================
 //=============================================================================
-Renderer::MeshImpl Renderer::createMesh(
+Mesh::Mesh(
 	PrimitiveType primitiveType,
 	std::array_ref<Attribute> layout,
 	int numVertices,
 	const void *vertexData,
 	int numIndices,
 	const void *indexData,
-	std::array_ref<Submesh> submeshes
+	std::array_ref<Submesh> submeshes_
 	)
 {
-	MeshImpl impl;
-
-	impl.mode = primitiveTypeToGLenum(primitiveType);
+	mode = primitiveTypeToGLenum(primitiveType);
 
 	// create VAO
-	gl::GenVertexArrays(1, &impl.vao);
+	GLuint vao_;
+	gl::GenVertexArrays(1, &vao_);
+	vao = util::unique_resource<GLuint, Mesh::VAODeleter>(vao_);
 	if (!gl::exts::var_EXT_direct_state_access) {
-		gl::BindVertexArray(impl.vao);
+		gl::BindVertexArray(vao.get());
 	}
 	int offset = 0;
 	for (int attribindex = 0; attribindex < layout.size(); ++attribindex)
@@ -198,17 +197,17 @@ Renderer::MeshImpl Renderer::createMesh(
 		const auto& fmt = getElementFormatInfoGL(attrib.format);
 		if (gl::exts::var_EXT_direct_state_access) {
 			gl::EnableVertexArrayAttribEXT(
-				impl.vao, 
+				vao.get(), 
 				attribindex);
 			gl::VertexArrayVertexAttribFormatEXT(
-				impl.vao, 
+				vao.get(),
 				attribindex, 
 				fmt.size, 
 				fmt.type, 
 				fmt.normalize, 
 				offset);
 			gl::VertexArrayVertexAttribBindingEXT(
-				impl.vao, 
+				vao.get(),
 				attribindex, 
 				0);
 		}
@@ -231,66 +230,57 @@ Renderer::MeshImpl Renderer::createMesh(
 		gl::BindVertexArray(0);
 	}
 
-	impl.stride = offset;
-	impl.nbvertex = numVertices;
-	impl.vbsize = impl.stride*numVertices;
+	stride = offset;
+	nbvertex = numVertices;
+	vbsize = stride*numVertices;
 
 	// VBO
-	impl.vb = createBuffer(
-		gl::ARRAY_BUFFER, 
-		impl.vbsize,
-		gl::DYNAMIC_STORAGE_BIT,
-		vertexData
-		);
+	vb = util::unique_resource<GLuint, Mesh::Deleter>(
+			createBuffer(
+				gl::ARRAY_BUFFER, 
+				vbsize,
+				gl::DYNAMIC_STORAGE_BIT,
+				vertexData
+				));
 
 	// IB
-	impl.ibsize = numIndices * 2;
-	impl.nbindex = numIndices;
+	ibsize = numIndices * 2;
+	nbindex = numIndices;
 	if (numIndices) {
-		impl.ib = createBuffer(
-			gl::ELEMENT_ARRAY_BUFFER,
-			impl.ibsize,
-			gl::DYNAMIC_STORAGE_BIT,
-			indexData
-			);
+		ib = util::unique_resource<GLuint, Mesh::Deleter>(
+			createBuffer(
+				gl::ELEMENT_ARRAY_BUFFER,
+				ibsize,
+				gl::DYNAMIC_STORAGE_BIT,
+				indexData
+				));
 	}
 
 	// copy submeshes
-	impl.submeshes = submeshes.vec();
-	return impl;
+	submeshes = submeshes_.vec();
 }
 
-//=============================================================================
-//=============================================================================
-// Renderer::deleteMesh
-//=============================================================================
-//=============================================================================
-void Renderer::deleteMesh(
-	MeshImpl &mesh
-	)
+Texture2D::Texture2D(
+	glm::ivec2 size_,
+	int numMipLevels_,
+	ElementFormat pixelFormat_,
+	const void *data_
+	) :
+	size(size_),
+	format(pixelFormat_),
+	glformat(getElementFormatInfoGL(pixelFormat_).internalFormat)
 {
-	//if (gl::exts::var_EXT_direct_state_access) {
-	gl::DeleteBuffers(1, &mesh.vb);
-	gl::DeleteBuffers(1, &mesh.ib);
-	gl::DeleteVertexArrays(1, &mesh.vao);
-	//}
+
 }
 
-
-//=============================================================================
-//=============================================================================
-// Renderer::createTexture2D
-//=============================================================================
-//=============================================================================
-Renderer::Texture2DImpl Renderer::createTexture2D(
+void Texture2D::update(
+	int mipLevel,
+	glm::ivec2 offset,
 	glm::ivec2 size,
-	int numMipLevels,
-	ElementFormat pixelFormat,
 	const void *data
 	)
 {
-	// TODO
-	return Texture2DImpl{};
+
 }
 
 //=============================================================================
@@ -298,29 +288,16 @@ Renderer::Texture2DImpl Renderer::createTexture2D(
 // Renderer::createEffectParameter
 //=============================================================================
 //=============================================================================
-Renderer::ParameterImpl Renderer::createEffectParameter(
-	const EffectImpl &effect, 
+Parameter Effect::createParameter(
 	const char *name
 	)
 {
-	ParameterImpl impl;
-	impl.effect = &effect;
-	impl.location = gl::GetUniformBlockIndex(effect.program, name);
+	Parameter impl;
+	impl.effect = this;
+	impl.location = gl::GetUniformBlockIndex(program.get(), name);
 	impl.binding = impl.location;
-	gl::UniformBlockBinding(effect.program, impl.location, impl.location);
-	return impl;
-}
-
-//=============================================================================
-//=============================================================================
-// Renderer::deleteEffectParameter
-//=============================================================================
-//=============================================================================
-void Renderer::deleteEffectParameter(
-	ParameterImpl &impl
-	)
-{
-	// Nothing to do
+	gl::UniformBlockBinding(program.get(), impl.location, impl.location);
+	return std::move(impl);
 }
 
 //=============================================================================
@@ -328,33 +305,23 @@ void Renderer::deleteEffectParameter(
 // Renderer::createEffectTextureParameter
 //=============================================================================
 //=============================================================================
-Renderer::TextureParameterImpl Renderer::createEffectTextureParameter(
-	const EffectImpl &effect,
+TextureParameter Effect::createTextureParameter(
 	const char *name
 	)
 {
-	// TODO
-	TextureParameterImpl impl;
-	impl.effect = &effect;
-	impl.location = gl::GetUniformLocation(effect.program, name);
-	return impl;
+	TextureParameter impl;
+	impl.effect = this;
+	impl.location = gl::GetUniformLocation(program.get(), name);
+	return std::move(impl);
 }
 
-//=============================================================================
-//=============================================================================
-// Renderer::createConstantBuffer
-//=============================================================================
-//=============================================================================
-ConstantBufferImpl Renderer::createConstantBuffer(
-	int size,
-	const void *initialData
-	)
+ConstantBuffer::ConstantBuffer(
+	int size_,
+	const void *initialData)
 {
-	ConstantBufferImpl impl { 
-		createBuffer(gl::UNIFORM_BUFFER, size, gl::DYNAMIC_STORAGE_BIT, initialData),
-		size
-	};
-	return impl;
+	ubo = util::unique_resource<GLuint, ConstantBuffer::Deleter>(
+		createBuffer(gl::UNIFORM_BUFFER, size_, gl::DYNAMIC_STORAGE_BIT, initialData));
+	size = size_;
 }
 
 //=============================================================================
@@ -362,27 +329,13 @@ ConstantBufferImpl Renderer::createConstantBuffer(
 // Renderer::createParameterBlock
 //=============================================================================
 //=============================================================================
-Renderer::ParameterBlockImpl Renderer::createParameterBlock(
-	const EffectImpl &effect
-	//const PassImpl &pass
-	// TechniqueID / PassID
-	)
+ParameterBlock::ParameterBlock(Effect &effect_) : effect(&effect_)
 {
-	return ParameterBlockImpl();
-}
-
-//=============================================================================
-//=============================================================================
-// Renderer::setParameter
-//=============================================================================
-//=============================================================================
-void Renderer::setParameter(
-	ParameterBlockImpl &paramBlock,
-	const ParameterImpl &param,
-	const void *data
-	)
-{
-	// TODO
+	std::fill(ubo, ubo + kMaxUniformBufferBindings, 0);
+	std::fill(ubo_offsets, ubo_offsets + kMaxUniformBufferBindings, 0);
+	std::fill(ubo_sizes, ubo_sizes + kMaxUniformBufferBindings, 0);
+	std::fill(textures, textures + kMaxTextureUnits, 0);
+	std::fill(samplers, samplers + kMaxTextureUnits, 0);
 }
 
 //=============================================================================
@@ -390,16 +343,15 @@ void Renderer::setParameter(
 // Renderer::setConstantBuffer
 //=============================================================================
 //=============================================================================
-void Renderer::setConstantBuffer(
-	ParameterBlockImpl &paramBlock,
-	const ParameterImpl &param,
-	const ConstantBufferImpl &constantBuffer
+void ParameterBlock::setConstantBuffer(
+	const Parameter &param,
+	const ConstantBuffer &constantBuffer
 	)
 {
 	//assert(param.size == constantBuffer.size);
-	paramBlock.ubo[param.binding] = constantBuffer.ubo;
-	paramBlock.ubo_offsets[param.binding] = 0;
-	paramBlock.ubo_sizes[param.binding] = constantBuffer.size;
+	ubo[param.binding] = constantBuffer.ubo.get();
+	ubo_offsets[param.binding] = 0;
+	ubo_sizes[param.binding] = constantBuffer.size;
 }
 
 //=============================================================================
@@ -407,61 +359,20 @@ void Renderer::setConstantBuffer(
 // Renderer::updateConstantBuffer
 //=============================================================================
 //=============================================================================
-void Renderer::updateConstantBuffer(
-	ConstantBufferImpl &impl,
+void ConstantBuffer::update(
 	int offset,
 	int size,
 	const void *data
 	)
 {
 	if (gl::exts::var_EXT_direct_state_access) {
-		gl::NamedBufferSubDataEXT(impl.ubo, offset, size, data);
+		gl::NamedBufferSubDataEXT(ubo.get(), offset, size, data);
 	}
 	else {
-		gl::BindBuffer(gl::UNIFORM_BUFFER, impl.ubo);
+		gl::BindBuffer(gl::UNIFORM_BUFFER, ubo.get());
 		gl::BufferSubData(gl::UNIFORM_BUFFER, offset, size, data);
 		gl::BindBuffer(gl::UNIFORM_BUFFER, 0);
 	}
-}
-
-//=============================================================================
-//=============================================================================
-// Renderer::deleteConstantBuffer
-//=============================================================================
-//=============================================================================
-void Renderer::deleteConstantBuffer(
-	ConstantBufferImpl &impl
-	)
-{
-	gl::DeleteBuffers(1, &impl.ubo);
-}
-
-//=============================================================================
-//=============================================================================
-// Renderer::setTextureParameter
-//=============================================================================
-//=============================================================================
-void Renderer::setTextureParameter(
-	ParameterBlockImpl &paramBlock,
-	const TextureParameterImpl &param,
-	const Texture2DImpl *texture,
-	const SamplerDesc &samplerDesc
-	)
-{
-	paramBlock.textures[param.texunit] = texture->id;
-	// TODO sampler
-}
-
-//=============================================================================
-//=============================================================================
-// Renderer::deleteParameterBlock
-//=============================================================================
-//=============================================================================
-void Renderer::deleteParameterBlock(
-	ParameterBlockImpl &impl
-	)
-{
-	// nothing to do
 }
 
 //=============================================================================
@@ -508,7 +419,7 @@ void Renderer::setViewports(
 		viewports[0].width,
 		viewports[0].height
 	};
-	gl::Viewport(viewports[0].topLeftX, viewports[0].topLeftY, viewports[0].width, viewports[0].height);
+	gl::ViewportIndexedfv(1, vp);
 	gl::DepthRangeIndexed(0, viewports[0].minDepth, viewports[0].maxDepth);
 	//gl::DepthRangeIndexed(0, 0.0f, 1.0f);
 
@@ -531,8 +442,8 @@ void Renderer::setViewports(
 //=============================================================================
 //=============================================================================
 void Renderer::setRenderTargets(
-	std::array_ref<const RenderTargetImpl*> colorTargets,
-	const RenderTargetImpl *depthStencilTarget
+	std::array_ref<const RenderTarget*> colorTargets,
+	const RenderTarget *depthStencilTarget
 	)
 {
 	assert(colorTargets.size() != 0);
@@ -556,7 +467,7 @@ void Renderer::setRenderTargets(
 				gl::FramebufferTexture(
 					gl::FRAMEBUFFER, 
 					gl::COLOR_ATTACHMENT0 + i, 
-					rt->u.texture_2d->id, 
+					rt->u.texture_2d->id.get(), 
 					rt->mipLevel
 					);
 			else
@@ -564,7 +475,7 @@ void Renderer::setRenderTargets(
 				gl::FramebufferTextureLayer(
 					gl::FRAMEBUFFER, 
 					gl::COLOR_ATTACHMENT0 + i, 
-					rt->u.texture_2d->id, 
+					rt->u.texture_2d->id.get(), 
 					rt->mipLevel, 
 					rt->layer
 					);
@@ -572,7 +483,7 @@ void Renderer::setRenderTargets(
 		gl::FramebufferTexture(
 			gl::FRAMEBUFFER, 
 			gl::DEPTH_ATTACHMENT, 
-			depthStencilTarget->u.texture_2d->id, 
+			depthStencilTarget->u.texture_2d->id.get(), 
 			depthStencilTarget->mipLevel
 			);
 		// check fb completeness
@@ -598,22 +509,10 @@ void Renderer::setRenderTargets(
 // Renderer::createRenderQueue
 //=============================================================================
 //=============================================================================
-Renderer::RenderQueueImpl Renderer::createRenderQueue()
+RenderQueue Renderer::createRenderQueue()
 {
 	// Nothing to do
-	return RenderQueueImpl();
-}
-
-//=============================================================================
-//=============================================================================
-// Renderer::deleteRenderQueue
-//=============================================================================
-//=============================================================================
-void Renderer::deleteRenderQueue(
-	RenderQueueImpl &impl
-	)
-{
-	// Nothing to do
+	return RenderQueue{};
 }
 
 //=============================================================================
@@ -621,12 +520,11 @@ void Renderer::deleteRenderQueue(
 // Renderer::draw
 //=============================================================================
 //=============================================================================
-void Renderer::draw(
-	RenderQueueImpl &renderQueue,
-	const MeshImpl &mesh,
+void RenderQueue::draw(
+	const Mesh &mesh,
 	int submeshIndex,
-	const EffectImpl &effect,
-	const ParameterBlockImpl &parameterBlock,
+	const Effect &effect,
+	const ParameterBlock &parameterBlock,
 	uint64_t sortHint
 	)
 {
@@ -636,7 +534,7 @@ void Renderer::draw(
 	item.submesh = submeshIndex;
 	item.param_block = &parameterBlock;
 	item.sort_key = sortHint;
-	renderQueue.items.push_back(item);
+	items.push_back(item);
 }
 
 
@@ -644,8 +542,8 @@ void Renderer::drawItem(const RenderItem &item)
 {
 	// TODO multi-bind
 	// bind vertex buffers
-	gl::BindVertexArray(item.mesh->vao);
-	gl::BindVertexBuffer(0, item.mesh->vb, 0, item.mesh->stride);
+	gl::BindVertexArray(item.mesh->vao.get());
+	gl::BindVertexBuffer(0, item.mesh->vb.get(), 0, item.mesh->stride);
 
 	gl::BindBuffersRange(
 		gl::UNIFORM_BUFFER,
@@ -660,7 +558,7 @@ void Renderer::drawItem(const RenderItem &item)
 	gl::BindSamplers(0, kMaxTextureUnits, &item.param_block->samplers[0]);
 
 	// shaders
-	gl::UseProgram(item.effect->program);
+	gl::UseProgram(item.effect->program.get());
 	// Rasterizer
 	if (item.effect->rs_state.cullMode == CullMode::None) {
 		gl::Disable(gl::CULL_FACE);
@@ -674,7 +572,7 @@ void Renderer::drawItem(const RenderItem &item)
 	const auto &sm = item.mesh->submeshes[item.submesh];
 
 	if (item.mesh->ibsize != 0) {
-		gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, item.mesh->ib);
+		gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, item.mesh->ib.get());
 		gl::DrawElementsBaseVertex(
 			item.mesh->mode, 
 			sm.numIndices,
@@ -697,11 +595,10 @@ void Renderer::drawItem(const RenderItem &item)
 // Renderer::clearRenderQueue
 //=============================================================================
 //=============================================================================
-void Renderer::clearRenderQueue(
-	RenderQueueImpl &impl
+void RenderQueue::clear(
 	)
 {
-	impl.items.clear();
+	items.clear();
 }
 
 //=============================================================================
@@ -710,7 +607,7 @@ void Renderer::clearRenderQueue(
 //=============================================================================
 //=============================================================================
 void Renderer::submitRenderQueue(
-	RenderQueueImpl &renderQueue
+	RenderQueue &renderQueue
 	)
 {
 	std::sort(renderQueue.items.begin(), renderQueue.items.end(), [](const RenderItem &i1, const RenderItem &i2) {

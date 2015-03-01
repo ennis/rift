@@ -272,8 +272,9 @@ namespace gl4
 		int sCurrentEffectCacheID = 0;
 
 
-		GLuint buildShader(
-			Renderer::EffectImpl &impl,
+		std::pair<std::string, std::string> preprocessGLSLEffect(
+			const char *vs_source,
+			const char *ps_source,
 			const char *include_path,
 			std::array_ref<GLSLKeyword> keywords
 			)
@@ -287,7 +288,7 @@ namespace gl4
 			}*/
 
 			std::ostringstream shader_name;
-			shader_name << impl.cache_id << '/'
+			shader_name << '/'
 				<< std::setw(16) << std::setfill('0') << std::hex << hash << std::dec << '/';
 			// log keywords
 			for (const auto &k : keywords) {
@@ -301,7 +302,7 @@ namespace gl4
 
 			std::string vs, fs;
 			// combined source file
-			std::istringstream vsIn(impl.source);
+			std::istringstream vsIn(vs_source);
 			// preprocess source file as a vertex shader source
 			vs = glslPreprocess(
 				include_path,
@@ -310,18 +311,17 @@ namespace gl4
 				GLShaderStage::Vertex
 				);
 			// rewind stream and parse as a fragment shader source
-			vsIn.clear();
-			vsIn.seekg(0);
+			std::istringstream psIn(ps_source);
 			fs = glslPreprocess(
 				include_path,
-				vsIn,
+				psIn,
 				keywords,
 				GLShaderStage::Fragment
 				);
 
 			// create new shader 
 			// TODO error handling
-			return glslCreateProgram(vs.c_str(), fs.c_str());
+			return std::make_pair(vs, fs);
 		}
 
 	} // end gl4::<anonymous namespace>
@@ -332,41 +332,44 @@ namespace gl4
 	// Renderer::createEffect
 	//=============================================================================
 	//=============================================================================
-	Renderer::EffectImpl Renderer::createEffect(
+	Effect::Effect(
 		const char *combinedShaderSource,
 		const char *includePath,
 		RasterizerDesc rasterizerState,
 		DepthStencilDesc depthStencilState
-		)
+		) :
+		Effect(combinedShaderSource, combinedShaderSource, includePath, rasterizerState, depthStencilState)
 	{
-		EffectImpl eff;
-		eff.cache_id = sCurrentEffectCacheID++;
-		eff.ds_state = depthStencilState;
-		eff.rs_state = rasterizerState;
-		eff.source = std::string(combinedShaderSource);
+	}
+	
+	Effect::Effect(
+		const char *vsSource,
+		const char *psSource,
+		const char *includePath,
+		RasterizerDesc rasterizerState,
+		DepthStencilDesc depthStencilState) 
+	{
+		cache_id = sCurrentEffectCacheID++;
+		ds_state = depthStencilState;
+		rs_state = rasterizerState;
 		// preprocess source
-		eff.program = buildShader(eff, includePath, std::array_ref < GLSLKeyword > {});
-		return eff;
+		std::pair<std::string, std::string> sources = preprocessGLSLEffect(
+			vsSource,
+			psSource,
+			includePath,
+			std::array_ref < GLSLKeyword > {});
+		program =
+			util::unique_resource<GLuint, Effect::Deleter>(
+			glslCreateProgram(
+			sources.first.c_str(),
+			sources.second.c_str()));
 	}
-
-	//=============================================================================
-	//=============================================================================
-	// Renderer::deleteEffect
-	//=============================================================================
-	//=============================================================================
-	void Renderer::deleteEffect(
-		EffectImpl &effect
-		)
-	{
-		gl::DeleteProgram(effect.program);
-	}
-
 }
 
 
 //=============================================================================
 // TODO where should this be?
-std::string loadShaderSource(const char *fileName)
+std::string loadEffectSource(const char *fileName)
 {
 	std::ifstream fileIn(fileName, std::ios::in);
 	if (!fileIn.is_open()) {
