@@ -191,9 +191,9 @@ Mesh::Mesh(
 	// create VAO
 	GLuint vao_;
 	gl::GenVertexArrays(1, &vao_);
-	vao = util::unique_resource<GLuint, Mesh::VAODeleter>(vao_);
+	vao = vao_;
 	if (!gl::exts::var_EXT_direct_state_access) {
-		gl::BindVertexArray(vao.get());
+		gl::BindVertexArray(vao);
 	}
 	int offset = 0;
 	for (int attribindex = 0; attribindex < layout.size(); ++attribindex)
@@ -202,17 +202,17 @@ Mesh::Mesh(
 		const auto& fmt = getElementFormatInfoGL(attrib.format);
 		if (gl::exts::var_EXT_direct_state_access) {
 			gl::EnableVertexArrayAttribEXT(
-				vao.get(), 
+				vao, 
 				attribindex);
 			gl::VertexArrayVertexAttribFormatEXT(
-				vao.get(),
+				vao,
 				attribindex, 
 				fmt.size, 
 				fmt.type, 
 				fmt.normalize, 
 				offset);
 			gl::VertexArrayVertexAttribBindingEXT(
-				vao.get(),
+				vao,
 				attribindex, 
 				0);
 		}
@@ -240,25 +240,23 @@ Mesh::Mesh(
 	vbsize = stride*numVertices;
 
 	// VBO
-	vb = util::unique_resource<GLuint, Mesh::Deleter>(
-			createBuffer(
+	vb = createBuffer(
 				gl::ARRAY_BUFFER, 
 				vbsize,
 				gl::DYNAMIC_STORAGE_BIT,
 				vertexData
-				));
+				);
 
 	// IB
 	ibsize = numIndices * 2;
 	nbindex = numIndices;
 	if (numIndices) {
-		ib = util::unique_resource<GLuint, Mesh::Deleter>(
-			createBuffer(
+		ib = createBuffer(
 				gl::ELEMENT_ARRAY_BUFFER,
 				ibsize,
 				gl::DYNAMIC_STORAGE_BIT,
 				indexData
-				));
+				);
 	}
 
 	// copy submeshes
@@ -287,7 +285,7 @@ Texture2D::Texture2D(
 		gl::BindTexture(gl::TEXTURE_2D, 0);
 	}
 	
-	id = util::unique_resource<GLuint, Texture2D::Deleter>(tex);
+	id = tex;
 
 	if (data_)
 		update(0, { 0, 0 }, size, data_);
@@ -304,7 +302,7 @@ void Texture2D::update(
 	if (gl::exts::var_EXT_direct_state_access)
 	{
 		gl::TextureSubImage2DEXT(
-			id.get(),
+			id,
 			gl::TEXTURE_2D,
 			mipLevel,
 			offset.x,
@@ -317,7 +315,7 @@ void Texture2D::update(
 	}
 	else
 	{
-		gl::BindTexture(gl::TEXTURE_2D, id.get());
+		gl::BindTexture(gl::TEXTURE_2D, id);
 		gl::TexSubImage2D(
 			gl::TEXTURE_2D,
 			mipLevel,
@@ -332,43 +330,43 @@ void Texture2D::update(
 	}
 }
 
-RenderTarget RenderTarget::createRenderTarget2D(
+RenderTarget::Ptr RenderTarget::createRenderTarget2D(
 	Texture2D &texture2D,
 	int mipLevel
 	)
 {
-	RenderTarget r;
-	r.type = RenderTarget::kRenderToTexture2D;
-	r.layer = 0;
-	r.mipLevel = mipLevel;
-	r.u.texture_2d = &texture2D;
+	auto r = std::make_unique<RenderTarget>();
+	r->type = RenderTarget::kRenderToTexture2D;
+	r->layer = 0;
+	r->mipLevel = mipLevel;
+	r->u.texture_2d = &texture2D;
 	return r;
 }
 
-RenderTarget RenderTarget::createRenderTarget2DFace(
+RenderTarget::Ptr RenderTarget::createRenderTarget2DFace(
 	TextureCubeMap &cubeMap,
 	int mipLevel,
 	int face
 	)
 {
-	RenderTarget r;
-	r.type = RenderTarget::kRenderToCubeMapLayer;
-	r.layer = face;
-	r.mipLevel = mipLevel;
-	r.u.texture_cubemap = &cubeMap;
+	auto r = std::make_unique<RenderTarget>();
+	r->type = RenderTarget::kRenderToCubeMapLayer;
+	r->layer = face;
+	r->mipLevel = mipLevel;
+	r->u.texture_cubemap = &cubeMap;
 	return r;
 }
 
-RenderTarget RenderTarget::createRenderTargetCubeMap(
+RenderTarget::Ptr RenderTarget::createRenderTargetCubeMap(
 	TextureCubeMap &cubeMap,
 	int mipLevel
 	)
 {
-	RenderTarget r;
-	r.type = RenderTarget::kRenderToCubeMap;
-	r.layer = 0;
-	r.mipLevel = mipLevel;
-	r.u.texture_cubemap = &cubeMap;
+	auto r = std::make_unique<RenderTarget>();
+	r->type = RenderTarget::kRenderToCubeMap;
+	r->layer = 0;
+	r->mipLevel = mipLevel;
+	r->u.texture_cubemap = &cubeMap;
 	return r;
 }
 
@@ -377,16 +375,16 @@ RenderTarget RenderTarget::createRenderTargetCubeMap(
 // Renderer::createEffectParameter
 //=============================================================================
 //=============================================================================
-Parameter Effect::createParameter(
+Parameter::Ptr Effect::createParameter(
 	const char *name
 	)
 {
-	Parameter impl;
-	impl.effect = this;
-	impl.location = gl::GetUniformBlockIndex(program.get(), name);
-	impl.binding = impl.location;
-	gl::UniformBlockBinding(program.get(), impl.location, impl.location);
-	return std::move(impl);
+	auto ptr = std::make_unique<Parameter>();
+	ptr->effect = this;
+	ptr->location = gl::GetUniformBlockIndex(program, name);
+	ptr->binding = ptr->location;
+	gl::UniformBlockBinding(program, ptr->location, ptr->location);
+	return std::move(ptr);
 }
 
 //=============================================================================
@@ -394,33 +392,32 @@ Parameter Effect::createParameter(
 // Renderer::createEffectTextureParameter
 //=============================================================================
 //=============================================================================
-TextureParameter Effect::createTextureParameter(
+TextureParameter::Ptr Effect::createTextureParameter(
 	const char *name
 	)
 {
-	TextureParameter impl;
-	impl.effect = this;
-	impl.location = gl::GetUniformLocation(program.get(), name);
-	return std::move(impl);
+	auto ptr = std::make_unique<TextureParameter>();
+	ptr->effect = this;
+	ptr->location = gl::GetUniformLocation(program, name);
+	return std::move(ptr);
 }
 
-TextureParameter Effect::createTextureParameter(
+TextureParameter::Ptr Effect::createTextureParameter(
 	int texunit
 	)
 {
-	TextureParameter impl;
-	impl.effect = this;
-	impl.location = -1;
-	impl.texunit = texunit;
-	return std::move(impl);
+	auto ptr = std::make_unique<TextureParameter>();
+	ptr->effect = this;
+	ptr->location = -1;
+	ptr->texunit = texunit;
+	return std::move(ptr);
 }
 
 ConstantBuffer::ConstantBuffer(
 	int size_,
 	const void *initialData)
 {
-	ubo = util::unique_resource<GLuint, ConstantBuffer::Deleter>(
-		createBuffer(gl::UNIFORM_BUFFER, size_, gl::DYNAMIC_STORAGE_BIT, initialData));
+	ubo = createBuffer(gl::UNIFORM_BUFFER, size_, gl::DYNAMIC_STORAGE_BIT, initialData);
 	size = size_;
 }
 
@@ -449,7 +446,7 @@ void ParameterBlock::setConstantBuffer(
 	)
 {
 	//assert(param.size == constantBuffer.size);
-	ubo[param.binding] = constantBuffer.ubo.get();
+	ubo[param.binding] = constantBuffer.ubo;
 	ubo_offsets[param.binding] = 0;
 	ubo_sizes[param.binding] = constantBuffer.size;
 }
@@ -460,8 +457,29 @@ void ParameterBlock::setTextureParameter(
 	const SamplerDesc &samplerDesc
 	)
 {
-	textures[param.texunit] = texture->id.get();
+	textures[param.texunit] = texture->id;
 	samplers[param.texunit] = Renderer::getInstance().getSampler(samplerDesc);
+}
+
+void ParameterBlock::setConstantBuffer(
+	int binding,
+	const ConstantBuffer &constantBuffer
+	)
+{
+	//assert(param.size == constantBuffer.size);
+	ubo[binding] = constantBuffer.ubo;
+	ubo_offsets[binding] = 0;
+	ubo_sizes[binding] = constantBuffer.size;
+}
+
+void ParameterBlock::setTextureParameter(
+	int texunit,
+	const Texture2D *texture,
+	const SamplerDesc &samplerDesc
+	)
+{
+	textures[texunit] = texture->id;
+	samplers[texunit] = Renderer::getInstance().getSampler(samplerDesc);
 }
 
 //=============================================================================
@@ -476,10 +494,10 @@ void ConstantBuffer::update(
 	)
 {
 	if (gl::exts::var_EXT_direct_state_access) {
-		gl::NamedBufferSubDataEXT(ubo.get(), offset, size, data);
+		gl::NamedBufferSubDataEXT(ubo, offset, size, data);
 	}
 	else {
-		gl::BindBuffer(gl::UNIFORM_BUFFER, ubo.get());
+		gl::BindBuffer(gl::UNIFORM_BUFFER, ubo);
 		gl::BufferSubData(gl::UNIFORM_BUFFER, offset, size, data);
 		gl::BindBuffer(gl::UNIFORM_BUFFER, 0);
 	}
@@ -577,7 +595,7 @@ void Renderer::setRenderTargets(
 				gl::FramebufferTexture(
 					gl::FRAMEBUFFER, 
 					gl::COLOR_ATTACHMENT0 + i, 
-					rt->u.texture_2d->id.get(), 
+					rt->u.texture_2d->id, 
 					rt->mipLevel
 					);
 			else
@@ -585,7 +603,7 @@ void Renderer::setRenderTargets(
 				gl::FramebufferTextureLayer(
 					gl::FRAMEBUFFER, 
 					gl::COLOR_ATTACHMENT0 + i, 
-					rt->u.texture_2d->id.get(), 
+					rt->u.texture_2d->id, 
 					rt->mipLevel, 
 					rt->layer
 					);
@@ -593,7 +611,7 @@ void Renderer::setRenderTargets(
 		gl::FramebufferTexture(
 			gl::FRAMEBUFFER, 
 			gl::DEPTH_ATTACHMENT, 
-			depthStencilTarget->u.texture_2d->id.get(), 
+			depthStencilTarget->u.texture_2d->id, 
 			depthStencilTarget->mipLevel
 			);
 		// check fb completeness
@@ -652,8 +670,8 @@ void Renderer::drawItem(const RenderItem &item)
 {
 	// TODO multi-bind
 	// bind vertex buffers
-	gl::BindVertexArray(item.mesh->vao.get());
-	gl::BindVertexBuffer(0, item.mesh->vb.get(), 0, item.mesh->stride);
+	gl::BindVertexArray(item.mesh->vao);
+	gl::BindVertexBuffer(0, item.mesh->vb, 0, item.mesh->stride);
 
 	gl::BindBuffersRange(
 		gl::UNIFORM_BUFFER,
@@ -668,7 +686,7 @@ void Renderer::drawItem(const RenderItem &item)
 	gl::BindSamplers(0, kMaxTextureUnits, &item.param_block->samplers[0]);
 
 	// shaders
-	gl::UseProgram(item.effect->program.get());
+	gl::UseProgram(item.effect->program);
 	// Rasterizer
 	if (item.effect->rs_state.cullMode == CullMode::None) {
 		gl::Disable(gl::CULL_FACE);
@@ -690,7 +708,7 @@ void Renderer::drawItem(const RenderItem &item)
 	const auto &sm = item.mesh->submeshes[item.submesh];
 
 	if (item.mesh->ibsize != 0) {
-		gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, item.mesh->ib.get());
+		gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, item.mesh->ib);
 		gl::DrawElementsBaseVertex(
 			item.mesh->mode, 
 			sm.numIndices,

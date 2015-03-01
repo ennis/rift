@@ -11,7 +11,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
 #include <image.hpp>
-
+#include <sky.hpp>
 #include <gl4/renderer.hpp>
 
 //============================================================================
@@ -45,16 +45,14 @@ private:
 	SceneData sceneData;
 
 	Entity *cameraEntity;
-	Mesh mesh;
-	Effect effect;
-	Parameter sceneDataParam;
-	Parameter perObjParam;
-	TextureParameter texParam;
-	ParameterBlock paramBlock;
-	ConstantBuffer cbSceneData;
-	ConstantBuffer cbPerObj;
-	RenderQueue renderQueue;
-	Texture2D tex;
+	Mesh::Ptr mesh;
+	Effect::Ptr effect;
+	ParameterBlock::Ptr paramBlock;
+	ConstantBuffer::Ptr cbSceneData;
+	ConstantBuffer::Ptr cbPerObj;
+	RenderQueue::Ptr renderQueue;
+	Texture2D::Ptr tex;
+	Sky sky;
 };
 
 //============================================================================
@@ -74,7 +72,7 @@ void RiftGame::init()
 	cameraEntity->addComponent<FreeCameraController>();
 
 	// Effect 
-	effect = Effect(
+	effect = Effect::create(
 		loadEffectSource("resources/shaders/default.glsl").c_str(),
 		"resources/shaders",
 		RasterizerDesc{},
@@ -114,7 +112,7 @@ void RiftGame::init()
 		{ 0, 0, 8, 36 }
 	};
 
-	mesh = Mesh(
+	mesh = Mesh::create(
 		PrimitiveType::Triangle,
 		attribs,
 		8,
@@ -125,13 +123,10 @@ void RiftGame::init()
 
 	tex = Image::loadFromFile("resources/img/brick_wall.jpg").convertToTexture2D();
 
-	sceneDataParam = effect.createParameter("SceneData");
-	perObjParam = effect.createParameter("PerObject");
-	texParam = effect.createTextureParameter(0);
-
-	cbSceneData = ConstantBuffer(sizeof(SceneData));
-	cbPerObj = ConstantBuffer(sizeof(PerObject));
-	paramBlock = ParameterBlock(effect);
+	cbSceneData = ConstantBuffer::create(sizeof(SceneData), nullptr);
+	cbPerObj = ConstantBuffer::create(sizeof(PerObject), nullptr);
+	paramBlock = ParameterBlock::create(*effect);
+	renderQueue = RenderQueue::create();
 }
 
 
@@ -153,27 +148,29 @@ void RiftGame::render(float dt)
 	sceneData.viewMatrix = cam->getViewMatrix();
 	sceneData.viewProjMatrix = sceneData.projMatrix * sceneData.viewMatrix;
 	sceneData.viewportSize = win_size;
-	cbSceneData.update(0, sizeof(SceneData), &sceneData);
+	cbSceneData->update(0, sizeof(SceneData), &sceneData);
 
 	// update per-model buffer
 	perObj.modelMatrix = glm::mat4(1.0f);
 	perObj.objectColor = glm::vec4(1.0f);
-	cbPerObj.update(0, sizeof(PerObject), &perObj);
+	cbPerObj->update(0, sizeof(PerObject), &perObj);
 
 	// create parameter block
-	paramBlock.setConstantBuffer(sceneDataParam, cbSceneData);
-	paramBlock.setConstantBuffer(perObjParam, cbPerObj);
-	paramBlock.setTextureParameter(texParam, &tex, SamplerDesc{});
+	paramBlock->setConstantBuffer(0, *cbSceneData);
+	paramBlock->setConstantBuffer(1, *cbPerObj);
+	paramBlock->setTextureParameter(0, tex.get(), SamplerDesc{});
 
 	// submit to render queue
-	renderQueue.draw(mesh, 0, effect, paramBlock, 0);
+	renderQueue->draw(*mesh, 0, *effect, *paramBlock, 0);
 
 	if (glfwGetKey(Engine::instance().getWindow().getHandle(), GLFW_KEY_H)) {
 		//renderQueue.debugPrint();
 	}
 
-	R.submitRenderQueue(renderQueue);
-	renderQueue.clear();
+	sky.render(*renderQueue, sceneData, *cbSceneData);
+
+	R.submitRenderQueue(*renderQueue);
+	renderQueue->clear();
 
 	// render tweak bar
 	//TwDraw();

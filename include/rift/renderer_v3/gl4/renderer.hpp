@@ -51,6 +51,8 @@ namespace gl4
 	{
 		friend class Renderer;
 	public:
+		using Ptr = std::unique_ptr < Texture2D >;
+
 		Texture2D() = default;
 
 		Texture2D(
@@ -60,15 +62,20 @@ namespace gl4
 			const void *data
 			);
 
+		~Texture2D()
+		{
+			gl::DeleteTextures(1, &id);
+		}
+
 		// VS2013
-		Texture2D(Texture2D &&rhs) : id(std::move(rhs.id)), size(rhs.size), format(rhs.format), glformat(rhs.glformat) {}
+		/*Texture2D(Texture2D &&rhs) : id(std::move(rhs.id)), size(rhs.size), format(rhs.format), glformat(rhs.glformat) {}
 		Texture2D &operator=(Texture2D &&rhs) {
 			id = std::move(rhs.id);
 			size = rhs.size;
 			format = rhs.format;
 			glformat = rhs.glformat;
 			return *this;
-		}
+		}*/
 		// -VS2013
 
 		void update(
@@ -79,13 +86,16 @@ namespace gl4
 			);
 
 	//protected:
-		struct Deleter {
-			void operator()(GLuint id) {
-				gl::DeleteTextures(1, &id);
-			}
-		};
+		static Ptr create(
+			glm::ivec2 size,
+			int numMipLevels,
+			ElementFormat pixelFormat,
+			const void *data)
+		{
+			return std::make_unique<Texture2D>(size, numMipLevels, pixelFormat, data);
+		}
 
-		util::unique_resource<GLuint, Deleter> id;
+		GLuint id;
 		glm::ivec2 size;
 		ElementFormat format;
 		GLenum glformat;
@@ -95,6 +105,8 @@ namespace gl4
 	{
 		friend class Renderer;
 	public:
+		using Ptr = std::unique_ptr < TextureCubeMap >;
+
 		TextureCubeMap() = default;
 
 		TextureCubeMap(
@@ -105,9 +117,14 @@ namespace gl4
 			);
 
 		// VS2013
-		TextureCubeMap(TextureCubeMap &&rhs)  {}
-		TextureCubeMap &operator=(TextureCubeMap &&rhs) {}
+		/*TextureCubeMap(TextureCubeMap &&rhs)  {}
+		TextureCubeMap &operator=(TextureCubeMap &&rhs) {}*/
 		// -VS2013
+
+		static Ptr create()
+		{
+			return std::make_unique<TextureCubeMap>();
+		}
 
 	//protected:
 
@@ -117,10 +134,11 @@ namespace gl4
 	{
 		friend class Renderer;
 	public:
+		using Ptr = std::unique_ptr < RenderTarget > ;
 		RenderTarget() = default;
 
 		// VS2013
-		RenderTarget(RenderTarget &&rhs) : format(rhs.format), u(rhs.u), type(rhs.type), mipLevel(rhs.mipLevel), layer(rhs.layer) {}
+		/*RenderTarget(RenderTarget &&rhs) : format(rhs.format), u(rhs.u), type(rhs.type), mipLevel(rhs.mipLevel), layer(rhs.layer) {}
 		RenderTarget &operator=(RenderTarget &&rhs) {
 			format = rhs.format;
 			u = rhs.u;
@@ -128,9 +146,8 @@ namespace gl4
 			mipLevel = rhs.mipLevel;
 			layer = rhs.layer;
 			return *this;
-		}
+		}*/
 		// -VS2013
-
 
 		enum Type
 		{
@@ -139,18 +156,18 @@ namespace gl4
 			kRenderToCubeMapLayer
 		};
 
-		static RenderTarget createRenderTarget2D(
+		static RenderTarget::Ptr createRenderTarget2D(
 			Texture2D &texture2D,
 			int mipLevel
 			);
 
-		static RenderTarget createRenderTarget2DFace(
+		static RenderTarget::Ptr createRenderTarget2DFace(
 			TextureCubeMap &cubeMap,
 			int mipLevel,
 			int face
 			);
 
-		static RenderTarget createRenderTargetCubeMap(
+		static RenderTarget::Ptr createRenderTargetCubeMap(
 			TextureCubeMap &cubeMap,
 			int mipLevel
 			);
@@ -172,6 +189,8 @@ namespace gl4
 		friend class Renderer;
 	public:
 
+		using Ptr = std::unique_ptr < Mesh > ;
+
 		Mesh(PrimitiveType primitiveType,
 			std::array_ref<Attribute> layout,
 			int numVertices,
@@ -180,11 +199,8 @@ namespace gl4
 			const void *indexData,
 			std::array_ref<Submesh> submeshes);
 
-		~Mesh()
-		{}
-
 		// VS2013
-		Mesh(Mesh &&rhs) :
+		/*Mesh(Mesh &&rhs) :
 			mode(rhs.mode),
 			vb(std::move(rhs.vb)),
 			ib(std::move(rhs.ib)),
@@ -210,29 +226,41 @@ namespace gl4
 			index_format = rhs.index_format;
 			submeshes = std::move(rhs.submeshes);
 			return *this;
-		}
+		}*/
 		// -VS2013
 
 	//protected:
 		Mesh() = default;
-		// TODO multiple buffers
-		// one for each update frequency
-		struct Deleter {
-			void operator()(GLuint id) {
-				gl::DeleteBuffers(1, &id);
-			}
-		};
 
-		struct VAODeleter {
-			void operator()(GLuint id) {
-				gl::DeleteVertexArrays(1, &id);
-			}
-		};
+		~Mesh() {
+			gl::DeleteVertexArrays(1, &vao);
+			gl::DeleteBuffers(1, &vb);
+			gl::DeleteBuffers(1, &ib);
+		}
+
+		static Ptr create(
+			PrimitiveType primitiveType,
+			std::array_ref<Attribute> layout,
+			int numVertices,
+			const void *vertexData,
+			int numIndices,
+			const void *indexData,
+			std::array_ref<Submesh> submeshes)
+		{
+			return std::make_unique<Mesh>(
+				primitiveType, 
+				layout, 
+				numVertices, 
+				vertexData, 
+				numIndices, 
+				indexData, 
+				submeshes);
+		}
 
 		GLenum mode;
-		util::unique_resource<GLuint, Deleter> vb;
-		util::unique_resource<GLuint, Deleter> ib;
-		util::unique_resource<GLuint, VAODeleter> vao;
+		GLuint vb;
+		GLuint ib;
+		GLuint vao;
 		int vbsize;
 		int ibsize;
 		int nbvertex;
@@ -248,6 +276,7 @@ namespace gl4
 		friend class Renderer;
 		friend class ParameterBlock;
 	public:
+		using Ptr = std::unique_ptr < Parameter >;
 
 	//protected:
 		Parameter() = default;
@@ -264,6 +293,8 @@ namespace gl4
 		friend class ParameterBlock;
 	public:
 
+		using Ptr = std::unique_ptr < TextureParameter > ;
+
 	//protected:
 		TextureParameter() = default;
 
@@ -277,6 +308,8 @@ namespace gl4
 		friend class Renderer;
 	public:
 
+		using Ptr = std::unique_ptr < ParameterBlock > ;
+
 		ParameterBlock(Effect &effect);
 
 		void setParameter(
@@ -289,11 +322,26 @@ namespace gl4
 			const ConstantBuffer &constantBuffer
 			);
 
+		void setConstantBuffer(
+			int binding,
+			const ConstantBuffer &constantBuffer
+			);
+
 		void setTextureParameter(
 			const TextureParameter &param,
 			const Texture2D *texture,
 			const SamplerDesc &samplerDesc
 			);
+
+		void setTextureParameter(
+			int texunit,
+			const Texture2D *texture,
+			const SamplerDesc &samplerDesc
+			);
+
+		static Ptr create(Effect &effect) {
+			return std::make_unique<ParameterBlock>(effect);
+		}
 
 	//protected:
 		ParameterBlock() = default;
@@ -314,6 +362,8 @@ namespace gl4
 		friend class ParameterBlock;
 
 	public:
+		using Ptr = std::unique_ptr < Effect >;
+
 		Effect(
 			const char *combinedSource,
 			const char *includePath,
@@ -328,7 +378,7 @@ namespace gl4
 			DepthStencilDesc depthStencilState);
 
 		// VS2013
-		Effect(Effect &&rhs) :
+		/*Effect(Effect &&rhs) :
 			cache_id(rhs.cache_id),
 			source(std::move(rhs.source)),
 			program(std::move(rhs.program)),
@@ -342,37 +392,54 @@ namespace gl4
 			rs_state = rhs.rs_state;
 			ds_state = rhs.ds_state;
 			return *this;
-		}
+		}*/
 		// -VS2013
 
-		Parameter createParameter(
+		Parameter::Ptr createParameter(
 			const char *name
 			);
 
 		// TODO named texture parameters
-		TextureParameter createTextureParameter(
+		TextureParameter::Ptr createTextureParameter(
 			const char *name
 			);
 
-		TextureParameter createTextureParameter(
+		TextureParameter::Ptr createTextureParameter(
 			int texunit
 			);
 
-		ParameterBlock createParameterBlock();
+		ParameterBlock::Ptr createParameterBlock();
+
+		static Ptr create(
+			const char *combinedSource,
+			const char *includePath,
+			RasterizerDesc rasterizerState,
+			DepthStencilDesc depthStencilState)
+		{
+			return std::make_unique<Effect>(combinedSource, includePath, rasterizerState, depthStencilState);
+		}
+		
+		static Ptr create(
+			const char *vsSource,
+			const char *psSource,
+			const char *includePath,
+			RasterizerDesc rasterizerState,
+			DepthStencilDesc depthStencilState)
+		{
+			return std::make_unique<Effect>(vsSource, psSource, includePath, rasterizerState, depthStencilState);
+		}
 
 	//private:
 		Effect() = default;
-
-		struct Deleter {
-			void operator()(GLuint id) {
-				gl::DeleteProgram(id);
-			}
-		};
+		~Effect()
+		{
+			gl::DeleteProgram(program);
+		}
 
 		int cache_id;
 		// effect source code
 		std::string source;
-		util::unique_resource<GLuint, Deleter> program;
+		GLuint program;
 		// XXX in source code?
 		RasterizerDesc rs_state;
 		DepthStencilDesc ds_state;
@@ -387,6 +454,8 @@ namespace gl4
 
 	public:
 
+		using Ptr = std::unique_ptr < ConstantBuffer > ;
+
 		void update(
 			int offset,
 			int size,
@@ -398,23 +467,30 @@ namespace gl4
 			int size,
 			const void *initialData = nullptr);
 
+		~ConstantBuffer()
+		{
+			gl::DeleteBuffers(1, &ubo);
+		}
+
 		// VS2013
-		ConstantBuffer(ConstantBuffer &&rhs) : ubo(std::move(rhs.ubo)), size(rhs.size) {}
+		/*ConstantBuffer(ConstantBuffer &&rhs) : ubo(std::move(rhs.ubo)), size(rhs.size) {}
 		ConstantBuffer &operator=(ConstantBuffer &&rhs) {
 			ubo = std::move(rhs.ubo);
 			size = rhs.size;
 			return *this;
-		}
+		}*/
 		// -VS2013
+
+		static Ptr create(
+			int size,
+			const void *initialData) 
+		{
+			return std::make_unique<ConstantBuffer>(size, initialData);
+		}
 		
 	// protected:
-		struct Deleter {
-			void operator()(GLuint id) {
-				gl::DeleteBuffers(1, &id);
-			}
-		};
 
-		util::unique_resource<GLuint, Deleter> ubo;
+		GLuint ubo;
 		int size = 0;
 	};
 
@@ -431,6 +507,8 @@ namespace gl4
 	{
 		friend class Renderer;
 	public:
+		using Ptr = std::unique_ptr < RenderQueue > ;
+
 		void draw(
 			const Mesh &mesh,
 			int submeshIndex,
@@ -446,6 +524,8 @@ namespace gl4
 
 		std::vector<int> sort_list;
 		std::vector<RenderItem> items;
+
+		static Ptr create() { return std::make_unique<RenderQueue>(); }
 	};
 
 	class Renderer

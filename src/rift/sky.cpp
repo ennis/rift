@@ -1,6 +1,15 @@
 #include <sky.hpp>
 
-Sky::Sky(Renderer &renderer) 
+namespace
+{
+	struct SkyParams
+	{
+		glm::vec3 sunDirection;
+		glm::vec3 sunColor;
+	};
+}
+
+Sky::Sky()
 {
 	static const float skycubeVertices[] = {
 		-10.0f, 10.0f, -10.0f,
@@ -46,19 +55,28 @@ Sky::Sky(Renderer &renderer)
 		10.0f, -10.0f, 10.0f
 	};
 
-	skyEffect = Effect("resources/shaders/sky.glsl");
-	CBParams = BaseParameter(skyEffect, "skyParams");
-	CBSceneData = BaseParameter(skyEffect, "sceneData");
+	skyEffect = Effect::create(
+		loadEffectSource("resources/shaders/sky.glsl").c_str(), 
+		"resources/shaders", 
+		RasterizerDesc{}, 
+		DepthStencilDesc{});
 
-	Mesh::Attribute attribs[] = { { 0, ElementFormat::Float3 } };
-	Mesh::BufferDesc buffers[] = { { ResourceUsage::Static } };
-	const void *init[] = { skycubeVertices };
-	skybox = Mesh(PrimitiveType::Triangle, attribs, buffers, 36, init, 0, ElementFormat::Max, ResourceUsage::Static, nullptr);
+	cbSkyParams = ConstantBuffer::create(sizeof(SkyParams), nullptr);
+
+	skybox = Mesh::create(
+		PrimitiveType::Triangle, 
+		{ Attribute{ ElementFormat::Float3, ResourceUsage::Static } },
+		36, 
+		skycubeVertices, 
+		0, 
+		nullptr, 
+		{ Submesh{ 0, 0, 36, 0 } }
+	); 
+	
+	paramBlock = ParameterBlock::create(*skyEffect);
+	paramBlock->setConstantBuffer(1, *cbSkyParams);
 }
 
-Sky::~Sky()
-{
-}
 
 void Sky::setTimeOfDay(float hour)
 {
@@ -67,23 +85,17 @@ void Sky::setTimeOfDay(float hour)
 
 void Sky::render(
 	RenderQueue &rq, 
-	const SceneData &sceneData
+	const SceneData &sceneData,
+	const ConstantBuffer &cbSceneData
 	)
 {
-	struct SkyParams
-	{
-		glm::vec3 sunDirection;
-		glm::vec3 color;
-	} params;
-
+	SkyParams params;
 	using namespace glm;
 	float sunAngle = timeOfDay / 24.0f * 2 * 3.14159f;
 	params.sunDirection = vec3(cosf(sunAngle), sinf(sunAngle), 0);
 	params.sunColor = vec3(1.0f, 1.0f, 1.0f);
-
-	ParameterBlock pb(skyEffect);
-	pb.setParameter(CBParams, params);
-	pb.setParameterBuffer(CBSceneData, ...);
-	rq.draw(skybox, 0, skyEffect, pb, 0);
+	cbSkyParams->update(0, sizeof(SkyParams), &params);
+	paramBlock->setConstantBuffer(0, cbSceneData);
+	rq.draw(*skybox, 0, *skyEffect, *paramBlock, 0);
 }
 

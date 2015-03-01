@@ -87,11 +87,11 @@ Image::~Image()
 }
 
 //====================================
-Texture2D Image::convertToTexture2D()
+Texture2D::Ptr Image::convertToTexture2D()
 {
-	auto tex = Texture2D(getSize(), mNumMipLevels, mFormat, nullptr);
+	auto tex = Texture2D::create(getSize(), mNumMipLevels, mFormat, nullptr);
 	for (unsigned int iMip = 0; iMip < mNumMipLevels; iMip++) {
-		tex.update(
+		tex->update(
 			iMip, 
 			glm::ivec2(0, 0), 
 			getSize(iMip),

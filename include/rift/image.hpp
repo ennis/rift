@@ -94,7 +94,7 @@ public:
 			mip.size.x);
 	}
 	
-	Texture2D convertToTexture2D();
+	Texture2D::Ptr convertToTexture2D();
 
 	static Image loadFromFile(
 		const char *filePath, 

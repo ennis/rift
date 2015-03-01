@@ -359,10 +359,9 @@ namespace gl4
 			includePath,
 			std::array_ref < GLSLKeyword > {});
 		program =
-			util::unique_resource<GLuint, Effect::Deleter>(
 			glslCreateProgram(
 			sources.first.c_str(),
-			sources.second.c_str()));
+			sources.second.c_str());
 	}
 }
 

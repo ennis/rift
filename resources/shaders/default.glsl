@@ -5,7 +5,7 @@
 #pragma include <scene.glsl>
 
 // tous les paramètres doivent être placés dans des uniform buffers
-layout(std140) uniform PerObject {
+layout(std140, binding = 1) uniform PerObject {
 	mat4 modelMatrix;
 	vec4 color;
 } perObj;
