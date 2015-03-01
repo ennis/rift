@@ -186,26 +186,4 @@ const char *getElementFormatName(ElementFormat format);
 unsigned int getElementFormatSize(ElementFormat format);
 
 
-template <typename ImplementationType>
-class RendererObject
-{
-public:
-    using Impl = ImplementationType;
-	RendererObject() = default;
-
-	RendererObject(Impl impl_) : impl(impl_)
-	{}
-    
-    Impl &getImpl() {
-        return impl;
-    }
-
-    const Impl &getImpl() const {
-        return impl;
-    }
-
-protected:
-    Impl impl;
-};
-
 #endif /* end of include guard: RENDERER_COMMON_HPP */
