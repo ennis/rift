@@ -10,6 +10,9 @@ layout(std140) uniform PerObject {
 	vec4 color;
 } perObj;
 
+// sauf les paramètres de texture
+layout (binding = 0) uniform sampler2D diffuse;
+
 //=============================================================
 // La macro _VERTEX_ est définie par le code qui va charger le shader (classe Effect)
 #ifdef _VERTEX_
@@ -57,7 +60,7 @@ const vec4 vertColor = vec4(0.9f, 0.9f, 0.1f, 1.0f);
 
 void main()
 {
-	oColor = perObj.color;
+	oColor = texture(diffuse, fPosition.xy);
 }
 
 #endif

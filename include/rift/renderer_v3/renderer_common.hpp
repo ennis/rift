@@ -121,8 +121,8 @@ struct RasterizerDesc
 
 struct DepthStencilDesc
 {
-	bool depthTestEnable;
-	bool depthWriteEnable;
+	bool depthTestEnable = true;
+	bool depthWriteEnable = true;
 };
 
 struct SamplerDesc

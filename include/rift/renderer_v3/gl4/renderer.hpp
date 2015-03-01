@@ -8,6 +8,22 @@
 #include <glm/glm.hpp>
 #include <array_ref.hpp>
 #include <unique_resource.hpp>
+#include <unordered_map>
+
+namespace std {
+	template <> struct hash<SamplerDesc>
+	{
+		size_t operator()(const SamplerDesc& v) const
+		{
+			auto h = hash<int>();
+			return h(static_cast<int>(v.addrU))
+				^ h(static_cast<int>(v.addrV))
+				^ h(static_cast<int>(v.addrW))
+				^ h(static_cast<int>(v.minFilter))
+				^ h(static_cast<int>(v.magFilter));
+		}
+	};
+}
 
 namespace gl4
 {
@@ -273,11 +289,11 @@ namespace gl4
 			const ConstantBuffer &constantBuffer
 			);
 
-		/*void setTextureParameter(
-		const TextureParameter &param,
-		const Texture2D *texture,
-		const SamplerDesc &samplerDesc
-		);*/
+		void setTextureParameter(
+			const TextureParameter &param,
+			const Texture2D *texture,
+			const SamplerDesc &samplerDesc
+			);
 
 	//protected:
 		ParameterBlock() = default;
@@ -333,8 +349,13 @@ namespace gl4
 			const char *name
 			);
 
+		// TODO named texture parameters
 		TextureParameter createTextureParameter(
 			const char *name
+			);
+
+		TextureParameter createTextureParameter(
+			int texunit
 			);
 
 		ParameterBlock createParameterBlock();
@@ -517,13 +538,25 @@ namespace gl4
 
 		// do not use
 		Renderer() = default;
+		GLuint getSampler(SamplerDesc desc);
 
 	private:
+		
+
 		void drawItem(const RenderItem &item);
 
 		GLuint fbo = 0;
 		RenderTarget screen_rt;
 		RenderTarget screen_depth_rt;
+
+		//-----------------------------
+		// sampler state cache
+		struct SamplerDeleter {
+			void operator()(GLuint id) {
+				gl::DeleteSamplers(1, &id);
+			}
+		};
+		std::unordered_map<SamplerDesc, util::unique_resource<GLuint, SamplerDeleter> > sampler_cache;
 
 		static std::unique_ptr<Renderer> instance;
 	};

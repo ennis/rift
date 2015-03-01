@@ -10,6 +10,7 @@
 #include <scene.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
+#include <image.hpp>
 
 #include <gl4/renderer.hpp>
 
@@ -48,10 +49,12 @@ private:
 	Effect effect;
 	Parameter sceneDataParam;
 	Parameter perObjParam;
+	TextureParameter texParam;
 	ParameterBlock paramBlock;
 	ConstantBuffer cbSceneData;
 	ConstantBuffer cbPerObj;
 	RenderQueue renderQueue;
+	Texture2D tex;
 };
 
 //============================================================================
@@ -120,8 +123,11 @@ void RiftGame::init()
 		cubeIndices,
 		sm);
 
+	tex = Image::loadFromFile("resources/img/brick_wall.jpg").convertToTexture2D();
+
 	sceneDataParam = effect.createParameter("SceneData");
 	perObjParam = effect.createParameter("PerObject");
+	texParam = effect.createTextureParameter(0);
 
 	cbSceneData = ConstantBuffer(sizeof(SceneData));
 	cbPerObj = ConstantBuffer(sizeof(PerObject));
@@ -137,7 +143,7 @@ void RiftGame::render(float dt)
 
 	R.clearColor(0.25f, 0.25f, 0.2f, 0.0f);
 	R.clearDepth(1000.f);
-	R.setRenderTargets({ nullptr }, nullptr );
+	R.setRenderTargets({ nullptr }, nullptr);
 	R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
 
 	// update scene data buffer
@@ -147,7 +153,7 @@ void RiftGame::render(float dt)
 	sceneData.viewMatrix = cam->getViewMatrix();
 	sceneData.viewProjMatrix = sceneData.projMatrix * sceneData.viewMatrix;
 	sceneData.viewportSize = win_size;
-	cbSceneData.update(0, sizeof(SceneData), &sceneData); 
+	cbSceneData.update(0, sizeof(SceneData), &sceneData);
 
 	// update per-model buffer
 	perObj.modelMatrix = glm::mat4(1.0f);
@@ -157,6 +163,7 @@ void RiftGame::render(float dt)
 	// create parameter block
 	paramBlock.setConstantBuffer(sceneDataParam, cbSceneData);
 	paramBlock.setConstantBuffer(perObjParam, cbPerObj);
+	paramBlock.setTextureParameter(texParam, &tex, SamplerDesc{});
 
 	// submit to render queue
 	renderQueue.draw(mesh, 0, effect, paramBlock, 0);

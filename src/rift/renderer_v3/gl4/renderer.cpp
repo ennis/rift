@@ -8,20 +8,6 @@
 
 std::unique_ptr<Renderer> Renderer::instance;
 
-namespace std {
-	template <> struct hash<SamplerDesc>
-	{
-		size_t operator()(const SamplerDesc& v) const
-		{
-			auto h = hash<int>();
-			return h(static_cast<int>(v.addrU))
-				^ h(static_cast<int>(v.addrV))
-				^ h(static_cast<int>(v.addrW))
-				^ h(static_cast<int>(v.minFilter))
-				^ h(static_cast<int>(v.magFilter));
-		}
-	};
-}
 
 // operator== for samplerDesc
 bool operator==(const SamplerDesc &lhs, const SamplerDesc &rhs)
@@ -38,6 +24,25 @@ namespace gl4
 
 namespace 
 {
+	GLint textureFilterToGL_[static_cast<int>(TextureFilter::Max)] = {
+		/* Nearest */ gl::NEAREST,
+		/* Linear */  gl::LINEAR
+	};
+
+	GLint textureAddressModeToGL_[static_cast<int>(TextureAddressMode::Max)] = {
+		/* Repeat */ gl::REPEAT,
+		/* Mirror */ gl::MIRRORED_REPEAT,
+		/* Clamp  */ gl::CLAMP_TO_EDGE
+	};
+
+	GLint textureFilterToGL(TextureFilter filter) {
+		return textureFilterToGL_[static_cast<int>(filter)];
+	}
+
+	GLint textureAddressModeToGL(TextureAddressMode addr) {
+		return textureAddressModeToGL_[static_cast<int>(addr)];
+	}
+
 	GLenum bufferUsageToBindingPoint(BufferUsage bufferUsage)
 	{
 		switch (bufferUsage)
@@ -399,6 +404,17 @@ TextureParameter Effect::createTextureParameter(
 	return std::move(impl);
 }
 
+TextureParameter Effect::createTextureParameter(
+	int texunit
+	)
+{
+	TextureParameter impl;
+	impl.effect = this;
+	impl.location = -1;
+	impl.texunit = texunit;
+	return std::move(impl);
+}
+
 ConstantBuffer::ConstantBuffer(
 	int size_,
 	const void *initialData)
@@ -436,6 +452,16 @@ void ParameterBlock::setConstantBuffer(
 	ubo[param.binding] = constantBuffer.ubo.get();
 	ubo_offsets[param.binding] = 0;
 	ubo_sizes[param.binding] = constantBuffer.size;
+}
+
+void ParameterBlock::setTextureParameter(
+	const TextureParameter &param,
+	const Texture2D *texture,
+	const SamplerDesc &samplerDesc
+	)
+{
+	textures[param.texunit] = texture->id.get();
+	samplers[param.texunit] = Renderer::getInstance().getSampler(samplerDesc);
 }
 
 //=============================================================================
@@ -652,6 +678,14 @@ void Renderer::drawItem(const RenderItem &item)
 		gl::CullFace(cullModeToGLenum(item.effect->rs_state.cullMode));
 	}
 	gl::PolygonMode(gl::FRONT_AND_BACK, fillModeToGLenum(item.effect->rs_state.fillMode));
+	if (item.effect->ds_state.depthTestEnable)
+		gl::Enable(gl::DEPTH_TEST);
+	else
+		gl::Disable(gl::DEPTH_TEST);
+	if (item.effect->ds_state.depthWriteEnable)
+		gl::DepthMask(true);
+	else
+		gl::DepthMask(false);
 
 	const auto &sm = item.mesh->submeshes[item.submesh];
 
@@ -701,6 +735,26 @@ void Renderer::submitRenderQueue(
 	for (const auto &ri : renderQueue.items) {
 		drawItem(ri);
 	}
+}
+
+GLuint Renderer::getSampler(SamplerDesc desc)
+{
+	auto &ins = sampler_cache.insert(
+		std::pair<
+		SamplerDesc,
+		util::unique_resource<GLuint, SamplerDeleter> >(desc, 0));
+	auto &res = ins.first;
+	if (ins.second) {
+		GLuint id;
+		gl::GenSamplers(1, &id);
+		gl::SamplerParameteri(id, gl::TEXTURE_MIN_FILTER, textureFilterToGL(desc.minFilter));
+		gl::SamplerParameteri(id, gl::TEXTURE_MAG_FILTER, textureFilterToGL(desc.magFilter));
+		gl::SamplerParameteri(id, gl::TEXTURE_WRAP_R, textureAddressModeToGL(desc.addrU));
+		gl::SamplerParameteri(id, gl::TEXTURE_WRAP_S, textureAddressModeToGL(desc.addrV));
+		gl::SamplerParameteri(id, gl::TEXTURE_WRAP_T, textureAddressModeToGL(desc.addrW));
+		res->second = util::unique_resource<GLuint, SamplerDeleter>(id);
+	}
+	return res->second.get();
 }
 
 //=============================================================================
