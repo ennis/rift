@@ -531,53 +531,6 @@ namespace gl4
 	class Renderer
 	{
 	public:
-		//================================
-		// Textures
-		Texture2D createTexture2D(
-			glm::ivec2 size,
-			int numMipLevels,
-			ElementFormat pixelFormat,
-			const void *data
-			);
-
-		TextureCubeMap createTextureCubeMap(
-			glm::ivec2 size,
-			int numMipLevels,
-			ElementFormat pixelFormat,
-			const void* faceData[6]
-			);
-
-		// TODO create from file / opaque archive?
-		Effect createEffect(
-			const char *vsSource,
-			const char *psSource,
-			RasterizerDesc rasterizerState,
-			DepthStencilDesc depthStencilState
-			// TODO blend state
-			);
-
-		//================================
-		// Render targets
-		RenderTarget createRenderTarget2D(
-			Texture2D &texture2D, 
-			int mipLevel
-			);
-
-		RenderTarget createRenderTarget2DFace(
-			TextureCubeMap &cubeMap, 
-			int mipLevel, 
-			int face
-			);
-
-		RenderTarget createRenderTargetCubeMap(
-			TextureCubeMap &cubeMap, 
-			int mipLevel
-			);
-
-		//================================
-		// Render queues
-		RenderQueue createRenderQueue(
-			);
 
 		//================================
 		// Submission
@@ -617,7 +570,8 @@ namespace gl4
 		static void initialize();
 
 		// do not use
-		Renderer() = default;
+		Renderer();
+		~Renderer();
 		GLuint getSampler(SamplerDesc desc);
 
 	private:

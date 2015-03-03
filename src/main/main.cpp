@@ -143,7 +143,7 @@ void RiftGame::init()
 	renderQueue = RenderQueue::create();
 
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
-	shadowMap = Texture2D::create(win_size, 1, ElementFormat::Float16, nullptr);
+	shadowMap = Texture2D::create(win_size, 1, ElementFormat::Depth16, nullptr);
 	shadowRT = RenderTarget::createRenderTarget2D(*shadowMap, 0);
 }
 
@@ -154,7 +154,7 @@ void RiftGame::render(float dt)
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	auto &R = Renderer::getInstance();
 
-	R.setRenderTargets({ nullptr }, nullptr);
+	R.setRenderTargets({}, nullptr);
 	R.clearColor(0.25f, 0.25f, 0.2f, 0.0f);
 	R.clearDepth(1000.f);
 	R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
@@ -193,7 +193,7 @@ void RiftGame::render(float dt)
 	sky.render(*renderQueue, sceneData, *cbSceneData);
 	R.submitRenderQueue(*renderQueue);
 
-	R.setRenderTargets({ nullptr }, shadowRT.get());
+	R.setRenderTargets({}, shadowRT.get());
 	R.clearDepth(1000.f);
 	R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
 	// resubmit

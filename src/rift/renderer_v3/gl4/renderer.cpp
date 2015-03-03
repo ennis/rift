@@ -291,6 +291,7 @@ Texture2D::Texture2D(
 		update(0, { 0, 0 }, size, data_);
 }
 
+
 void Texture2D::update(
 	int mipLevel,
 	glm::ivec2 offset,
@@ -574,12 +575,11 @@ void Renderer::setRenderTargets(
 	const RenderTarget *depthStencilTarget
 	)
 {
-	assert(colorTargets.size() != 0);
 	// TODO hardcoded
 	assert(colorTargets.size() <= 8);
 
 	// hmmm...
-	if (!colorTargets[0] || (colorTargets[0] == &screen_rt))
+	if (((colorTargets.size() == 0) && !depthStencilTarget) || (((colorTargets.size() != 0) && colorTargets[0] == &screen_rt)))
 	{
 		gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
 	}
@@ -593,20 +593,20 @@ void Renderer::setRenderTargets(
 			if (rt->layer != -1)
 				// bind all layers
 				gl::FramebufferTexture(
-					gl::FRAMEBUFFER, 
-					gl::COLOR_ATTACHMENT0 + i, 
-					rt->u.texture_2d->id, 
+					gl::FRAMEBUFFER,
+					gl::COLOR_ATTACHMENT0 + i,
+					rt->u.texture_2d->id,
 					rt->mipLevel
-					);
+				);
 			else
 				// bind a layer (face) of a cubemap or (TODO) a layer of a texture array
 				gl::FramebufferTextureLayer(
-					gl::FRAMEBUFFER, 
-					gl::COLOR_ATTACHMENT0 + i, 
-					rt->u.texture_2d->id, 
-					rt->mipLevel, 
+					gl::FRAMEBUFFER,
+					gl::COLOR_ATTACHMENT0 + i,
+					rt->u.texture_2d->id,
+					rt->mipLevel,
 					rt->layer
-					);
+				);
 		}
 		gl::FramebufferTexture(
 			gl::FRAMEBUFFER, 
@@ -615,9 +615,6 @@ void Renderer::setRenderTargets(
 			depthStencilTarget->mipLevel
 			);
 		// check fb completeness
-		GLenum err;
-		err = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
-		assert(err == gl::FRAMEBUFFER_COMPLETE);
 		// enable draw buffers
 		static const GLenum drawBuffers[8] = {
 			gl::COLOR_ATTACHMENT0,
@@ -629,18 +626,12 @@ void Renderer::setRenderTargets(
 			gl::COLOR_ATTACHMENT0 + 6,
 			gl::COLOR_ATTACHMENT0 + 7
 		};
+		
 		gl::DrawBuffers(colorTargets.size(), drawBuffers);
+		GLenum err;
+		err = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
+		assert(err == gl::FRAMEBUFFER_COMPLETE);
 	}
-}
-//=============================================================================
-//=============================================================================
-// Renderer::createRenderQueue
-//=============================================================================
-//=============================================================================
-RenderQueue Renderer::createRenderQueue()
-{
-	// Nothing to do
-	return RenderQueue{};
 }
 
 //=============================================================================
@@ -773,6 +764,16 @@ GLuint Renderer::getSampler(SamplerDesc desc)
 		res->second = util::unique_resource<GLuint, SamplerDeleter>(id);
 	}
 	return res->second.get();
+}
+
+Renderer::Renderer()
+{
+	gl::GenFramebuffers(1, &fbo);
+}
+
+Renderer::~Renderer()
+{
+	gl::DeleteFramebuffers(1, &fbo);
 }
 
 //=============================================================================
