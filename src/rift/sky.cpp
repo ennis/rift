@@ -1,4 +1,5 @@
 #include <sky.hpp>
+#include <gl4/effect.hpp>
 
 namespace
 {
@@ -55,11 +56,8 @@ Sky::Sky()
 		10.0f, -10.0f, 10.0f
 	};
 
-	skyEffect = Effect::create(
-		loadEffectSource("resources/shaders/sky.glsl").c_str(), 
-		"resources/shaders", 
-		RasterizerDesc{}, 
-		DepthStencilDesc{});
+	auto effect = gl4::Effect::loadFromFile("resources/shaders/sky.glsl");
+	skyShader = effect->compileShader();
 
 	cbSkyParams = ConstantBuffer::create(sizeof(SkyParams), nullptr);
 
@@ -73,7 +71,7 @@ Sky::Sky()
 		{ Submesh{ 0, 0, 36, 0 } }
 	); 
 	
-	paramBlock = ParameterBlock::create(*skyEffect);
+	paramBlock = ParameterBlock::create(*skyShader);
 	paramBlock->setConstantBuffer(1, *cbSkyParams);
 }
 
@@ -96,6 +94,6 @@ void Sky::render(
 	params.sunColor = vec3(1.0f, 1.0f, 1.0f);
 	cbSkyParams->update(0, sizeof(SkyParams), &params);
 	paramBlock->setConstantBuffer(0, cbSceneData);
-	rq.draw(*skybox, 0, *skyEffect, *paramBlock, 0);
+	rq.draw(*skybox, 0, *skyShader, *paramBlock, 0);
 }
 

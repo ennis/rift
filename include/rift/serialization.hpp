@@ -205,7 +205,7 @@ public:
 		return *this;
 	}
 	template <std::size_t size>
-		Unpacker &unpack_n(char(&v)[size]) {
+	Unpacker &unpack_n(char(&v)[size]) {
 		unpack_n(v, size);
 		return *this;
 	}

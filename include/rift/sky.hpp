@@ -12,13 +12,13 @@ public:
 	// VS2013
 	Sky(Sky &&rhs) : 
 		timeOfDay(rhs.timeOfDay), 
-		skyEffect(std::move(rhs.skyEffect)), 
+		skyShader(std::move(rhs.skyShader)),
 		cbSkyParams(std::move(rhs.cbSkyParams)), 
 		skybox(std::move(rhs.skybox))
 	{}
 	Sky &operator=(Sky &&rhs) {
 		timeOfDay = rhs.timeOfDay;
-		skyEffect = std::move(rhs.skyEffect);
+		skyShader = std::move(rhs.skyShader);
 		cbSkyParams = std::move(rhs.cbSkyParams);
 		skybox = std::move(rhs.skybox);
 		return *this;
@@ -32,7 +32,7 @@ public:
 
 private:
 	float timeOfDay;
-	Effect::Ptr skyEffect;
+	Shader::Ptr skyShader;
 	ConstantBuffer::Ptr cbSkyParams;
 	ParameterBlock::Ptr paramBlock;
 	Mesh::Ptr skybox;

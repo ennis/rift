@@ -169,6 +169,83 @@ namespace
 		gl::BindBuffer(bindingPoint, 0);
 		return id;
 	}
+
+	//=========================================================================
+	//=========================================================================
+	// GLSL
+	//=========================================================================
+	//=========================================================================
+	GLuint glslCompileShader(const char *shaderSource, GLenum type)
+	{
+		GLuint obj = gl::CreateShader(type);
+		const char *shaderSources[1] = { shaderSource };
+		gl::ShaderSource(obj, 1, shaderSources, NULL);
+		gl::CompileShader(obj);
+
+		GLint status = gl::TRUE_;
+		GLint logsize = 0;
+
+		gl::GetShaderiv(obj, gl::COMPILE_STATUS, &status);
+		gl::GetShaderiv(obj, gl::INFO_LOG_LENGTH, &logsize);
+		if (status != gl::TRUE_) {
+			ERROR << "Compile error:";
+			if (logsize != 0) {
+				char *logbuf = new char[logsize];
+				gl::GetShaderInfoLog(obj, logsize, &logsize, logbuf);
+				ERROR << logbuf;
+				delete[] logbuf;
+				gl::DeleteShader(obj);
+			}
+			else {
+				ERROR << "<no log>";
+			}
+			throw std::runtime_error("shader compilation failed");
+		}
+
+		return obj;
+	}
+
+	void glslLinkProgram(GLuint program)
+	{
+		GLint status = gl::TRUE_;
+		GLint logsize = 0;
+
+		gl::LinkProgram(program);
+		gl::GetProgramiv(program, gl::LINK_STATUS, &status);
+		gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &logsize);
+		if (status != gl::TRUE_) {
+			ERROR << "Link error:";
+			if (logsize != 0) {
+				char *logbuf = new char[logsize];
+				gl::GetProgramInfoLog(program, logsize, &logsize, logbuf);
+				ERROR << logbuf;
+				delete[] logbuf;
+			}
+			else {
+				ERROR << "<no log>";
+			}
+			throw std::runtime_error("link failed");
+		}
+	}
+
+	// creates a shader program from vertex and fragment shader source files
+	GLuint glslCreateProgram(const char *vertexShaderSource, const char *fragmentShaderSource)
+	{
+		GLuint vs_obj = glslCompileShader(vertexShaderSource, gl::VERTEX_SHADER);
+		GLuint fs_obj = glslCompileShader(fragmentShaderSource, gl::FRAGMENT_SHADER);
+		GLuint program_obj = gl::CreateProgram();
+		gl::AttachShader(program_obj, vs_obj);
+		gl::AttachShader(program_obj, fs_obj);
+		glslLinkProgram(program_obj);
+		// once the program is linked, no need to keep the shader objects
+		gl::DetachShader(program_obj, vs_obj);
+		gl::DetachShader(program_obj, fs_obj);
+		gl::DeleteShader(vs_obj);
+		gl::DeleteShader(fs_obj);
+		return program_obj;
+	}
+
+	int shader_cache_index = 0;
 }
 
 //=============================================================================
@@ -371,17 +448,30 @@ RenderTarget::Ptr RenderTarget::createRenderTargetCubeMap(
 	return r;
 }
 
+Shader::Shader(
+	const char *vsSource,
+	const char *psSource,
+	const RasterizerDesc &rasterizerState,
+	const DepthStencilDesc &depthStencilState)
+{
+	cache_id = shader_cache_index++;
+	ds_state = depthStencilState;
+	rs_state = rasterizerState;
+	// preprocess source
+	program = glslCreateProgram(vsSource, psSource);
+}
+
 //=============================================================================
 //=============================================================================
 // Renderer::createEffectParameter
 //=============================================================================
 //=============================================================================
-Parameter::Ptr Effect::createParameter(
+Parameter::Ptr Shader::createParameter(
 	const char *name
 	)
 {
 	auto ptr = std::make_unique<Parameter>();
-	ptr->effect = this;
+	ptr->shader = this;
 	ptr->location = gl::GetUniformBlockIndex(program, name);
 	ptr->binding = ptr->location;
 	gl::UniformBlockBinding(program, ptr->location, ptr->location);
@@ -393,22 +483,22 @@ Parameter::Ptr Effect::createParameter(
 // Renderer::createEffectTextureParameter
 //=============================================================================
 //=============================================================================
-TextureParameter::Ptr Effect::createTextureParameter(
+TextureParameter::Ptr Shader::createTextureParameter(
 	const char *name
 	)
 {
 	auto ptr = std::make_unique<TextureParameter>();
-	ptr->effect = this;
+	ptr->shader = this;
 	ptr->location = gl::GetUniformLocation(program, name);
 	return std::move(ptr);
 }
 
-TextureParameter::Ptr Effect::createTextureParameter(
+TextureParameter::Ptr Shader::createTextureParameter(
 	int texunit
 	)
 {
 	auto ptr = std::make_unique<TextureParameter>();
-	ptr->effect = this;
+	ptr->shader = this;
 	ptr->location = -1;
 	ptr->texunit = texunit;
 	return std::move(ptr);
@@ -427,7 +517,7 @@ ConstantBuffer::ConstantBuffer(
 // Renderer::createParameterBlock
 //=============================================================================
 //=============================================================================
-ParameterBlock::ParameterBlock(Effect &effect_) : effect(&effect_)
+ParameterBlock::ParameterBlock(Shader &shader_) : shader(&shader_)
 {
 	std::fill(ubo, ubo + kMaxUniformBufferBindings, 0);
 	std::fill(ubo_offsets, ubo_offsets + kMaxUniformBufferBindings, 0);
@@ -642,13 +732,13 @@ void Renderer::setRenderTargets(
 void RenderQueue::draw(
 	const Mesh &mesh,
 	int submeshIndex,
-	const Effect &effect,
+	const Shader &shader,
 	const ParameterBlock &parameterBlock,
 	uint64_t sortHint
 	)
 {
 	RenderItem item;
-	item.effect = &effect;
+	item.shader = &shader;
 	item.mesh = &mesh;
 	item.submesh = submeshIndex;
 	item.param_block = &parameterBlock;
@@ -677,21 +767,21 @@ void Renderer::drawItem(const RenderItem &item)
 	gl::BindSamplers(0, kMaxTextureUnits, &item.param_block->samplers[0]);
 
 	// shaders
-	gl::UseProgram(item.effect->program);
+	gl::UseProgram(item.shader->program);
 	// Rasterizer
-	if (item.effect->rs_state.cullMode == CullMode::None) {
+	if (item.shader->rs_state.cullMode == CullMode::None) {
 		gl::Disable(gl::CULL_FACE);
 	}
 	else {
 		gl::Enable(gl::CULL_FACE);
-		gl::CullFace(cullModeToGLenum(item.effect->rs_state.cullMode));
+		gl::CullFace(cullModeToGLenum(item.shader->rs_state.cullMode));
 	}
-	gl::PolygonMode(gl::FRONT_AND_BACK, fillModeToGLenum(item.effect->rs_state.fillMode));
-	if (item.effect->ds_state.depthTestEnable)
+	gl::PolygonMode(gl::FRONT_AND_BACK, fillModeToGLenum(item.shader->rs_state.fillMode));
+	if (item.shader->ds_state.depthTestEnable)
 		gl::Enable(gl::DEPTH_TEST);
 	else
 		gl::Disable(gl::DEPTH_TEST);
-	if (item.effect->ds_state.depthWriteEnable)
+	if (item.shader->ds_state.depthWriteEnable)
 		gl::DepthMask(true);
 	else
 		gl::DepthMask(false);

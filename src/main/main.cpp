@@ -13,6 +13,7 @@
 #include <image.hpp>
 #include <sky.hpp>
 #include <gl4/renderer.hpp>
+#include <gl4/effect.hpp>	// Effect
 
 //============================================================================
 // Classe de base du jeu
@@ -47,8 +48,9 @@ private:
 	Entity *cameraEntity;
 	Mesh::Ptr mesh;
 
-	Effect::Ptr effect;
-	Effect::Ptr effectWireframe;
+	gl4::Effect::Ptr effect;
+	Shader::Ptr shader;
+	Shader::Ptr shaderWireframe;
 
 	ParameterBlock::Ptr paramBlock;
 	ConstantBuffer::Ptr cbSceneData;
@@ -79,18 +81,11 @@ void RiftGame::init()
 	cameraEntity->addComponent<FreeCameraController>();
 
 	// Effect 
-	effect = Effect::create(
-		loadEffectSource("resources/shaders/default.glsl").c_str(),
-		"resources/shaders",
-		RasterizerDesc{},
-		DepthStencilDesc{});
+	effect = gl4::Effect::loadFromFile("resources/shaders/default.glsl");
+	shader = effect->compileShader();
 	RasterizerDesc rs = {};
 	rs.fillMode = PolygonFillMode::Wireframe;
-	effectWireframe = Effect::create(
-		loadEffectSource("resources/shaders/default.glsl").c_str(),
-		"resources/shaders",
-		rs,
-		DepthStencilDesc{});
+	shaderWireframe = effect->compileShader({}, rs, DepthStencilDesc{});
 
 	// buffer contenant les données des vertex (c'est un cube, pour info)
 	// ici: position (x,y,z), normales (x,y,z), coordonnées de texture (x,y) 
@@ -139,7 +134,7 @@ void RiftGame::init()
 
 	cbSceneData = ConstantBuffer::create(sizeof(SceneData), nullptr);
 	cbPerObj = ConstantBuffer::create(sizeof(PerObject), nullptr);
-	paramBlock = ParameterBlock::create(*effect);
+	paramBlock = ParameterBlock::create(*shader);
 	renderQueue = RenderQueue::create();
 
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
@@ -184,10 +179,11 @@ void RiftGame::render(float dt)
 	}
 
 	if (glfwGetKey(Engine::instance().getWindow().getHandle(), GLFW_KEY_W)) {
-		renderQueue->draw(*mesh, 0, *effectWireframe, *paramBlock, 0);
+		// XXX not the same parameter block!
+		renderQueue->draw(*mesh, 0, *shaderWireframe, *paramBlock, 0);
 	}
 	else {
-		renderQueue->draw(*mesh, 0, *effect, *paramBlock, 0);
+		renderQueue->draw(*mesh, 0, *shader, *paramBlock, 0);
 	}
 
 	sky.render(*renderQueue, sceneData, *cbSceneData);

@@ -36,7 +36,7 @@ namespace gl4
 	class TextureCubeMap;
 	class RenderTarget;
 	class RenderQueue;
-	class Effect;
+	class Shader;
 	class Parameter;
 	class ParameterBlock;
 	class ConstantBuffer;
@@ -281,7 +281,7 @@ namespace gl4
 	//protected:
 		Parameter() = default;
 
-		const Effect * effect;
+		const Shader *shader;
 		GLuint location = 0;
 		GLuint binding = 0;
 		int size = 0;	// in bytes
@@ -298,7 +298,7 @@ namespace gl4
 	//protected:
 		TextureParameter() = default;
 
-		const Effect *effect = nullptr;
+		const Shader *shader = nullptr;
 		GLuint location = 0;
 		GLuint texunit = 0;
 	};
@@ -310,7 +310,7 @@ namespace gl4
 
 		using Ptr = std::unique_ptr < ParameterBlock > ;
 
-		ParameterBlock(Effect &effect);
+		ParameterBlock(Shader &shader);
 
 		void setParameter(
 			const Parameter &param,
@@ -339,14 +339,14 @@ namespace gl4
 			const SamplerDesc &samplerDesc
 			);
 
-		static Ptr create(Effect &effect) {
-			return std::make_unique<ParameterBlock>(effect);
+		static Ptr create(Shader &shader) {
+			return std::make_unique<ParameterBlock>(shader);
 		}
 
 	//protected:
 		ParameterBlock() = default;
 
-		Effect * effect;
+		Shader * shader;
 		GLuint ubo[kMaxUniformBufferBindings];
 		GLintptr ubo_offsets[kMaxUniformBufferBindings];
 		GLintptr ubo_sizes[kMaxUniformBufferBindings];
@@ -354,7 +354,7 @@ namespace gl4
 		GLuint samplers[kMaxTextureUnits];
 	};
 
-	class Effect
+	class Shader
 	{
 		friend class Renderer;
 		friend class Parameter;
@@ -362,20 +362,13 @@ namespace gl4
 		friend class ParameterBlock;
 
 	public:
-		using Ptr = std::unique_ptr < Effect >;
-
-		Effect(
-			const char *combinedSource,
-			const char *includePath,
-			RasterizerDesc rasterizerState,
-			DepthStencilDesc depthStencilState);
-
-		Effect(
+		using Ptr = std::unique_ptr < Shader >;
+		
+		Shader(
 			const char *vsSource,
 			const char *psSource,
-			const char *includePath,
-			RasterizerDesc rasterizerState,
-			DepthStencilDesc depthStencilState);
+			const RasterizerDesc &rasterizerState,
+			const DepthStencilDesc &depthStencilState);
 
 		// VS2013
 		/*Effect(Effect &&rhs) :
@@ -411,35 +404,25 @@ namespace gl4
 		ParameterBlock::Ptr createParameterBlock();
 
 		static Ptr create(
-			const char *combinedSource,
-			const char *includePath,
-			RasterizerDesc rasterizerState,
-			DepthStencilDesc depthStencilState)
-		{
-			return std::make_unique<Effect>(combinedSource, includePath, rasterizerState, depthStencilState);
-		}
-		
-		static Ptr create(
 			const char *vsSource,
 			const char *psSource,
-			const char *includePath,
-			RasterizerDesc rasterizerState,
-			DepthStencilDesc depthStencilState)
+			const RasterizerDesc &rasterizerState,
+			const DepthStencilDesc &depthStencilState)
 		{
-			return std::make_unique<Effect>(vsSource, psSource, includePath, rasterizerState, depthStencilState);
+			return std::make_unique<Shader>(vsSource, psSource, rasterizerState, depthStencilState);
 		}
 
 	//private:
-		Effect() = default;
-		~Effect()
+		Shader() = default;
+		~Shader()
 		{
 			gl::DeleteProgram(program);
 		}
 
 		int cache_id;
-		// effect source code
+		// shader source code
 		std::string source;
-		GLuint program;
+		GLuint program = 0;
 		// XXX in source code?
 		RasterizerDesc rs_state;
 		DepthStencilDesc ds_state;
@@ -500,7 +483,7 @@ namespace gl4
 		const Mesh *mesh;
 		int submesh;
 		const ParameterBlock *param_block;
-		const Effect *effect;
+		const Shader *shader;
 	};
 
 	class RenderQueue
@@ -512,7 +495,7 @@ namespace gl4
 		void draw(
 			const Mesh &mesh,
 			int submeshIndex,
-			const Effect &effect,
+			const Shader &shader,
 			const ParameterBlock &parameterBlock,
 			uint64_t sortHint
 			);
@@ -600,7 +583,7 @@ namespace gl4
 std::string loadEffectSource(const char *fileName);
 
 using Renderer = gl4::Renderer;
-using Effect = gl4::Effect;
+using Shader = gl4::Shader;
 using Texture2D = gl4::Texture2D; 
 using ParameterBlock = gl4::ParameterBlock;
 using Parameter = gl4::Parameter;

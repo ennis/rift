@@ -1,9 +1,8 @@
-#include <gl4/renderer.hpp>
+#include <gl4/effect.hpp>
 #include <sstream>
 #include <algorithm>
 #include <vector>
 #include <log.hpp>
-#include <boost/filesystem.hpp>
 #include <fstream>
 #include <iomanip>
 #include <array_ref.hpp>
@@ -11,80 +10,7 @@
 namespace gl4
 {
 	namespace {
-		//=========================================================================
-		//=========================================================================
-		// GLSL
-		//=========================================================================
-		//=========================================================================
-		GLuint glslCompileShader(const char *shaderSource, GLenum type)
-		{
-			GLuint obj = gl::CreateShader(type);
-			const char *shaderSources[1] = { shaderSource };
-			gl::ShaderSource(obj, 1, shaderSources, NULL);
-			gl::CompileShader(obj);
-
-			GLint status = gl::TRUE_;
-			GLint logsize = 0;
-
-			gl::GetShaderiv(obj, gl::COMPILE_STATUS, &status);
-			gl::GetShaderiv(obj, gl::INFO_LOG_LENGTH, &logsize);
-			if (status != gl::TRUE_) {
-				ERROR << "Compile error:";
-				if (logsize != 0) {
-					char *logbuf = new char[logsize];
-					gl::GetShaderInfoLog(obj, logsize, &logsize, logbuf);
-					ERROR << logbuf;
-					delete[] logbuf;
-					gl::DeleteShader(obj);
-				}
-				else {
-					ERROR << "<no log>";
-				}
-				throw std::runtime_error("shader compilation failed");
-			}
-
-			return obj;
-		}
-
-		void glslLinkProgram(GLuint program)
-		{
-			GLint status = gl::TRUE_;
-			GLint logsize = 0;
-
-			gl::LinkProgram(program);
-			gl::GetProgramiv(program, gl::LINK_STATUS, &status);
-			gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &logsize);
-			if (status != gl::TRUE_) {
-				ERROR << "Link error:";
-				if (logsize != 0) {
-					char *logbuf = new char[logsize];
-					gl::GetProgramInfoLog(program, logsize, &logsize, logbuf);
-					ERROR << logbuf;
-					delete[] logbuf;
-				}
-				else {
-					ERROR << "<no log>";
-				}
-				throw std::runtime_error("link failed");
-			}
-		}
-
-		// creates a shader program from vertex and fragment shader source files
-		GLuint glslCreateProgram(const char *vertexShaderSource, const char *fragmentShaderSource)
-		{
-			GLuint vs_obj = glslCompileShader(vertexShaderSource, gl::VERTEX_SHADER);
-			GLuint fs_obj = glslCompileShader(fragmentShaderSource, gl::FRAGMENT_SHADER);
-			GLuint program_obj = gl::CreateProgram();
-			gl::AttachShader(program_obj, vs_obj);
-			gl::AttachShader(program_obj, fs_obj);
-			glslLinkProgram(program_obj);
-			// once the program is linked, no need to keep the shader objects
-			gl::DetachShader(program_obj, vs_obj);
-			gl::DetachShader(program_obj, fs_obj);
-			gl::DeleteShader(vs_obj);
-			gl::DeleteShader(fs_obj);
-			return program_obj;
-		}
+		
 
 		//=========================================================================
 		//=========================================================================
@@ -233,7 +159,7 @@ namespace gl4
 		std::string glslPreprocess(
 			const boost::filesystem::path &sourcePath,
 			std::istream &sourceIn,
-			std::array_ref<GLSLKeyword> keywords,
+			std::array_ref<Effect::Keyword> keywords,
 			GLShaderStage stage)
 		{
 			int glslVersion = 110;
@@ -258,7 +184,7 @@ namespace gl4
 		}
 
 		std::size_t hashKeywords(
-			std::array_ref<GLSLKeyword> keywords)
+			std::array_ref<Effect::Keyword> keywords)
 		{
 			std::size_t a = 0;
 			std::hash<std::string> hashfn;
@@ -276,7 +202,7 @@ namespace gl4
 			const char *vs_source,
 			const char *ps_source,
 			const char *include_path,
-			std::array_ref<GLSLKeyword> keywords
+			std::array_ref<Effect::Keyword> keywords
 			)
 		{
 			auto hash = hashKeywords(keywords);
@@ -332,36 +258,42 @@ namespace gl4
 	// Renderer::createEffect
 	//=============================================================================
 	//=============================================================================
-	Effect::Effect(
-		const char *combinedShaderSource,
-		const char *includePath,
-		RasterizerDesc rasterizerState,
-		DepthStencilDesc depthStencilState
-		) :
-		Effect(combinedShaderSource, combinedShaderSource, includePath, rasterizerState, depthStencilState)
+	
+	
+	Shader::Ptr Effect::compileShader(
+		std::array_ref<Effect::Keyword> additionalKeywords
+		)
 	{
+		return compileShader(additionalKeywords, RasterizerDesc{}, DepthStencilDesc{});
 	}
 	
-	Effect::Effect(
-		const char *vsSource,
-		const char *psSource,
-		const char *includePath,
-		RasterizerDesc rasterizerState,
-		DepthStencilDesc depthStencilState) 
+	Shader::Ptr Effect::compileShader(
+		std::array_ref<Effect::Keyword> additionalKeywords,
+		const RasterizerDesc &rasterizerState,
+		const DepthStencilDesc &depthStencilState
+		)
 	{
-		cache_id = sCurrentEffectCacheID++;
-		ds_state = depthStencilState;
-		rs_state = rasterizerState;
-		// preprocess source
-		std::pair<std::string, std::string> sources = preprocessGLSLEffect(
-			vsSource,
-			psSource,
-			includePath,
-			std::array_ref < GLSLKeyword > {});
-		program =
-			glslCreateProgram(
-			sources.first.c_str(),
-			sources.second.c_str());
+		std::vector<Effect::Keyword> kw = keywords;
+		kw.insert(kw.end(), additionalKeywords.begin(), additionalKeywords.end());
+		std::pair<std::string, std::string> sources =
+			preprocessGLSLEffect(
+				vs_source.c_str(),
+				vs_source.c_str(),
+				"resources/shaders",
+				std::make_array_ref(kw));
+		return Shader::create(sources.first.c_str(), sources.second.c_str(), rasterizerState, depthStencilState);
+	}
+	
+	Effect::Ptr Effect::loadFromFile(
+		const char *combinedSourcePath,
+		std::array_ref<Effect::Keyword> keywords_)
+	{
+		Effect::Ptr eff = std::make_unique<Effect>();;
+		eff->keywords = keywords_.vec();
+		eff->vs_source = loadEffectSource(combinedSourcePath);
+		eff->combined_source = true;
+		eff->vs_path = boost::filesystem::path(combinedSourcePath);
+		return eff;
 	}
 }
 
