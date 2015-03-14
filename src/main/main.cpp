@@ -47,6 +47,7 @@ private:
 
 	Entity *cameraEntity;
 	Mesh::Ptr mesh;
+	Mesh::Ptr mokou;
 
 	gl4::Effect::Ptr effect;
 	Shader::Ptr shader;
@@ -130,10 +131,15 @@ void RiftGame::init()
 		cubeIndices,
 		sm);
 
+	std::ifstream mokou_file("resources/models/mokou/mokou.mesh", std::ios::binary);
+	serialization::IArchive arc(mokou_file);
+	mokou = Mesh::loadFromArchive(arc);
+
 	tex = Image::loadFromFile("resources/img/brick_wall.jpg").convertToTexture2D();
 
 	cbSceneData = ConstantBuffer::create(sizeof(SceneData), nullptr);
 	cbPerObj = ConstantBuffer::create(sizeof(PerObject), nullptr);
+
 	paramBlock = ParameterBlock::create(*shader);
 	renderQueue = RenderQueue::create();
 
@@ -180,13 +186,15 @@ void RiftGame::render(float dt)
 
 	if (glfwGetKey(Engine::instance().getWindow().getHandle(), GLFW_KEY_W)) {
 		// XXX not the same parameter block!
-		renderQueue->draw(*mesh, 0, *shaderWireframe, *paramBlock, 0);
+		//renderQueue->draw(*mesh, 0, *shaderWireframe, *paramBlock, 0);
 	}
 	else {
-		renderQueue->draw(*mesh, 0, *shader, *paramBlock, 0);
+		//renderQueue->draw(*mesh, 0, *shader, *paramBlock, 0);
 	}
 
-	sky.render(*renderQueue, sceneData, *cbSceneData);
+	renderQueue->draw(*mokou, 0, *shader, *paramBlock, 0);
+
+	//sky.render(*renderQueue, sceneData, *cbSceneData);
 	R.submitRenderQueue(*renderQueue);
 
 	R.setRenderTargets({}, shadowRT.get());

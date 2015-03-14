@@ -7,8 +7,9 @@
 #include <gl_common.hpp>
 #include <glm/glm.hpp>
 #include <array_ref.hpp>
-#include <unique_resource.hpp>
 #include <unordered_map>
+#include <serialization.hpp>
+#include <unique_resource.hpp>
 
 namespace std {
 	template <> struct hash<SamplerDesc>
@@ -257,10 +258,16 @@ namespace gl4
 				submeshes);
 		}
 
+		static Ptr loadFromArchive(serialization::IArchive &ar);
+
+		static const auto kMaxVertexBuffers = 16u;
+
+		// TODO multiple buffers?
 		GLenum mode;
 		GLuint vb;
 		GLuint ib;
 		GLuint vao;
+		int nbvb;
 		int vbsize;
 		int ibsize;
 		int nbvertex;

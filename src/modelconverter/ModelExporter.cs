@@ -257,13 +257,12 @@ namespace modelconverter
             }
 
             // write to file
-            var path = Path.Combine(options.OutputDirectory, options.ModelName + ".model");
+            /*var path = Path.Combine(options.OutputDirectory, options.ModelName + ".model");
             Console.WriteLine("Writing master model " + path + "...");
             using (var streamOut = new FileStream(path, FileMode.Create, FileAccess.Write))
             //using (var gzipStream = new GZipStream(streamOut, CompressionLevel.Fastest))
             {
                 BinaryWriter writer = new BinaryWriter(streamOut);
-
                 writer.Write(submeshes.Count);
                 foreach (var sm in submeshes)
                 {
@@ -368,6 +367,53 @@ namespace modelconverter
                         writer.Write(bw[2]);
                         writer.Write(bw[3]);
                     }
+                }
+
+                foreach (var ix in indices)
+                {
+                    writer.Write(ix);
+                }
+            }*/
+
+            // V3 exporter
+            var path = Path.Combine(options.OutputDirectory, options.ModelName + ".mesh");
+            Console.WriteLine("Writing mesh " + path + "...");
+
+            using (var streamOut = new FileStream(path, FileMode.Create, FileAccess.Write))
+            //using (var gzipStream = new GZipStream(streamOut, CompressionLevel.Fastest))
+            {
+                BinaryWriter writer = new BinaryWriter(streamOut);
+
+                writer.Write((byte)3);      // V3
+                writer.Write((byte)1);      // Layout type 1
+                writer.Write((ushort)submeshes.Count);
+                writer.Write(positions.Count);
+                writer.Write(indices.Count);
+                
+                foreach (var sm in submeshes)
+                {
+                    writer.Write(sm.StartVertex);
+                    writer.Write(sm.StartIndex);
+                    writer.Write(sm.NumVertices);
+                    writer.Write(sm.NumIndices);
+                }
+
+                for (int i = 0; i < positions.Count; ++i) 
+                {
+                    writer.Write(positions[i].X);
+                    writer.Write(positions[i].Y);
+                    writer.Write(positions[i].Z);
+                    writer.Write(normals[i].X);
+                    writer.Write(normals[i].Y);
+                    writer.Write(normals[i].Z);
+                    writer.Write(tangents[i].X);
+                    writer.Write(tangents[i].Y);
+                    writer.Write(tangents[i].Z);
+                    writer.Write(bitangents[i].X);
+                    writer.Write(bitangents[i].Y);
+                    writer.Write(bitangents[i].Z);
+                    writer.Write(texcoords[i].X);
+                    writer.Write(texcoords[i].Y);
                 }
 
                 foreach (var ix in indices)

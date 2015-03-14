@@ -317,6 +317,7 @@ Mesh::Mesh(
 	vbsize = stride*numVertices;
 
 	// VBO
+	nbvb = 1;
 	vb = createBuffer(
 				gl::ARRAY_BUFFER, 
 				vbsize,
