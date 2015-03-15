@@ -99,7 +99,7 @@ public:
 		delete compPtr; 
 		mComponents[T::kComponentID] = nullptr;
 	}
-
+	
 	template <typename T>
 	bool hasComponent()
 	{
