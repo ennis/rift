@@ -43,6 +43,18 @@ private:
 		glm::vec4 objectColor;
 	} perObj;
 
+	struct PerObjectPBR
+	{
+		glm::mat4 modelMatrix;
+		glm::vec4 objectColor;
+		float eta;
+	} perObjPBR;
+
+	struct EnvCubeParams
+	{
+		glm::mat4 modelMatrix;
+	} envCubeParams;
+
 	SceneData sceneData;
 
 	Entity *cameraEntity;
@@ -50,14 +62,26 @@ private:
 	Mesh::Ptr mokou;
 
 	gl4::Effect::Ptr effect;
+	gl4::Effect::Ptr effectEnvCube;
+	gl4::Effect::Ptr effectPBR;
+
 	Shader::Ptr shader;
 	Shader::Ptr shaderWireframe;
+	Shader::Ptr shaderPBR;
+	Shader::Ptr shaderEnvCube;
 
 	ParameterBlock::Ptr paramBlock;
+	ParameterBlock::Ptr paramBlockPBR;
+	ParameterBlock::Ptr paramBlockEnvCube;
+
 	ConstantBuffer::Ptr cbSceneData;
 	ConstantBuffer::Ptr cbPerObj;
+	ConstantBuffer::Ptr cbPerObjPBR;
+	ConstantBuffer::Ptr cbEnvCube;
+
 	RenderQueue::Ptr renderQueue;
 	Texture2D::Ptr tex;
+	TextureCubeMap::Ptr envmap;
 	
 	Texture2D::Ptr shadowMap;
 	RenderTarget::Ptr shadowRT;
@@ -87,6 +111,11 @@ void RiftGame::init()
 	RasterizerDesc rs = {};
 	rs.fillMode = PolygonFillMode::Wireframe;
 	shaderWireframe = effect->compileShader({}, rs, DepthStencilDesc{});
+
+	effectPBR = gl4::Effect::loadFromFile("resources/shaders/pbr.glsl");
+	shaderPBR = effectPBR->compileShader();
+	effectEnvCube = gl4::Effect::loadFromFile("resources/shaders/envcube.glsl");
+	shaderEnvCube = effectEnvCube->compileShader();
 
 	// buffer contenant les données des vertex (c'est un cube, pour info)
 	// ici: position (x,y,z), normales (x,y,z), coordonnées de texture (x,y) 
@@ -136,11 +165,16 @@ void RiftGame::init()
 	mokou = Mesh::loadFromArchive(arc);
 
 	tex = Image::loadFromFile("resources/img/brick_wall.jpg").convertToTexture2D();
+	envmap = Image::loadFromFile("resources/img/env/uffizi/env.dds").convertToTextureCubeMap();
 
 	cbSceneData = ConstantBuffer::create(sizeof(SceneData), nullptr);
 	cbPerObj = ConstantBuffer::create(sizeof(PerObject), nullptr);
+	cbPerObjPBR = ConstantBuffer::create(sizeof(PerObjectPBR), nullptr);
+	cbEnvCube = ConstantBuffer::create(sizeof(EnvCubeParams), nullptr);
 
 	paramBlock = ParameterBlock::create(*shader);
+	paramBlockPBR = ParameterBlock::create(*shaderPBR);
+	paramBlockEnvCube = ParameterBlock::create(*shaderEnvCube);
 	renderQueue = RenderQueue::create();
 
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
@@ -174,10 +208,27 @@ void RiftGame::render(float dt)
 	perObj.objectColor = glm::vec4(1.0f);
 	cbPerObj->update(0, sizeof(PerObject), &perObj);
 
+	// update per-model buffer
+	perObjPBR.modelMatrix = glm::mat4(1.0f);
+	perObjPBR.objectColor = glm::vec4(1.0f);
+	perObjPBR.eta = 2.0f;
+	cbPerObjPBR->update(0, sizeof(PerObjectPBR), &perObjPBR);
+
+	envCubeParams.modelMatrix = glm::scale(glm::translate(glm::vec3{-0.5f, -0.5f, -0.5f}), glm::vec3{ 10.0f, 10.0f, 10.0f });
+	cbEnvCube->update(0, sizeof(EnvCubeParams), &envCubeParams);
+
 	// create parameter block
 	paramBlock->setConstantBuffer(0, *cbSceneData);
 	paramBlock->setConstantBuffer(1, *cbPerObj);
 	paramBlock->setTextureParameter(0, tex.get(), SamplerDesc{});
+
+	paramBlockPBR->setConstantBuffer(0, *cbSceneData);
+	paramBlockPBR->setConstantBuffer(1, *cbPerObjPBR);
+	paramBlockPBR->setTextureParameter(0, envmap.get(), SamplerDesc{});
+
+	paramBlockEnvCube->setConstantBuffer(0, *cbSceneData);
+	paramBlockEnvCube->setConstantBuffer(1, *cbEnvCube);
+	paramBlockEnvCube->setTextureParameter(0, envmap.get(), SamplerDesc{});
 
 	// submit to render queue
 	if (glfwGetKey(Engine::instance().getWindow().getHandle(), GLFW_KEY_H)) {
@@ -192,7 +243,8 @@ void RiftGame::render(float dt)
 		//renderQueue->draw(*mesh, 0, *shader, *paramBlock, 0);
 	}
 
-	renderQueue->draw(*mokou, 0, *shader, *paramBlock, 0);
+	renderQueue->draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
+	renderQueue->draw(*mokou, 2, *shaderPBR, *paramBlockPBR, 0);
 
 	//sky.render(*renderQueue, sceneData, *cbSceneData);
 	R.submitRenderQueue(*renderQueue);

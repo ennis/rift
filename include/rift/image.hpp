@@ -95,6 +95,7 @@ public:
 	}
 	
 	Texture2D::Ptr convertToTexture2D();
+	TextureCubeMap::Ptr convertToTextureCubeMap();
 
 	static Image loadFromFile(
 		const char *filePath, 

@@ -117,18 +117,37 @@ namespace gl4
 			const void* faceData[6]
 			);
 
+		void update(
+			int face,
+			int mipLevel,
+			glm::ivec2 offset,
+			glm::ivec2 size,
+			const void *data
+			);
+
 		// VS2013
 		/*TextureCubeMap(TextureCubeMap &&rhs)  {}
 		TextureCubeMap &operator=(TextureCubeMap &&rhs) {}*/
 		// -VS2013
 
-		static Ptr create()
+		static Ptr create(
+			glm::ivec2 size,
+			int numMipLevels,
+			ElementFormat pixelFormat,
+			const void* faceData[6])
 		{
-			return std::make_unique<TextureCubeMap>();
+			return std::make_unique<TextureCubeMap>(
+				size,
+				numMipLevels,
+				pixelFormat,
+				faceData);
 		}
 
 	//protected:
-
+		GLuint id;
+		glm::ivec2 size;
+		ElementFormat format;
+		GLenum glformat;
 	};
 
 	class RenderTarget
@@ -343,6 +362,12 @@ namespace gl4
 		void setTextureParameter(
 			int texunit,
 			const Texture2D *texture,
+			const SamplerDesc &samplerDesc
+			);
+
+		void setTextureParameter(
+			int texunit,
+			const TextureCubeMap *texture,
 			const SamplerDesc &samplerDesc
 			);
 
@@ -592,6 +617,7 @@ std::string loadEffectSource(const char *fileName);
 using Renderer = gl4::Renderer;
 using Shader = gl4::Shader;
 using Texture2D = gl4::Texture2D; 
+using TextureCubeMap = gl4::TextureCubeMap;
 using ParameterBlock = gl4::ParameterBlock;
 using Parameter = gl4::Parameter;
 using TextureParameter = gl4::TextureParameter;

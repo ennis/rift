@@ -100,6 +100,21 @@ Texture2D::Ptr Image::convertToTexture2D()
 	return std::move(tex);
 }
 
+TextureCubeMap::Ptr Image::convertToTextureCubeMap()
+{
+	assert(mNumFaces == 6);
+	const void *faceBytes[6] = {
+		getImageView(0, 0).data(),
+		getImageView(0, 1).data(),
+		getImageView(0, 2).data(),
+		getImageView(0, 3).data(),
+		getImageView(0, 4).data(),
+		getImageView(0, 5).data()
+	};
+	auto tex = TextureCubeMap::create(getSize(), mNumMipLevels, mFormat, faceBytes);
+	return tex;
+}
+
 //====================================
 namespace
 {
