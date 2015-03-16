@@ -36,6 +36,8 @@ private:
 	float mLastTime = 0.f;
 	float mTotalTime = 0.f;
 	float mFPS = 0;
+	float spinAngle = 0.f;
+	unsigned long numFrames;
 
 	struct PerObject
 	{
@@ -209,12 +211,13 @@ void RiftGame::render(float dt)
 	cbPerObj->update(0, sizeof(PerObject), &perObj);
 
 	// update per-model buffer
-	perObjPBR.modelMatrix = glm::mat4(1.0f);
+	spinAngle = fmodf(spinAngle + 0.1f*3.14159f*dt, 2 * 3.14159);
+	perObjPBR.modelMatrix = glm::rotate(glm::mat4(1.0f), spinAngle, glm::vec3{ 0, 1, 0 });
 	perObjPBR.objectColor = glm::vec4(1.0f);
 	perObjPBR.eta = 2.0f;
 	cbPerObjPBR->update(0, sizeof(PerObjectPBR), &perObjPBR);
 
-	envCubeParams.modelMatrix = glm::scale(glm::translate(glm::vec3{-0.5f, -0.5f, -0.5f}), glm::vec3{ 10.0f, 10.0f, 10.0f });
+	envCubeParams.modelMatrix = glm::translate(glm::scale(glm::vec3{ 1000.0f, 1000.0f, 1000.0f }), glm::vec3{ -0.5f, -0.5f, -0.5f });
 	cbEnvCube->update(0, sizeof(EnvCubeParams), &envCubeParams);
 
 	// create parameter block
@@ -224,7 +227,8 @@ void RiftGame::render(float dt)
 
 	paramBlockPBR->setConstantBuffer(0, *cbSceneData);
 	paramBlockPBR->setConstantBuffer(1, *cbPerObjPBR);
-	paramBlockPBR->setTextureParameter(0, envmap.get(), SamplerDesc{});
+	paramBlockPBR->setTextureParameter(0, tex.get(), SamplerDesc{});
+	paramBlockPBR->setTextureParameter(1, envmap.get(), SamplerDesc{});
 
 	paramBlockEnvCube->setConstantBuffer(0, *cbSceneData);
 	paramBlockEnvCube->setConstantBuffer(1, *cbEnvCube);
@@ -273,6 +277,7 @@ void RiftGame::update(float dt)
 		Engine::instance().getWindow().setTitle(("Rift (" + std::to_string(mFPS) + " FPS)").c_str());
 	}
 
+	++numFrames;
 }
 
 void RiftGame::tearDown()

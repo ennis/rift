@@ -7,47 +7,50 @@
 //====================================
 // Default constructor
 Image::Image() : 
-	mFormat(ElementFormat::Max),
-	mNumMipLevels(0),
-	mNumFaces(0)
+	format(ElementFormat::Max),
+	numMipLevels(0),
+	numFaces(0)
 {
 }
 
 //====================================
 Image::Image(
-	ElementFormat format, 
-	glm::ivec3 size, 
-	unsigned int numMipLevels, 
-	unsigned int numFaces
+	ElementFormat format_, 
+	glm::ivec3 size_, 
+	unsigned int numMipLevels_, 
+	unsigned int numFaces_
 	)
 {
-	allocate(format, size, numMipLevels, numFaces);
+	allocate(format_, size_, numMipLevels_, numFaces_);
 }
 
 //====================================
 void Image::allocate(
-	ElementFormat format, 
-	glm::ivec3 size, 
-	unsigned int numMipLevels,
-	unsigned int numFaces
+	ElementFormat format_, 
+	glm::ivec3 size_, 
+	unsigned int numMipLevels_,
+	unsigned int numFaces_
 	)
 {
-	mFormat = format;
-	mNumMipLevels = numMipLevels;
-	mNumFaces = numFaces;
+	format = format_;
+	numMipLevels = numMipLevels_;
+	numFaces = numFaces_;
 
 	auto elemsize = getElementFormatSize(format);
-	std::size_t len = size.x * size.y * size.z * elemsize * numFaces * numMipLevels;
+	std::size_t len = size_.x * size_.y * size_.z * elemsize * numFaces * numMipLevels;
 	std::size_t offset = 0;
-	glm::ivec2 mipsize = glm::ivec2(size.x, size.y);
-	mData.reserve(len);
+	glm::ivec2 mipsize = glm::ivec2(size_.x, size_.y);
+	data.reserve(len);
 
-	for (unsigned int iMip = 0; iMip < numMipLevels && mipsize.x != 1 && mipsize.y != 1; ++iMip)
+	for (auto imip = 0u; 
+		(imip < numMipLevels) && (mipsize.x != 1) && (mipsize.y != 1); 
+		++imip)
 	{
-		for (unsigned int iFace = 0; iFace < numFaces; ++iFace)
+		subimages.push_back(util::small_vector<Subimage, 6>());
+		for (auto iface = 0u; iface < numFaces; ++iface)
 		{
 			std::size_t numBytes = mipsize.x * mipsize.y * elemsize;
-			mSubimages.push_back(Subimage{ offset, numBytes, mipsize });
+			subimages[imip].push_back(Subimage{ offset, numBytes, mipsize });
 			offset += numBytes;
 		}
 		mipsize /= 2;
@@ -56,11 +59,11 @@ void Image::allocate(
 
 //====================================
 Image::Image(Image const &rhs) :
-	mFormat(rhs.mFormat),
-	mNumMipLevels(rhs.mNumMipLevels),
-	mNumFaces(rhs.mNumFaces),
-	mSubimages(rhs.mSubimages),
-	mData(rhs.mData)
+	format(rhs.format),
+	numMipLevels(rhs.numMipLevels),
+	numFaces(rhs.numFaces),
+	subimages(rhs.subimages),
+	data(rhs.data)
 {
 }
 
@@ -73,11 +76,11 @@ Image::Image(Image &&rhs)
 //====================================
 Image &Image::operator=(Image &&rhs)
 {
-	mFormat = rhs.mFormat;
-	mNumMipLevels = rhs.mNumMipLevels;
-	mNumFaces = rhs.mNumFaces;
-	mData.swap(rhs.mData);
-	mSubimages.swap(rhs.mSubimages);
+	format = rhs.format;
+	numMipLevels = rhs.numMipLevels;
+	numFaces = rhs.numFaces;
+	data.swap(rhs.data);
+	subimages.swap(rhs.subimages);
 	return *this;
 }
 
@@ -89,20 +92,20 @@ Image::~Image()
 //====================================
 Texture2D::Ptr Image::convertToTexture2D()
 {
-	auto tex = Texture2D::create(getSize(), mNumMipLevels, mFormat, nullptr);
-	for (unsigned int iMip = 0; iMip < mNumMipLevels; iMip++) {
+	auto tex = Texture2D::create(getSize(), numMipLevels, format, nullptr);
+	for (auto imip = 0u; imip < numMipLevels; imip++) {
 		tex->update(
-			iMip, 
+			imip,
 			glm::ivec2(0, 0), 
-			getSize(iMip),
-			getImageView(iMip).data());
+			getSize(imip),
+			getImageView(imip).data());
 	}
 	return std::move(tex);
 }
 
 TextureCubeMap::Ptr Image::convertToTextureCubeMap()
 {
-	assert(mNumFaces == 6);
+	assert(numFaces == 6);
 	const void *faceBytes[6] = {
 		getImageView(0, 0).data(),
 		getImageView(0, 1).data(),
@@ -111,7 +114,7 @@ TextureCubeMap::Ptr Image::convertToTextureCubeMap()
 		getImageView(0, 4).data(),
 		getImageView(0, 5).data()
 	};
-	auto tex = TextureCubeMap::create(getSize(), mNumMipLevels, mFormat, faceBytes);
+	auto tex = TextureCubeMap::create(getSize(), numMipLevels, format, faceBytes);
 	return tex;
 }
 
