@@ -81,7 +81,6 @@ Mesh::Ptr Mesh::loadFromArchive(serialization::IArchive &ar)
 		num_vertices,
 		vs.data(),
 		num_indices,
-		is.data(),
-		std::make_array_ref(submeshes));
+		is.data());
 	return ptr;
 }

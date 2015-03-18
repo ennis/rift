@@ -8,7 +8,7 @@
 layout(std140, binding = 1) uniform PerObject {
 	mat4 modelMatrix;
 	vec4 color;
-} perObj;
+};
 
 // sauf les paramètres de texture
 layout (binding = 0) uniform sampler2D diffuse;
@@ -34,8 +34,8 @@ out vec2 fTexcoord;
 //--- CODE ---------------------------
 void main() 
 {
-	vec4 modelPos = perObj.modelMatrix * vec4(position, 1.f);
-	gl_Position = gRenderData.viewProjMatrix * modelPos;
+	vec4 modelPos = modelMatrix * vec4(position, 1.f);
+	gl_Position = viewProjMatrix * modelPos;
 	fPosition = modelPos.xyz;
 	fNormal = normal;
 	fTexcoord = texcoord;

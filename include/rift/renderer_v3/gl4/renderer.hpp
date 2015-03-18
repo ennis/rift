@@ -117,18 +117,37 @@ namespace gl4
 			const void* faceData[6]
 			);
 
+		void update(
+			int face,
+			int mipLevel,
+			glm::ivec2 offset,
+			glm::ivec2 size,
+			const void *data
+			);
+
 		// VS2013
 		/*TextureCubeMap(TextureCubeMap &&rhs)  {}
 		TextureCubeMap &operator=(TextureCubeMap &&rhs) {}*/
 		// -VS2013
 
-		static Ptr create()
+		static Ptr create(
+			glm::ivec2 size,
+			int numMipLevels,
+			ElementFormat pixelFormat,
+			const void* faceData[6])
 		{
-			return std::make_unique<TextureCubeMap>();
+			return std::make_unique<TextureCubeMap>(
+				size,
+				numMipLevels,
+				pixelFormat,
+				faceData);
 		}
 
 	//protected:
-
+		GLuint id;
+		glm::ivec2 size;
+		ElementFormat format;
+		GLenum glformat;
 	};
 
 	class RenderTarget
@@ -197,8 +216,7 @@ namespace gl4
 			int numVertices,
 			const void *vertexData,
 			int numIndices,
-			const void *indexData,
-			std::array_ref<Submesh> submeshes);
+			const void *indexData);
 
 		// VS2013
 		/*Mesh(Mesh &&rhs) :
@@ -245,8 +263,7 @@ namespace gl4
 			int numVertices,
 			const void *vertexData,
 			int numIndices,
-			const void *indexData,
-			std::array_ref<Submesh> submeshes)
+			const void *indexData)
 		{
 			return std::make_unique<Mesh>(
 				primitiveType, 
@@ -254,8 +271,7 @@ namespace gl4
 				numVertices, 
 				vertexData, 
 				numIndices, 
-				indexData, 
-				submeshes);
+				indexData);
 		}
 
 		static Ptr loadFromArchive(serialization::IArchive &ar);
@@ -274,8 +290,6 @@ namespace gl4
 		int nbindex;
 		int stride;
 		GLenum index_format;
-		// or smallvector?
-		std::vector<Submesh> submeshes;
 	};
 
 	class Parameter
@@ -343,6 +357,12 @@ namespace gl4
 		void setTextureParameter(
 			int texunit,
 			const Texture2D *texture,
+			const SamplerDesc &samplerDesc
+			);
+
+		void setTextureParameter(
+			int texunit,
+			const TextureCubeMap *texture,
 			const SamplerDesc &samplerDesc
 			);
 
@@ -488,7 +508,7 @@ namespace gl4
 	{
 		uint64_t sort_key;
 		const Mesh *mesh;
-		int submesh;
+		Submesh submesh;
 		const ParameterBlock *param_block;
 		const Shader *shader;
 	};
@@ -501,7 +521,7 @@ namespace gl4
 
 		void draw(
 			const Mesh &mesh,
-			int submeshIndex,
+			const Submesh &submesh,
 			const Shader &shader,
 			const ParameterBlock &parameterBlock,
 			uint64_t sortHint
@@ -592,6 +612,7 @@ std::string loadEffectSource(const char *fileName);
 using Renderer = gl4::Renderer;
 using Shader = gl4::Shader;
 using Texture2D = gl4::Texture2D; 
+using TextureCubeMap = gl4::TextureCubeMap;
 using ParameterBlock = gl4::ParameterBlock;
 using Parameter = gl4::Parameter;
 using TextureParameter = gl4::TextureParameter;
