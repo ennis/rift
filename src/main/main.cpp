@@ -159,8 +159,7 @@ void RiftGame::init()
 		8,
 		cubeMeshData,
 		36,
-		cubeIndices,
-		sm);
+		cubeIndices);
 
 	std::ifstream mokou_file("resources/models/mokou/mokou.mesh", std::ios::binary);
 	serialization::IArchive arc(mokou_file);
@@ -214,7 +213,7 @@ void RiftGame::render(float dt)
 	spinAngle = fmodf(spinAngle + 0.1f*3.14159f*dt, 2 * 3.14159);
 	perObjPBR.modelMatrix = glm::rotate(glm::mat4(1.0f), spinAngle, glm::vec3{ 0, 1, 0 });
 	perObjPBR.objectColor = glm::vec4(1.0f);
-	perObjPBR.eta = 2.0f;
+	perObjPBR.eta = 4.0f;
 	cbPerObjPBR->update(0, sizeof(PerObjectPBR), &perObjPBR);
 
 	envCubeParams.modelMatrix = glm::translate(glm::scale(glm::vec3{ 1000.0f, 1000.0f, 1000.0f }), glm::vec3{ -0.5f, -0.5f, -0.5f });
@@ -247,8 +246,8 @@ void RiftGame::render(float dt)
 		//renderQueue->draw(*mesh, 0, *shader, *paramBlock, 0);
 	}
 
-	renderQueue->draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
-	renderQueue->draw(*mokou, 2, *shaderPBR, *paramBlockPBR, 0);
+	renderQueue->draw(*mesh, Submesh{ 0, 0, 8, 36 }, *shaderEnvCube, *paramBlockEnvCube, 0);
+	renderQueue->draw(*mokou, Submesh{ 0, 0, 100, 100 }, *shaderPBR, *paramBlockPBR, 0);
 
 	//sky.render(*renderQueue, sceneData, *cbSceneData);
 	R.submitRenderQueue(*renderQueue);

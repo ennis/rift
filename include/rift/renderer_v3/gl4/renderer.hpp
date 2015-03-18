@@ -216,8 +216,7 @@ namespace gl4
 			int numVertices,
 			const void *vertexData,
 			int numIndices,
-			const void *indexData,
-			std::array_ref<Submesh> submeshes);
+			const void *indexData);
 
 		// VS2013
 		/*Mesh(Mesh &&rhs) :
@@ -264,8 +263,7 @@ namespace gl4
 			int numVertices,
 			const void *vertexData,
 			int numIndices,
-			const void *indexData,
-			std::array_ref<Submesh> submeshes)
+			const void *indexData)
 		{
 			return std::make_unique<Mesh>(
 				primitiveType, 
@@ -273,8 +271,7 @@ namespace gl4
 				numVertices, 
 				vertexData, 
 				numIndices, 
-				indexData, 
-				submeshes);
+				indexData);
 		}
 
 		static Ptr loadFromArchive(serialization::IArchive &ar);
@@ -293,8 +290,6 @@ namespace gl4
 		int nbindex;
 		int stride;
 		GLenum index_format;
-		// or smallvector?
-		std::vector<Submesh> submeshes;
 	};
 
 	class Parameter
@@ -513,7 +508,7 @@ namespace gl4
 	{
 		uint64_t sort_key;
 		const Mesh *mesh;
-		int submesh;
+		Submesh submesh;
 		const ParameterBlock *param_block;
 		const Shader *shader;
 	};
@@ -526,7 +521,7 @@ namespace gl4
 
 		void draw(
 			const Mesh &mesh,
-			int submeshIndex,
+			const Submesh &submesh,
 			const Shader &shader,
 			const ParameterBlock &parameterBlock,
 			uint64_t sortHint

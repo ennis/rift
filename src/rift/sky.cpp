@@ -67,8 +67,7 @@ Sky::Sky()
 		36, 
 		skycubeVertices, 
 		0, 
-		nullptr, 
-		{ Submesh{ 0, 0, 36, 0 } }
+		nullptr
 	); 
 	
 	paramBlock = ParameterBlock::create(*skyShader);
@@ -94,6 +93,6 @@ void Sky::render(
 	params.sunColor = vec3(1.0f, 1.0f, 1.0f);
 	cbSkyParams->update(0, sizeof(SkyParams), &params);
 	paramBlock->setConstantBuffer(0, cbSceneData);
-	rq.draw(*skybox, 0, *skyShader, *paramBlock, 0);
+	rq.draw(*skybox, Submesh{ 0, 0, 36, 0 }, *skyShader, *paramBlock, 0);
 }
 

@@ -259,9 +259,7 @@ Mesh::Mesh(
 	int numVertices,
 	const void *vertexData,
 	int numIndices,
-	const void *indexData,
-	std::array_ref<Submesh> submeshes_
-	)
+	const void *indexData)
 {
 	mode = primitiveTypeToGLenum(primitiveType);
 
@@ -336,9 +334,6 @@ Mesh::Mesh(
 				indexData
 				);
 	}
-
-	// copy submeshes
-	submeshes = submeshes_.vec();
 }
 
 TextureCubeMap::TextureCubeMap(
@@ -812,7 +807,7 @@ void Renderer::setRenderTargets(
 //=============================================================================
 void RenderQueue::draw(
 	const Mesh &mesh,
-	int submeshIndex,
+	const Submesh &submesh,
 	const Shader &shader,
 	const ParameterBlock &parameterBlock,
 	uint64_t sortHint
@@ -821,7 +816,7 @@ void RenderQueue::draw(
 	RenderItem item;
 	item.shader = &shader;
 	item.mesh = &mesh;
-	item.submesh = submeshIndex;
+	item.submesh = submesh;
 	item.param_block = &parameterBlock;
 	item.sort_key = sortHint;
 	items.push_back(item);
@@ -867,7 +862,7 @@ void Renderer::drawItem(const RenderItem &item)
 	else
 		gl::DepthMask(false);
 
-	const auto &sm = item.mesh->submeshes[item.submesh];
+	const auto &sm = item.submesh;
 
 	if (item.mesh->ibsize != 0) {
 		gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, item.mesh->ib);
