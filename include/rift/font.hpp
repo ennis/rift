@@ -1,14 +1,17 @@
 #ifndef FONT_HPP
 #define FONT_HPP
 
-#include <renderer2.hpp>
+#include <gl4/renderer.hpp>
 #include <image.hpp>
 #include <unordered_map>
+#include <memory>
 
 //=============================================================================
 class Font
 {
 public:
+	using Ptr = std::unique_ptr < Font > ;
+
 	//--------------------------
 	struct Glyph {
 		Glyph(
@@ -40,26 +43,25 @@ public:
 		int xAdvance;
 		unsigned int page;
 	};
-	//--------------------------
+
+	// do not use
 	Font() = default;
-	Font(Renderer &renderer, const char *fontFilePath);
 	~Font();
-	void loadFromFile(Renderer &renderer, const char *fontFilePath);
+
 	struct Metrics {
 		unsigned int height;
 		unsigned int baseline;
 		unsigned int scaleW;
 		unsigned int scaleH;
 	};
-	Metrics const &metrics() const {
-		return mMetrics;
+
+	Metrics const &getMetrics() const {
+		return metrics;
 	}
-	unsigned int getNumGlyphPages() const {
-		return mNumGlyphPages;
-	}
+
 	bool getGlyph(char32_t ch, Glyph const *& glyph) const {
-		auto p = mGlyphs.find(ch);
-		if (p != mGlyphs.end()) {
+		auto p = glyphs.find(ch);
+		if (p != glyphs.end()) {
 			glyph = &p->second;
 			return true;
 		} else {
@@ -67,6 +69,7 @@ public:
 			return false;
 		}
 	}
+
 	const Image &getTextureData(unsigned int page) const 
 	{
 		return data;
@@ -74,16 +77,16 @@ public:
 
 	const Texture2D &getTexture() const
 	{
-		return tex;
+		return *tex;
 	}
 
+	static Ptr loadFromFile(const char *fontFilePath);
+
 private:
-	Metrics mMetrics;
-	// number of pages
+	Metrics metrics;
 	Image data;
-	Texture2D tex;
-	// glyph map
-	std::unordered_map<char32_t, Glyph> mGlyphs;
+	Texture2D::Ptr tex;
+	std::unordered_map<char32_t, Glyph> glyphs;
 	// TODO kerning map
 };
 
