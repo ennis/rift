@@ -1,34 +1,29 @@
 #ifndef HUDTEXT_HPP
 #define HUDTEXT_HPP
 
-#include <renderer2.hpp>
+#include <gl4/renderer.hpp>
 #include <font.hpp>
-#include <renderable.hpp>
-#include <mesh.hpp>
+#include <scene.hpp>
 
 class HUDTextRenderer
 {
 public:
-	HUDTextRenderer() = default;
-	HUDTextRenderer(Renderer &renderer);
-	HUDTextRenderer(const HUDTextRenderer &rhs) = delete;
-	
+	HUDTextRenderer();
 	~HUDTextRenderer();
 	
 	void renderString(
-		RenderContext &renderContext,
+		const SceneData &sceneData,
 		const char *str,
-		Font *font,
+		const Font &font,
 		glm::vec2 viewPos,
 		glm::vec4 const &color = glm::vec4(1.0f),
 		glm::vec4 const &outlineColor = glm::vec4(0.0f));
 
 private:
-	static const unsigned int kMaxNumGlyphs = 128;
+	static const int kMaxNumGlyphs = 128;
 	void init();
-	Renderer *mRenderer = nullptr;	// borrowed ref
-	Shader *mShader = nullptr;
-	Mesh mMesh;
+	Shader::Ptr shader;
+	Buffer::Ptr vb;
 };
 
 #endif

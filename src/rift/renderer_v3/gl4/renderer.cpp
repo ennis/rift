@@ -255,7 +255,7 @@ namespace
 //=============================================================================
 Mesh::Mesh(
 	PrimitiveType primitiveType,
-	std::array_ref<Attribute> layout,
+	util::array_ref<Attribute> layout,
 	int numVertices,
 	const void *vertexData,
 	int numIndices,
@@ -705,7 +705,7 @@ void Renderer::clearDepth(
 //=============================================================================
 //=============================================================================
 void Renderer::setViewports(
-	std::array_ref<Viewport2> viewports
+	util::array_ref<Viewport2> viewports
 	)
 {
 	float vp[4] = {
@@ -737,7 +737,7 @@ void Renderer::setViewports(
 //=============================================================================
 //=============================================================================
 void Renderer::setRenderTargets(
-	std::array_ref<const RenderTarget*> colorTargets,
+	util::array_ref<const RenderTarget*> colorTargets,
 	const RenderTarget *depthStencilTarget
 	)
 {

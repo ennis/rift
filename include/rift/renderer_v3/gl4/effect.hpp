@@ -29,19 +29,19 @@ namespace gl4
 		// All the possible permutations will be created before runtime
 		// TODO should return non-owning pointer?
 		Shader::Ptr compileShader(
-			std::array_ref<Keyword> additionalKeywords = {}
+			util::array_ref<Keyword> additionalKeywords = {}
 			); 
 		
 		// override render states
 		Shader::Ptr compileShader(
-			std::array_ref<Keyword> additionalKeywords,
+			util::array_ref<Keyword> additionalKeywords,
 			const RasterizerDesc &rasterizerState,
 			const DepthStencilDesc &depthStencilState
 			);
 
 		static std::unique_ptr<Effect> loadFromFile(
 			const char *combinedSourcePath,
-			std::array_ref<Effect::Keyword> keywords = {}
+			util::array_ref<Effect::Keyword> keywords = {}
 		);
 
 	private:

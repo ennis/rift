@@ -29,9 +29,9 @@ namespace std {
 namespace gl4
 {
 	// constexpr
-	const int kMaxUniformBufferBindings = 16;
-	const int kMaxVertexBufferBindings = 16;
-	const int kMaxTextureUnits = 16;  
+	constexpr auto kMaxUniformBufferBindings = 16u;
+	constexpr auto kMaxVertexBufferBindings = 16u;
+	constexpr auto kMaxTextureUnits = 16u;
 
 	class Texture2D;
 	class TextureCubeMap;
@@ -47,6 +47,40 @@ namespace gl4
 	// VS2013 does not support implicit generation of move constructors and move assignment operators
 	// so the unique_resource pattern and the 'rule of zero' (http://flamingdangerzone.com/cxx11/2012/08/15/rule-of-zero.html)
 	// is effectively useless
+
+	class Buffer
+	{
+	public:
+		using Ptr = std::unique_ptr < Buffer > ;
+
+		Buffer() = default;
+		Buffer(
+			int size,
+			ResourceUsage resourceUsage,
+			BufferUsage usage
+			);
+
+		~Buffer()
+		{
+			gl::DeleteBuffers(1, &id);
+		}
+
+		void update(
+			int offset,
+			int size,
+			const void *data);
+
+		static Ptr create(
+			int size,
+			ResourceUsage resourceUsage,
+			BufferUsage usage
+			);
+
+	//protected:
+		GLbitfield flags;
+		GLenum target;
+		GLuint id;
+	};
 
 	class Texture2D
 	{
@@ -212,7 +246,7 @@ namespace gl4
 		using Ptr = std::unique_ptr < Mesh > ;
 
 		Mesh(PrimitiveType primitiveType,
-			std::array_ref<Attribute> layout,
+			util::array_ref<Attribute> layout,
 			int numVertices,
 			const void *vertexData,
 			int numIndices,
@@ -259,7 +293,7 @@ namespace gl4
 
 		static Ptr create(
 			PrimitiveType primitiveType,
-			std::array_ref<Attribute> layout,
+			util::array_ref<Attribute> layout,
 			int numVertices,
 			const void *vertexData,
 			int numIndices,
@@ -560,12 +594,12 @@ namespace gl4
 
 		// set the color & depth render targets
 		void setRenderTargets(
-			std::array_ref<const RenderTarget*> colorTargets,
+			util::array_ref<const RenderTarget*> colorTargets,
 			const RenderTarget *depthStencilTarget
 			);
 
 		void setViewports(
-			std::array_ref<Viewport2> viewports
+			util::array_ref<Viewport2> viewports
 			);
 
 		void submitRenderQueue(
@@ -610,6 +644,7 @@ namespace gl4
 std::string loadEffectSource(const char *fileName);
 
 using Renderer = gl4::Renderer;
+using Buffer = gl4::Buffer;
 using Shader = gl4::Shader;
 using Texture2D = gl4::Texture2D; 
 using TextureCubeMap = gl4::TextureCubeMap;
