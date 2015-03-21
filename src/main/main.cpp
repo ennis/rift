@@ -200,7 +200,7 @@ void RiftGame::render(float dt)
 
 	R.setRenderTargets({}, nullptr);
 	R.clearColor(0.25f, 0.25f, 0.2f, 0.0f);
-	R.clearDepth(1000.f);
+	R.clearDepth(1.0f);
 	R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
 
 	// update scene data buffer
@@ -263,7 +263,7 @@ void RiftGame::render(float dt)
 	R.submitRenderQueue(*renderQueue);
 
 	R.setRenderTargets({}, shadowRT.get());
-	R.clearDepth(1000.f);
+	R.clearDepth(1.0f);
 	R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
 	// resubmit
 	R.submitRenderQueue(*renderQueue);

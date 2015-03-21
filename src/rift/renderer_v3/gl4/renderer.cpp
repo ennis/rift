@@ -59,6 +59,38 @@ namespace
 		}
 	}
 
+	GLenum blendOpToGL_[static_cast<int>(BlendOp::Max_)] = 
+	{
+		/*Add*/      gl::FUNC_ADD,
+		/*Subtract*/ gl::FUNC_SUBTRACT,
+		/*RevSubtract*/ gl::FUNC_REVERSE_SUBTRACT,
+		/*Min*/      gl::MIN,
+		/*Max*/      gl::MAX
+	};
+
+	GLenum blendOpToGL(BlendOp bo)
+	{
+		return blendOpToGL_[static_cast<int>(bo)];
+	}
+
+	GLenum blendFactorToGL_[static_cast<int>(BlendFactor::Max)] = {
+		/*Zero*/         gl::ZERO,
+		/*One*/          gl::ONE,
+		/*SrcRgb*/       gl::SRC_COLOR,
+		/*InvSrcRgb*/    gl::ONE_MINUS_SRC_COLOR,
+		/*DestRgb*/      gl::DST_COLOR,
+		/*InvDestRgb*/   gl::ONE_MINUS_DST_COLOR,
+		/*SrcAlpha*/     gl::SRC_ALPHA,
+		/*InvSrcAlpha*/  gl::ONE_MINUS_SRC_ALPHA,
+		/*DestAlpha*/    gl::DST_ALPHA,
+		/*InvDestAlpha*/ gl::ONE_MINUS_DST_ALPHA
+	};
+
+	GLenum blendFactorToGL(BlendFactor bf)
+	{
+		return blendFactorToGL_[static_cast<int>(bf)];
+	}
+
 	const std::map<GLenum, std::string> gl_debug_source_names = {
 		{ gl::DEBUG_SOURCE_API, "DEBUG_SOURCE_API" },
 		{ gl::DEBUG_SOURCE_APPLICATION, "DEBUG_SOURCE_APPLICATION" },
@@ -650,30 +682,15 @@ Shader::Shader(
 	const char *vsSource,
 	const char *psSource,
 	const RasterizerDesc &rasterizerState,
-	const DepthStencilDesc &depthStencilState)
+	const DepthStencilDesc &depthStencilState,
+	const BlendDesc &blendState)
 {
 	cache_id = shader_cache_index++;
 	ds_state = depthStencilState;
 	rs_state = rasterizerState;
+	om_state = blendState;
 	// preprocess source
 	program = glslCreateProgram(vsSource, psSource);
-}
-
-//=============================================================================
-//=============================================================================
-// Renderer::createEffectParameter
-//=============================================================================
-//=============================================================================
-Parameter::Ptr Shader::createParameter(
-	const char *name
-	)
-{
-	auto ptr = std::make_unique<Parameter>();
-	ptr->shader = this;
-	ptr->location = gl::GetUniformBlockIndex(program, name);
-	ptr->binding = ptr->location;
-	gl::UniformBlockBinding(program, ptr->location, ptr->location);
-	return std::move(ptr);
 }
 
 //=============================================================================
@@ -681,27 +698,6 @@ Parameter::Ptr Shader::createParameter(
 // Renderer::createEffectTextureParameter
 //=============================================================================
 //=============================================================================
-TextureParameter::Ptr Shader::createTextureParameter(
-	const char *name
-	)
-{
-	auto ptr = std::make_unique<TextureParameter>();
-	ptr->shader = this;
-	ptr->location = gl::GetUniformLocation(program, name);
-	return std::move(ptr);
-}
-
-TextureParameter::Ptr Shader::createTextureParameter(
-	int texunit
-	)
-{
-	auto ptr = std::make_unique<TextureParameter>();
-	ptr->shader = this;
-	ptr->location = -1;
-	ptr->texunit = texunit;
-	return std::move(ptr);
-}
-
 ConstantBuffer::ConstantBuffer(
 	int size_,
 	const void *initialData)
@@ -729,27 +725,6 @@ ParameterBlock::ParameterBlock(Shader &shader_) : shader(&shader_)
 // Renderer::setConstantBuffer
 //=============================================================================
 //=============================================================================
-void ParameterBlock::setConstantBuffer(
-	const Parameter &param,
-	const ConstantBuffer &constantBuffer
-	)
-{
-	//assert(param.size == constantBuffer.size);
-	ubo[param.binding] = constantBuffer.ubo;
-	ubo_offsets[param.binding] = 0;
-	ubo_sizes[param.binding] = constantBuffer.size;
-}
-
-void ParameterBlock::setTextureParameter(
-	const TextureParameter &param,
-	const Texture2D *texture,
-	const SamplerDesc &samplerDesc
-	)
-{
-	textures[param.texunit] = texture->id;
-	samplers[param.texunit] = Renderer::getInstance().getSampler(samplerDesc);
-}
-
 void ParameterBlock::setConstantBuffer(
 	int binding,
 	const ConstantBuffer &constantBuffer
@@ -832,6 +807,7 @@ void Renderer::clearDepth(
 	float z
 	)
 {
+	gl::DepthMask(gl::TRUE_);
 	gl::ClearDepth(z);
 	gl::Clear(gl::DEPTH_BUFFER_BIT);
 }
@@ -991,14 +967,30 @@ void Renderer::drawItem(const RenderItem &item)
 		gl::CullFace(cullModeToGLenum(item.shader->rs_state.cullMode));
 	}
 	gl::PolygonMode(gl::FRONT_AND_BACK, fillModeToGLenum(item.shader->rs_state.fillMode));
-	if (item.shader->ds_state.depthTestEnable)
-		gl::Enable(gl::DEPTH_TEST);
+	gl::Enable(gl::DEPTH_TEST);
+	if (!item.shader->ds_state.depthTestEnable)
+		gl::DepthFunc(gl::ALWAYS);
 	else
-		gl::Disable(gl::DEPTH_TEST);
+		gl::DepthFunc(gl::LEQUAL);
 	if (item.shader->ds_state.depthWriteEnable)
-		gl::DepthMask(true);
+		gl::DepthMask(gl::TRUE_);
 	else
-		gl::DepthMask(false);
+		gl::DepthMask(gl::FALSE_);
+
+	// OM / blend state
+	// XXX this ain't cheap
+	// TODO blend state per color buffer
+	gl::Enable(gl::BLEND);
+	gl::BlendEquationSeparatei(
+		0,
+		blendOpToGL(item.shader->om_state.rgbOp),
+		blendOpToGL(item.shader->om_state.alphaOp));
+	gl::BlendFuncSeparatei(
+		0,
+		blendFactorToGL(item.shader->om_state.rgbSrcFactor),
+		blendFactorToGL(item.shader->om_state.rgbDestFactor),
+		blendFactorToGL(item.shader->om_state.alphaSrcFactor),
+		blendFactorToGL(item.shader->om_state.alphaDestFactor));
 
 	const auto &sm = item.mesh->submeshes[item.submesh_index];
 

@@ -16,13 +16,12 @@ HUDTextRenderer::HUDTextRenderer()
 
 	auto effect = gl4::Effect::loadFromFile("resources/shaders/text.glsl");
 	RasterizerDesc rs;
-	rs.cullMode = CullMode::None;
-	rs.depthClipEnable = true;
 	rs.fillMode = PolygonFillMode::Fill;
 	DepthStencilDesc ds;
-	//ds.depthTestEnable = false;
-	//ds.depthWriteEnable = false;
-	shader = effect->compileShader({}, rs, ds);
+	ds.depthTestEnable = true;
+	ds.depthWriteEnable = false;
+	BlendDesc om{};
+	shader = effect->compileShader({}, rs, ds, om);
 	pb = ParameterBlock::create(*shader);
 	cbParams = ConstantBuffer::create(sizeof(Params), nullptr);
 	pb->setConstantBuffer(0, *cbParams);
@@ -96,13 +95,8 @@ void HUDTextRenderer::renderString(
 	p.outlineColor = outlineColor;
 	cbParams->update(0, sizeof(p), &p);
 
-	gl::Enable(gl::BLEND);
-	gl::BlendEquationSeparate(gl::FUNC_ADD, gl::FUNC_ADD);
-	gl::BlendFuncSeparate(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA, gl::ONE, gl::ZERO);
-
 	pb->setTextureParameter(0, &font.getTexture(), SamplerDesc{});
-	renderQueue.draw(*mesh, 0, *shader, *pb, 0);
+	renderQueue.draw(*mesh, 0, *shader, *pb, 100);	// Hackish
 
-	gl::DepthMask(gl::TRUE_);
 }
 

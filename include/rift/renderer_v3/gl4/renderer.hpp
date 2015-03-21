@@ -462,7 +462,8 @@ namespace gl4
 			const char *vsSource,
 			const char *psSource,
 			const RasterizerDesc &rasterizerState,
-			const DepthStencilDesc &depthStencilState);
+			const DepthStencilDesc &depthStencilState,
+			const BlendDesc &blendState);
 
 		// VS2013
 		/*Effect(Effect &&rhs) :
@@ -482,28 +483,19 @@ namespace gl4
 		}*/
 		// -VS2013
 
-		Parameter::Ptr createParameter(
-			const char *name
-			);
-
-		// TODO named texture parameters
-		TextureParameter::Ptr createTextureParameter(
-			const char *name
-			);
-
-		TextureParameter::Ptr createTextureParameter(
-			int texunit
-			);
-
-		ParameterBlock::Ptr createParameterBlock();
-
 		static Ptr create(
 			const char *vsSource,
 			const char *psSource,
 			const RasterizerDesc &rasterizerState,
-			const DepthStencilDesc &depthStencilState)
+			const DepthStencilDesc &depthStencilState,
+			const BlendDesc &blendState)
 		{
-			return std::make_unique<Shader>(vsSource, psSource, rasterizerState, depthStencilState);
+			return std::make_unique<Shader>(
+				vsSource,
+				psSource, 
+				rasterizerState, 
+				depthStencilState, 
+				blendState);
 		}
 
 	//private:
@@ -519,7 +511,8 @@ namespace gl4
 		GLuint program = 0;
 		// XXX in source code?
 		RasterizerDesc rs_state;
-		DepthStencilDesc ds_state;
+		DepthStencilDesc ds_state; 
+		BlendDesc om_state;
 		// TODO list of passes
 		// TODO list of parameters / uniforms?
 	};
@@ -564,7 +557,7 @@ namespace gl4
 		{
 			return std::make_unique<ConstantBuffer>(size, initialData);
 		}
-		
+
 	// protected:
 
 		GLuint ubo;

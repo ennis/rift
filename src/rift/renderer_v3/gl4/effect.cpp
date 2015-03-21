@@ -10,7 +10,6 @@
 namespace gl4
 {
 	namespace {
-		
 
 		//=========================================================================
 		//=========================================================================
@@ -261,16 +260,10 @@ namespace gl4
 	
 	
 	Shader::Ptr Effect::compileShader(
-		util::array_ref<Effect::Keyword> additionalKeywords
-		)
-	{
-		return compileShader(additionalKeywords, RasterizerDesc{}, DepthStencilDesc{});
-	}
-	
-	Shader::Ptr Effect::compileShader(
 		util::array_ref<Effect::Keyword> additionalKeywords,
 		const RasterizerDesc &rasterizerState,
-		const DepthStencilDesc &depthStencilState
+		const DepthStencilDesc &depthStencilState,
+		const BlendDesc &blendState
 		)
 	{
 		std::vector<Effect::Keyword> kw = keywords;
@@ -281,14 +274,19 @@ namespace gl4
 				vs_source.c_str(),
 				"resources/shaders",
 				util::make_array_ref(kw));
-		return Shader::create(sources.first.c_str(), sources.second.c_str(), rasterizerState, depthStencilState);
+		return Shader::create(
+			sources.first.c_str(), 
+			sources.second.c_str(),
+			rasterizerState, 
+			depthStencilState, 
+			blendState);
 	}
 	
 	Effect::Ptr Effect::loadFromFile(
 		const char *combinedSourcePath,
 		util::array_ref<Effect::Keyword> keywords_)
 	{
-		Effect::Ptr eff = std::make_unique<Effect>();;
+		Effect::Ptr eff = std::make_unique<Effect>();
 		eff->keywords = keywords_.vec();
 		eff->vs_source = loadEffectSource(combinedSourcePath);
 		eff->combined_source = true;

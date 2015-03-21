@@ -27,16 +27,13 @@ namespace gl4
 		// Compile a shader with the given list of keywords
 		// TODO once the new effect system lands, there will be no need for preprocessing:
 		// All the possible permutations will be created before runtime
-		// TODO should return non-owning pointer?
-		Shader::Ptr compileShader(
-			util::array_ref<Keyword> additionalKeywords = {}
-			); 
-		
+		// TODO should return non-owning pointer?	
 		// override render states
 		Shader::Ptr compileShader(
-			util::array_ref<Keyword> additionalKeywords,
-			const RasterizerDesc &rasterizerState,
-			const DepthStencilDesc &depthStencilState
+			util::array_ref<Keyword> additionalKeywords = {},
+			const RasterizerDesc &rasterizerState = RasterizerDesc{},
+			const DepthStencilDesc &depthStencilState = DepthStencilDesc{},
+			const BlendDesc &blendState = BlendDesc{}
 			);
 
 		static std::unique_ptr<Effect> loadFromFile(
