@@ -45,7 +45,7 @@ namespace util
 			}
 		}
 
-		small_vector(std::array_ref<T> arr)
+		small_vector(util::array_ref<T> arr)
 		{
 			assert(arr.size() <= N);
 			for (size_type i = 0; i < len; ++i) {
@@ -108,6 +108,7 @@ namespace util
 			size_type i = 0;
 			// construct remaining objects
 			while (first != last) {
+				assert(i < N);
 				new (storage_ptr(i++)) T(std::move(*first++));
 			}
 			length = i;
@@ -121,8 +122,8 @@ namespace util
 			length = 0;
 		}
 
-		std::array_ref<T> slice() const {
-			return std::make_array_ref(data(), length);
+		util::array_ref<T> slice() const {
+			return util::make_array_ref(data(), length);
 		}
 
 	private:

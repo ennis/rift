@@ -59,6 +59,38 @@ namespace
 		}
 	}
 
+	GLenum blendOpToGL_[static_cast<int>(BlendOp::Max_)] = 
+	{
+		/*Add*/      gl::FUNC_ADD,
+		/*Subtract*/ gl::FUNC_SUBTRACT,
+		/*RevSubtract*/ gl::FUNC_REVERSE_SUBTRACT,
+		/*Min*/      gl::MIN,
+		/*Max*/      gl::MAX
+	};
+
+	GLenum blendOpToGL(BlendOp bo)
+	{
+		return blendOpToGL_[static_cast<int>(bo)];
+	}
+
+	GLenum blendFactorToGL_[static_cast<int>(BlendFactor::Max)] = {
+		/*Zero*/         gl::ZERO,
+		/*One*/          gl::ONE,
+		/*SrcRgb*/       gl::SRC_COLOR,
+		/*InvSrcRgb*/    gl::ONE_MINUS_SRC_COLOR,
+		/*DestRgb*/      gl::DST_COLOR,
+		/*InvDestRgb*/   gl::ONE_MINUS_DST_COLOR,
+		/*SrcAlpha*/     gl::SRC_ALPHA,
+		/*InvSrcAlpha*/  gl::ONE_MINUS_SRC_ALPHA,
+		/*DestAlpha*/    gl::DST_ALPHA,
+		/*InvDestAlpha*/ gl::ONE_MINUS_DST_ALPHA
+	};
+
+	GLenum blendFactorToGL(BlendFactor bf)
+	{
+		return blendFactorToGL_[static_cast<int>(bf)];
+	}
+
 	const std::map<GLenum, std::string> gl_debug_source_names = {
 		{ gl::DEBUG_SOURCE_API, "DEBUG_SOURCE_API" },
 		{ gl::DEBUG_SOURCE_APPLICATION, "DEBUG_SOURCE_APPLICATION" },
@@ -169,6 +201,23 @@ namespace
 		gl::BindBuffer(bindingPoint, 0);
 		return id;
 	}
+	
+	void updateBuffer(
+		GLuint buf,
+		GLenum target,
+		int offset,
+		int size,
+		const void *data
+		)
+	{
+		if (gl::exts::var_EXT_direct_state_access) {
+			gl::NamedBufferSubDataEXT(buf, offset, size, data);
+		}
+		else {
+			gl::BindBuffer(target, buf);
+			gl::BufferSubData(target, offset, size, data);
+		}
+	}
 
 	//=========================================================================
 	//=========================================================================
@@ -248,21 +297,130 @@ namespace
 	int shader_cache_index = 0;
 }
 
+
+InputLayout::InputLayout(util::array_ref<Attribute> attribs)
+{
+	// create VAO
+	gl::GenVertexArrays(1, &vao);
+	if (!gl::exts::var_EXT_direct_state_access) {
+		gl::BindVertexArray(vao);
+	}
+	int offset = 0;
+	for (int attribindex = 0; attribindex < attribs.size(); ++attribindex)
+	{
+		const auto& attrib = attribs[attribindex];
+		const auto& fmt = getElementFormatInfoGL(attrib.format);
+		if (gl::exts::var_EXT_direct_state_access) {
+			gl::EnableVertexArrayAttribEXT(
+				vao,
+				attribindex);
+			gl::VertexArrayVertexAttribFormatEXT(
+				vao,
+				attribindex,
+				fmt.size,
+				fmt.type,
+				fmt.normalize,
+				offset);
+			gl::VertexArrayVertexAttribBindingEXT(
+				vao,
+				attribindex,
+				0);
+		}
+		else {
+			gl::EnableVertexAttribArray(
+				attribindex);
+			gl::VertexAttribFormat(
+				attribindex,
+				fmt.size,
+				fmt.type,
+				fmt.normalize,
+				offset);
+			gl::VertexAttribBinding(
+				attribindex,
+				0);
+		}
+		offset += getElementFormatSize(attrib.format);
+	}
+	if (!gl::exts::var_EXT_direct_state_access) {
+		gl::BindVertexArray(0);
+	}
+	stride = offset;
+}
+
+Buffer::Buffer(
+	int size_,
+	ResourceUsage resourceUsage_,
+	BufferUsage usage_,
+	void *initialData_) :
+	target(bufferUsageToBindingPoint(usage_)), size(size_)
+{
+	gl::GenBuffers(1, &id);
+	gl::BindBuffer(target, id);
+	// allocate immutable storage
+	if (resourceUsage_ == ResourceUsage::Dynamic)
+		flags = gl::DYNAMIC_STORAGE_BIT;
+	gl::BufferStorage(target, size, initialData_, flags);
+	/*if (usage_ == ResourceUsage::Dynamic)
+	gl::BufferData(bindingPoint, size, data, gl::STREAM_DRAW);
+	else
+	gl::BufferData(bindingPoint, size, data, gl::STATIC_DRAW);*/
+	gl::BindBuffer(target, 0);
+}
+
+void Buffer::update(
+	int offset,
+	int size,
+	const void *data)
+{
+	if (gl::exts::var_EXT_direct_state_access) {
+		gl::NamedBufferSubDataEXT(id, offset, size, data);
+	}
+	else {
+		gl::BindBuffer(target, id);
+		gl::BufferSubData(target, offset, size, data);
+	}
+}
+
+Buffer::Ptr Buffer::create(
+	int size,
+	ResourceUsage resourceUsage,
+	BufferUsage usage,
+	void *initialData
+	)
+{
+	auto ptr = std::make_unique<Buffer>(size, resourceUsage, usage, initialData);
+	return ptr;
+}
+
+void Mesh::setSubmesh(int index, const Submesh &submesh)
+{
+	submeshes[index] = submesh;
+}
+
+void Mesh::updateVertices(int offset, int size, const void *data)
+{
+	updateBuffer(vb, gl::ARRAY_BUFFER, offset*stride, size*stride, data);
+}
+
+void Mesh::updateIndices(int offset, int size, const uint16_t *data)
+{
+	updateBuffer(ib, gl::ELEMENT_ARRAY_BUFFER, offset*2, size*2, data);
+}
+
 //=============================================================================
 //=============================================================================
 // Renderer::createMesh
 //=============================================================================
 //=============================================================================
 Mesh::Mesh(
-	PrimitiveType primitiveType,
-	std::array_ref<Attribute> layout,
+	util::array_ref<Attribute> layout,
 	int numVertices,
 	const void *vertexData,
 	int numIndices,
-	const void *indexData)
+	const void *indexData,
+	util::array_ref<Submesh> submeshes_,
+	ResourceUsage usage)
 {
-	mode = primitiveTypeToGLenum(primitiveType);
-
 	// create VAO
 	GLuint vao_;
 	gl::GenVertexArrays(1, &vao_);
@@ -314,12 +472,21 @@ Mesh::Mesh(
 	nbvertex = numVertices;
 	vbsize = stride*numVertices;
 
+	vb_flags = 0;
+	ib_flags = 0;
+
+	if (usage == ResourceUsage::Dynamic) 
+	{
+		vb_flags |= gl::DYNAMIC_STORAGE_BIT;
+		ib_flags |= gl::DYNAMIC_STORAGE_BIT;
+	}
+
 	// VBO
 	nbvb = 1;
 	vb = createBuffer(
 				gl::ARRAY_BUFFER, 
 				vbsize,
-				gl::DYNAMIC_STORAGE_BIT,
+				vb_flags,
 				vertexData
 				);
 
@@ -330,10 +497,12 @@ Mesh::Mesh(
 		ib = createBuffer(
 				gl::ELEMENT_ARRAY_BUFFER,
 				ibsize,
-				gl::DYNAMIC_STORAGE_BIT,
+				ib_flags,
 				indexData
 				);
 	}
+
+	submeshes.assign(submeshes_.begin(), submeshes_.end());
 }
 
 TextureCubeMap::TextureCubeMap(
@@ -513,30 +682,15 @@ Shader::Shader(
 	const char *vsSource,
 	const char *psSource,
 	const RasterizerDesc &rasterizerState,
-	const DepthStencilDesc &depthStencilState)
+	const DepthStencilDesc &depthStencilState,
+	const BlendDesc &blendState)
 {
 	cache_id = shader_cache_index++;
 	ds_state = depthStencilState;
 	rs_state = rasterizerState;
+	om_state = blendState;
 	// preprocess source
 	program = glslCreateProgram(vsSource, psSource);
-}
-
-//=============================================================================
-//=============================================================================
-// Renderer::createEffectParameter
-//=============================================================================
-//=============================================================================
-Parameter::Ptr Shader::createParameter(
-	const char *name
-	)
-{
-	auto ptr = std::make_unique<Parameter>();
-	ptr->shader = this;
-	ptr->location = gl::GetUniformBlockIndex(program, name);
-	ptr->binding = ptr->location;
-	gl::UniformBlockBinding(program, ptr->location, ptr->location);
-	return std::move(ptr);
 }
 
 //=============================================================================
@@ -544,27 +698,6 @@ Parameter::Ptr Shader::createParameter(
 // Renderer::createEffectTextureParameter
 //=============================================================================
 //=============================================================================
-TextureParameter::Ptr Shader::createTextureParameter(
-	const char *name
-	)
-{
-	auto ptr = std::make_unique<TextureParameter>();
-	ptr->shader = this;
-	ptr->location = gl::GetUniformLocation(program, name);
-	return std::move(ptr);
-}
-
-TextureParameter::Ptr Shader::createTextureParameter(
-	int texunit
-	)
-{
-	auto ptr = std::make_unique<TextureParameter>();
-	ptr->shader = this;
-	ptr->location = -1;
-	ptr->texunit = texunit;
-	return std::move(ptr);
-}
-
 ConstantBuffer::ConstantBuffer(
 	int size_,
 	const void *initialData)
@@ -592,27 +725,6 @@ ParameterBlock::ParameterBlock(Shader &shader_) : shader(&shader_)
 // Renderer::setConstantBuffer
 //=============================================================================
 //=============================================================================
-void ParameterBlock::setConstantBuffer(
-	const Parameter &param,
-	const ConstantBuffer &constantBuffer
-	)
-{
-	//assert(param.size == constantBuffer.size);
-	ubo[param.binding] = constantBuffer.ubo;
-	ubo_offsets[param.binding] = 0;
-	ubo_sizes[param.binding] = constantBuffer.size;
-}
-
-void ParameterBlock::setTextureParameter(
-	const TextureParameter &param,
-	const Texture2D *texture,
-	const SamplerDesc &samplerDesc
-	)
-{
-	textures[param.texunit] = texture->id;
-	samplers[param.texunit] = Renderer::getInstance().getSampler(samplerDesc);
-}
-
 void ParameterBlock::setConstantBuffer(
 	int binding,
 	const ConstantBuffer &constantBuffer
@@ -695,6 +807,7 @@ void Renderer::clearDepth(
 	float z
 	)
 {
+	gl::DepthMask(gl::TRUE_);
 	gl::ClearDepth(z);
 	gl::Clear(gl::DEPTH_BUFFER_BIT);
 }
@@ -705,7 +818,7 @@ void Renderer::clearDepth(
 //=============================================================================
 //=============================================================================
 void Renderer::setViewports(
-	std::array_ref<Viewport2> viewports
+	util::array_ref<Viewport2> viewports
 	)
 {
 	float vp[4] = {
@@ -737,7 +850,7 @@ void Renderer::setViewports(
 //=============================================================================
 //=============================================================================
 void Renderer::setRenderTargets(
-	std::array_ref<const RenderTarget*> colorTargets,
+	util::array_ref<const RenderTarget*> colorTargets,
 	const RenderTarget *depthStencilTarget
 	)
 {
@@ -807,7 +920,7 @@ void Renderer::setRenderTargets(
 //=============================================================================
 void RenderQueue::draw(
 	const Mesh &mesh,
-	const Submesh &submesh,
+	int submesh_index,
 	const Shader &shader,
 	const ParameterBlock &parameterBlock,
 	uint64_t sortHint
@@ -816,9 +929,10 @@ void RenderQueue::draw(
 	RenderItem item;
 	item.shader = &shader;
 	item.mesh = &mesh;
-	item.submesh = submesh;
+	item.submesh_index = submesh_index;
 	item.param_block = &parameterBlock;
 	item.sort_key = sortHint;
+	assert(item.submesh_index < mesh.submeshes.size());
 	items.push_back(item);
 }
 
@@ -853,21 +967,37 @@ void Renderer::drawItem(const RenderItem &item)
 		gl::CullFace(cullModeToGLenum(item.shader->rs_state.cullMode));
 	}
 	gl::PolygonMode(gl::FRONT_AND_BACK, fillModeToGLenum(item.shader->rs_state.fillMode));
-	if (item.shader->ds_state.depthTestEnable)
-		gl::Enable(gl::DEPTH_TEST);
+	gl::Enable(gl::DEPTH_TEST);
+	if (!item.shader->ds_state.depthTestEnable)
+		gl::DepthFunc(gl::ALWAYS);
 	else
-		gl::Disable(gl::DEPTH_TEST);
+		gl::DepthFunc(gl::LEQUAL);
 	if (item.shader->ds_state.depthWriteEnable)
-		gl::DepthMask(true);
+		gl::DepthMask(gl::TRUE_);
 	else
-		gl::DepthMask(false);
+		gl::DepthMask(gl::FALSE_);
 
-	const auto &sm = item.submesh;
+	// OM / blend state
+	// XXX this ain't cheap
+	// TODO blend state per color buffer
+	gl::Enable(gl::BLEND);
+	gl::BlendEquationSeparatei(
+		0,
+		blendOpToGL(item.shader->om_state.rgbOp),
+		blendOpToGL(item.shader->om_state.alphaOp));
+	gl::BlendFuncSeparatei(
+		0,
+		blendFactorToGL(item.shader->om_state.rgbSrcFactor),
+		blendFactorToGL(item.shader->om_state.rgbDestFactor),
+		blendFactorToGL(item.shader->om_state.alphaSrcFactor),
+		blendFactorToGL(item.shader->om_state.alphaDestFactor));
+
+	const auto &sm = item.mesh->submeshes[item.submesh_index];
 
 	if (item.mesh->ibsize != 0) {
 		gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, item.mesh->ib);
 		gl::DrawElementsBaseVertex(
-			item.mesh->mode, 
+			primitiveTypeToGLenum(sm.primitiveType), 
 			sm.numIndices,
 			gl::UNSIGNED_SHORT, 
 			reinterpret_cast<void*>(sm.startIndex),
@@ -876,12 +1006,13 @@ void Renderer::drawItem(const RenderItem &item)
 	}
 	else {
 		gl::DrawArrays(
-			item.mesh->mode,
+			primitiveTypeToGLenum(sm.primitiveType),
 			sm.startVertex,
 			sm.numVertices
 			);
 	}
 }
+
 
 //=============================================================================
 //=============================================================================

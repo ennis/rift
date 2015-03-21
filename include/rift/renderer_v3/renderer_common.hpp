@@ -114,24 +114,28 @@ enum class PolygonFillMode : int
 
 struct RasterizerDesc
 {
-    CullMode cullMode;
-    PolygonFillMode fillMode;
-	bool depthClipEnable;
+	RasterizerDesc() = default;
+
+    CullMode cullMode = CullMode::None;
+    PolygonFillMode fillMode = PolygonFillMode::Fill;
+	bool depthClipEnable = true;
 };
 
 struct DepthStencilDesc
 {
+	DepthStencilDesc() = default;
 	bool depthTestEnable = true;
 	bool depthWriteEnable = true;
 };
 
 struct SamplerDesc
 {
-    TextureAddressMode addrU;
-    TextureAddressMode addrV;
-    TextureAddressMode addrW;
-    TextureFilter minFilter;
-    TextureFilter magFilter;
+	SamplerDesc() = default;
+    TextureAddressMode addrU = TextureAddressMode::Clamp;
+	TextureAddressMode addrV = TextureAddressMode::Clamp;
+	TextureAddressMode addrW = TextureAddressMode::Clamp;
+    TextureFilter minFilter = TextureFilter::Linear;
+	TextureFilter magFilter = TextureFilter::Linear;
 };
 
 struct Viewport2
@@ -171,7 +175,44 @@ enum class BufferUsage
 	ConstantBuffer
 };
 
+enum class BlendOp : int
+{
+	Add,
+	Subtract,
+	ReverseSubtract,
+	Min, 
+	Max,
+	Max_
+};
+
+enum class BlendFactor : int
+{
+	Zero,
+	One,
+	SrcRgb,
+	InvSrcRgb,
+	DestRgb,
+	InvDestRgb,
+	SrcAlpha,
+	InvSrcAlpha,
+	DestAlpha,
+	InvDestAlpha,
+	Max
+};
+
+struct BlendDesc
+{
+	BlendDesc() = default;
+	BlendOp rgbOp = BlendOp::Add;
+	BlendFactor rgbSrcFactor = BlendFactor::SrcAlpha;
+	BlendFactor rgbDestFactor = BlendFactor::InvSrcAlpha;
+	BlendOp alphaOp = BlendOp::Add;
+	BlendFactor alphaSrcFactor = BlendFactor::SrcAlpha;
+	BlendFactor alphaDestFactor = BlendFactor::InvSrcAlpha;
+};
+
 struct Submesh {
+	PrimitiveType primitiveType;
 	// Index du premier vertex 
 	unsigned int startVertex;
 	// Index du premier index (dans la table des indices)

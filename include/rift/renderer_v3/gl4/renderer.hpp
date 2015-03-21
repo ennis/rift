@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <serialization.hpp>
 #include <unique_resource.hpp>
+#include <small_vector.hpp>
 
 namespace std {
 	template <> struct hash<SamplerDesc>
@@ -29,9 +30,9 @@ namespace std {
 namespace gl4
 {
 	// constexpr
-	const int kMaxUniformBufferBindings = 16;
-	const int kMaxVertexBufferBindings = 16;
-	const int kMaxTextureUnits = 16;  
+	constexpr auto kMaxUniformBufferBindings = 16u;
+	constexpr auto kMaxVertexBufferBindings = 16u;
+	constexpr auto kMaxTextureUnits = 16u;
 
 	class Texture2D;
 	class TextureCubeMap;
@@ -42,11 +43,67 @@ namespace gl4
 	class ParameterBlock;
 	class ConstantBuffer;
 	class Renderer;
+	class InputLayout;
 
 	// WORKAROUND for vs2013
 	// VS2013 does not support implicit generation of move constructors and move assignment operators
 	// so the unique_resource pattern and the 'rule of zero' (http://flamingdangerzone.com/cxx11/2012/08/15/rule-of-zero.html)
 	// is effectively useless
+
+
+	class InputLayout
+	{
+	public:
+		using Ptr = std::unique_ptr<InputLayout>;
+
+		InputLayout(util::array_ref<Attribute> attribs);
+
+		static Ptr create(util::array_ref<Attribute> attribs)
+		{
+			return std::make_unique<InputLayout>(attribs);
+		}
+
+	// protected:
+		GLuint vao;
+		int stride;
+	};
+
+	class Buffer
+	{
+	public:
+		using Ptr = std::unique_ptr < Buffer > ;
+
+		Buffer() = default;
+		Buffer(
+			int size,
+			ResourceUsage resourceUsage,
+			BufferUsage usage,
+			void *initialData
+			);
+
+		~Buffer()
+		{
+			gl::DeleteBuffers(1, &id);
+		}
+
+		void update(
+			int offset,
+			int size,
+			const void *data);
+
+		static Ptr create(
+			int size,
+			ResourceUsage resourceUsage,
+			BufferUsage usage,
+			void *initialData
+			);
+
+	//protected:
+		int size;
+		GLbitfield flags;
+		GLenum target;
+		GLuint id;
+	};
 
 	class Texture2D
 	{
@@ -211,12 +268,13 @@ namespace gl4
 
 		using Ptr = std::unique_ptr < Mesh > ;
 
-		Mesh(PrimitiveType primitiveType,
-			std::array_ref<Attribute> layout,
+		Mesh(util::array_ref<Attribute> layout,
 			int numVertices,
 			const void *vertexData,
 			int numIndices,
-			const void *indexData);
+			const void *indexData,
+			util::array_ref<Submesh> submeshes,
+			ResourceUsage usage);
 
 		// VS2013
 		/*Mesh(Mesh &&rhs) :
@@ -257,21 +315,28 @@ namespace gl4
 			gl::DeleteBuffers(1, &ib);
 		}
 
+		void setSubmesh(int index, const Submesh &submesh);
+
+		void updateVertices(int offset, int size, const void *data);
+		void updateIndices(int offset, int size, const uint16_t *data);
+
 		static Ptr create(
-			PrimitiveType primitiveType,
-			std::array_ref<Attribute> layout,
+			util::array_ref<Attribute> layout,
 			int numVertices,
 			const void *vertexData,
 			int numIndices,
-			const void *indexData)
+			const void *indexData,
+			util::array_ref<Submesh> submeshes,
+			ResourceUsage usage)
 		{
 			return std::make_unique<Mesh>(
-				primitiveType, 
 				layout, 
 				numVertices, 
 				vertexData, 
 				numIndices, 
-				indexData);
+				indexData, 
+				submeshes,
+				usage);
 		}
 
 		static Ptr loadFromArchive(serialization::IArchive &ar);
@@ -279,7 +344,8 @@ namespace gl4
 		static const auto kMaxVertexBuffers = 16u;
 
 		// TODO multiple buffers?
-		GLenum mode;
+		GLbitfield vb_flags;
+		GLbitfield ib_flags;
 		GLuint vb;
 		GLuint ib;
 		GLuint vao;
@@ -290,6 +356,7 @@ namespace gl4
 		int nbindex;
 		int stride;
 		GLenum index_format;
+		std::vector<Submesh> submeshes;
 	};
 
 	class Parameter
@@ -395,7 +462,8 @@ namespace gl4
 			const char *vsSource,
 			const char *psSource,
 			const RasterizerDesc &rasterizerState,
-			const DepthStencilDesc &depthStencilState);
+			const DepthStencilDesc &depthStencilState,
+			const BlendDesc &blendState);
 
 		// VS2013
 		/*Effect(Effect &&rhs) :
@@ -415,28 +483,19 @@ namespace gl4
 		}*/
 		// -VS2013
 
-		Parameter::Ptr createParameter(
-			const char *name
-			);
-
-		// TODO named texture parameters
-		TextureParameter::Ptr createTextureParameter(
-			const char *name
-			);
-
-		TextureParameter::Ptr createTextureParameter(
-			int texunit
-			);
-
-		ParameterBlock::Ptr createParameterBlock();
-
 		static Ptr create(
 			const char *vsSource,
 			const char *psSource,
 			const RasterizerDesc &rasterizerState,
-			const DepthStencilDesc &depthStencilState)
+			const DepthStencilDesc &depthStencilState,
+			const BlendDesc &blendState)
 		{
-			return std::make_unique<Shader>(vsSource, psSource, rasterizerState, depthStencilState);
+			return std::make_unique<Shader>(
+				vsSource,
+				psSource, 
+				rasterizerState, 
+				depthStencilState, 
+				blendState);
 		}
 
 	//private:
@@ -452,7 +511,8 @@ namespace gl4
 		GLuint program = 0;
 		// XXX in source code?
 		RasterizerDesc rs_state;
-		DepthStencilDesc ds_state;
+		DepthStencilDesc ds_state; 
+		BlendDesc om_state;
 		// TODO list of passes
 		// TODO list of parameters / uniforms?
 	};
@@ -497,7 +557,7 @@ namespace gl4
 		{
 			return std::make_unique<ConstantBuffer>(size, initialData);
 		}
-		
+
 	// protected:
 
 		GLuint ubo;
@@ -508,7 +568,7 @@ namespace gl4
 	{
 		uint64_t sort_key;
 		const Mesh *mesh;
-		Submesh submesh;
+		int submesh_index;
 		const ParameterBlock *param_block;
 		const Shader *shader;
 	};
@@ -521,11 +581,12 @@ namespace gl4
 
 		void draw(
 			const Mesh &mesh,
-			const Submesh &submesh,
+			int submesh_index,
 			const Shader &shader,
 			const ParameterBlock &parameterBlock,
 			uint64_t sortHint
 			);
+
 
 		void clear();
 
@@ -560,12 +621,12 @@ namespace gl4
 
 		// set the color & depth render targets
 		void setRenderTargets(
-			std::array_ref<const RenderTarget*> colorTargets,
+			util::array_ref<const RenderTarget*> colorTargets,
 			const RenderTarget *depthStencilTarget
 			);
 
 		void setViewports(
-			std::array_ref<Viewport2> viewports
+			util::array_ref<Viewport2> viewports
 			);
 
 		void submitRenderQueue(
@@ -585,8 +646,6 @@ namespace gl4
 		GLuint getSampler(SamplerDesc desc);
 
 	private:
-		
-
 		void drawItem(const RenderItem &item);
 
 		GLuint fbo = 0;
@@ -609,7 +668,9 @@ namespace gl4
 // TODO move this somewhere else (utils?)
 std::string loadEffectSource(const char *fileName);
 
+using InputLayout = gl4::InputLayout;
 using Renderer = gl4::Renderer;
+using Buffer = gl4::Buffer;
 using Shader = gl4::Shader;
 using Texture2D = gl4::Texture2D; 
 using TextureCubeMap = gl4::TextureCubeMap;

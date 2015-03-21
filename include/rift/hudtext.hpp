@@ -1,34 +1,41 @@
 #ifndef HUDTEXT_HPP
 #define HUDTEXT_HPP
 
-#include <renderer2.hpp>
+#include <gl4/renderer.hpp>
 #include <font.hpp>
-#include <renderable.hpp>
-#include <mesh.hpp>
+#include <scene.hpp>
+#include <string_ref.hpp>
 
 class HUDTextRenderer
 {
 public:
-	HUDTextRenderer() = default;
-	HUDTextRenderer(Renderer &renderer);
-	HUDTextRenderer(const HUDTextRenderer &rhs) = delete;
-	
-	~HUDTextRenderer();
+	HUDTextRenderer();
 	
 	void renderString(
-		RenderContext &renderContext,
-		const char *str,
-		Font *font,
+		util::string_ref str,
+		const Font &font,
 		glm::vec2 viewPos,
-		glm::vec4 const &color = glm::vec4(1.0f),
-		glm::vec4 const &outlineColor = glm::vec4(0.0f));
+		const glm::vec4 &color,
+		const glm::vec4 &outlineColor,
+		RenderQueue &renderQueue,
+		const SceneData &sceneData,
+		const ConstantBuffer &sceneDataCB);
 
 private:
-	static const unsigned int kMaxNumGlyphs = 128;
-	void init();
-	Renderer *mRenderer = nullptr;	// borrowed ref
-	Shader *mShader = nullptr;
-	Mesh mMesh;
+	static constexpr auto kMaxNumGlyphs = 128u;
+
+	// TODO auto-generation of parameter struct
+	struct Params
+	{
+		glm::mat4 transform;
+		glm::vec4 fillColor;
+		glm::vec4 outlineColor;
+	};
+
+	Mesh::Ptr mesh;
+	Shader::Ptr shader;
+	ParameterBlock::Ptr pb;
+	ConstantBuffer::Ptr cbParams;
 };
 
 #endif

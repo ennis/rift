@@ -14,6 +14,9 @@
 #include <sky.hpp>
 #include <gl4/renderer.hpp>
 #include <gl4/effect.hpp>	// Effect
+#include <font.hpp>
+#include <hudtext.hpp>
+#include <colors.hpp>
 
 //============================================================================
 // Classe de base du jeu
@@ -87,6 +90,9 @@ private:
 	
 	Texture2D::Ptr shadowMap;
 	RenderTarget::Ptr shadowRT;
+
+	Font::Ptr font;
+	std::unique_ptr<HUDTextRenderer> hud;
 
 	Sky sky;
 };
@@ -201,17 +207,16 @@ void RiftGame::init()
 		{ ElementFormat::Float2, ResourceUsage::Static },
 	};
 
-	Submesh sm[] = {
-		{ 0, 0, 8, 36 }
-	};
+	Submesh sm { PrimitiveType::Triangle, 0, 0, 8, 36 };
 
 	mesh = Mesh::create(
-		PrimitiveType::Triangle,
 		attribs,
 		8,
 		cubeMeshData,
 		36,
-		cubeIndices);
+		cubeIndices,
+		{ sm },
+		ResourceUsage::Static);
 
 	std::ifstream mokou_file("resources/models/mokou/mokou.mesh", std::ios::binary);
 	serialization::IArchive arc(mokou_file);
@@ -237,6 +242,9 @@ void RiftGame::init()
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	shadowMap = Texture2D::create(win_size, 1, ElementFormat::Depth16, nullptr);
 	shadowRT = RenderTarget::createRenderTarget2D(*shadowMap, 0);
+
+	font = Font::loadFromFile("resources/img/fonts/special_elite.fnt");
+	hud = std::make_unique<HUDTextRenderer>();
 }
 
 
@@ -248,7 +256,7 @@ void RiftGame::render(float dt)
 
 	R.setRenderTargets({}, nullptr);
 	R.clearColor(0.25f, 0.25f, 0.2f, 0.0f);
-	R.clearDepth(1000.f);
+	R.clearDepth(1.0f);
 	R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
 
 	// update scene data buffer
@@ -302,13 +310,15 @@ void RiftGame::render(float dt)
 		//renderQueue->draw(*mesh, 0, *shader, *paramBlock, 0);
 	}
 
-	renderQueue->draw(*mokou, Submesh{ 0, 0, 100, 100 }, *shaderPBR, *paramBlockPBR, 0);
+	hud->renderString("Hello world!", *font, { 100.0, 100.0 }, Color::White, Color::Black, *renderQueue, sceneData, *cbSceneData);
+	renderQueue->draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
+	renderQueue->draw(*mokou, 2, *shaderPBR, *paramBlockPBR, 0);
 
 	//sky.render(*renderQueue, sceneData, *cbSceneData);
 	R.submitRenderQueue(*renderQueue);
 
 	R.setRenderTargets({}, shadowRT.get());
-	R.clearDepth(1000.f);
+	R.clearDepth(1.0f);
 	R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
 	// resubmit
 	R.submitRenderQueue(*renderQueue);

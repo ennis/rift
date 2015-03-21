@@ -10,7 +10,6 @@
 namespace gl4
 {
 	namespace {
-		
 
 		//=========================================================================
 		//=========================================================================
@@ -159,7 +158,7 @@ namespace gl4
 		std::string glslPreprocess(
 			const boost::filesystem::path &sourcePath,
 			std::istream &sourceIn,
-			std::array_ref<Effect::Keyword> keywords,
+			util::array_ref<Effect::Keyword> keywords,
 			GLShaderStage stage)
 		{
 			int glslVersion = 110;
@@ -184,7 +183,7 @@ namespace gl4
 		}
 
 		std::size_t hashKeywords(
-			std::array_ref<Effect::Keyword> keywords)
+			util::array_ref<Effect::Keyword> keywords)
 		{
 			std::size_t a = 0;
 			std::hash<std::string> hashfn;
@@ -202,7 +201,7 @@ namespace gl4
 			const char *vs_source,
 			const char *ps_source,
 			const char *include_path,
-			std::array_ref<Effect::Keyword> keywords
+			util::array_ref<Effect::Keyword> keywords
 			)
 		{
 			auto hash = hashKeywords(keywords);
@@ -261,16 +260,10 @@ namespace gl4
 	
 	
 	Shader::Ptr Effect::compileShader(
-		std::array_ref<Effect::Keyword> additionalKeywords
-		)
-	{
-		return compileShader(additionalKeywords, RasterizerDesc{}, DepthStencilDesc{});
-	}
-	
-	Shader::Ptr Effect::compileShader(
-		std::array_ref<Effect::Keyword> additionalKeywords,
+		util::array_ref<Effect::Keyword> additionalKeywords,
 		const RasterizerDesc &rasterizerState,
-		const DepthStencilDesc &depthStencilState
+		const DepthStencilDesc &depthStencilState,
+		const BlendDesc &blendState
 		)
 	{
 		std::vector<Effect::Keyword> kw = keywords;
@@ -280,15 +273,20 @@ namespace gl4
 				vs_source.c_str(),
 				vs_source.c_str(),
 				"resources/shaders",
-				std::make_array_ref(kw));
-		return Shader::create(sources.first.c_str(), sources.second.c_str(), rasterizerState, depthStencilState);
+				util::make_array_ref(kw));
+		return Shader::create(
+			sources.first.c_str(), 
+			sources.second.c_str(),
+			rasterizerState, 
+			depthStencilState, 
+			blendState);
 	}
 	
 	Effect::Ptr Effect::loadFromFile(
 		const char *combinedSourcePath,
-		std::array_ref<Effect::Keyword> keywords_)
+		util::array_ref<Effect::Keyword> keywords_)
 	{
-		Effect::Ptr eff = std::make_unique<Effect>();;
+		Effect::Ptr eff = std::make_unique<Effect>();
 		eff->keywords = keywords_.vec();
 		eff->vs_source = loadEffectSource(combinedSourcePath);
 		eff->combined_source = true;
