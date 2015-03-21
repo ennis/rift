@@ -91,6 +91,23 @@ private:
 	Texture2D::Ptr shadowMap;
 	RenderTarget::Ptr shadowRT;
 
+	Texture2D::Ptr screenColorTexture;
+	Texture2D::Ptr screenDepthTexture;
+	RenderTarget::Ptr colorRT;
+	RenderTarget::Ptr depthRT;
+	Shader::Ptr passthrough;
+
+	struct FXParams
+	{
+		float thing;
+		float vx_offset;
+		float rt_w;
+		float rt_h;
+	};
+
+	ConstantBuffer::Ptr fxCB;
+	ParameterBlock::Ptr fxPB;
+
 	Font::Ptr font;
 	std::unique_ptr<HUDTextRenderer> hud;
 
@@ -189,6 +206,20 @@ void RiftGame::init()
 
 	font = Font::loadFromFile("resources/img/fonts/special_elite.fnt");
 	hud = std::make_unique<HUDTextRenderer>();
+
+	DepthStencilDesc ds_fx;
+	ds_fx.depthTestEnable = false;
+	ds_fx.depthWriteEnable = false;
+	passthrough = gl4::Effect::loadFromFile("resources/shaders/fxaa.glsl")->compileShader({}, RasterizerDesc{}, ds_fx, BlendDesc{});
+	screenColorTexture = Texture2D::create({ 1280, 720 }, 1, ElementFormat::Unorm8x4, nullptr);
+	screenDepthTexture = Texture2D::create({ 1280, 720 }, 1, ElementFormat::Depth16, nullptr);
+	colorRT = RenderTarget::createRenderTarget2D(*screenColorTexture, 0);
+	depthRT = RenderTarget::createRenderTarget2D(*screenDepthTexture, 0);
+	fxCB = ConstantBuffer::create(sizeof(FXParams), nullptr);
+	fxPB = ParameterBlock::create(*passthrough);
+	fxPB->setConstantBuffer(0, *fxCB);
+	fxPB->setTextureParameter(0, screenColorTexture.get(), SamplerDesc{});
+	fxPB->setTextureParameter(1, screenDepthTexture.get(), SamplerDesc{});
 }
 
 
@@ -198,7 +229,8 @@ void RiftGame::render(float dt)
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	auto &R = Renderer::getInstance();
 
-	R.setRenderTargets({}, nullptr);
+	//R.setRenderTargets({}, nullptr);
+	R.setRenderTargets({colorRT.get()}, depthRT.get());
 	R.clearColor(0.25f, 0.25f, 0.2f, 0.0f);
 	R.clearDepth(1.0f);
 	R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
@@ -268,6 +300,18 @@ void RiftGame::render(float dt)
 	// resubmit
 	R.submitRenderQueue(*renderQueue);
 
+	renderQueue->clear();
+
+	// PostFX pass
+	R.setRenderTargets({}, nullptr);
+	FXParams fxp;
+	fxp.thing = 2.0;
+	fxp.vx_offset = 1.0;
+	fxp.rt_w = 1280;
+	fxp.rt_h = 720;
+	fxCB->update(0, sizeof(FXParams), &fxp);
+	renderQueue->drawProcedural(PrimitiveType::Triangle, 3, *passthrough, *fxPB, 0);
+	R.submitRenderQueue(*renderQueue);
 	renderQueue->clear();
 
 	// render tweak bar

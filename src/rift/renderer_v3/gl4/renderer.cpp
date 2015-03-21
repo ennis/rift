@@ -932,17 +932,44 @@ void RenderQueue::draw(
 	item.submesh_index = submesh_index;
 	item.param_block = &parameterBlock;
 	item.sort_key = sortHint;
+	item.procedural_count = 0;
 	assert(item.submesh_index < mesh.submeshes.size());
 	items.push_back(item);
 }
 
+void RenderQueue::drawProcedural(
+	PrimitiveType primitiveType,
+	int count,
+	const Shader &shader,
+	const ParameterBlock &parameterBlock,
+	uint64_t sortHint)
+{
+	RenderItem item;
+	item.shader = &shader;
+	item.mesh = nullptr;
+	item.submesh_index = 0;
+	item.param_block = &parameterBlock;
+	item.sort_key = sortHint;
+	item.procedural_count = count;
+	item.procedural_mode = primitiveTypeToGLenum(primitiveType);
+	items.push_back(item);
+}
 
 void Renderer::drawItem(const RenderItem &item)
 {
 	// TODO multi-bind
 	// bind vertex buffers
-	gl::BindVertexArray(item.mesh->vao);
-	gl::BindVertexBuffer(0, item.mesh->vb, 0, item.mesh->stride);
+	// mesh input
+	if (item.mesh)
+	{
+		gl::BindVertexArray(item.mesh->vao);
+		gl::BindVertexBuffer(0, item.mesh->vb, 0, item.mesh->stride);
+	}
+	else
+	{
+		// fully procedural (no VBO)
+		gl::BindVertexArray(dummy_vao);
+	}
 
 	gl::BindBuffersRange(
 		gl::UNIFORM_BUFFER,
@@ -952,7 +979,6 @@ void Renderer::drawItem(const RenderItem &item)
 		&item.param_block->ubo_offsets[0],
 		&item.param_block->ubo_sizes[0]
 		);
-
 	gl::BindTextures(0, kMaxTextureUnits, &item.param_block->textures[0]);
 	gl::BindSamplers(0, kMaxTextureUnits, &item.param_block->samplers[0]);
 
@@ -992,24 +1018,31 @@ void Renderer::drawItem(const RenderItem &item)
 		blendFactorToGL(item.shader->om_state.alphaSrcFactor),
 		blendFactorToGL(item.shader->om_state.alphaDestFactor));
 
-	const auto &sm = item.mesh->submeshes[item.submesh_index];
+	if (item.mesh)
+	{
+		const auto &sm = item.mesh->submeshes[item.submesh_index];
 
-	if (item.mesh->ibsize != 0) {
-		gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, item.mesh->ib);
-		gl::DrawElementsBaseVertex(
-			primitiveTypeToGLenum(sm.primitiveType), 
-			sm.numIndices,
-			gl::UNSIGNED_SHORT, 
-			reinterpret_cast<void*>(sm.startIndex),
-			sm.startVertex
-			);
+		if (item.mesh->ibsize != 0) {
+			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, item.mesh->ib);
+			gl::DrawElementsBaseVertex(
+				primitiveTypeToGLenum(sm.primitiveType),
+				sm.numIndices,
+				gl::UNSIGNED_SHORT,
+				reinterpret_cast<void*>(sm.startIndex),
+				sm.startVertex
+				);
+		}
+		else {
+			gl::DrawArrays(
+				primitiveTypeToGLenum(sm.primitiveType),
+				sm.startVertex,
+				sm.numVertices
+				);
+		}
 	}
-	else {
-		gl::DrawArrays(
-			primitiveTypeToGLenum(sm.primitiveType),
-			sm.startVertex,
-			sm.numVertices
-			);
+	else
+	{
+		gl::DrawArrays(item.procedural_mode, 0, item.procedural_count);
 	}
 }
 
@@ -1066,6 +1099,7 @@ GLuint Renderer::getSampler(SamplerDesc desc)
 Renderer::Renderer()
 {
 	gl::GenFramebuffers(1, &fbo);
+	gl::GenVertexArrays(1, &dummy_vao);
 }
 
 Renderer::~Renderer()

@@ -571,6 +571,8 @@ namespace gl4
 		int submesh_index;
 		const ParameterBlock *param_block;
 		const Shader *shader;
+		int procedural_count;	// == 0 if mesh == nullptr
+		GLenum procedural_mode;
 	};
 
 	class RenderQueue
@@ -586,6 +588,13 @@ namespace gl4
 			const ParameterBlock &parameterBlock,
 			uint64_t sortHint
 			);
+
+		void drawProcedural(
+			PrimitiveType primitiveType,
+			int count,
+			const Shader &shader,
+			const ParameterBlock &parameterBlock,
+			uint64_t sortHint);
 
 
 		void clear();
@@ -648,6 +657,7 @@ namespace gl4
 	private:
 		void drawItem(const RenderItem &item);
 
+		GLuint dummy_vao;
 		GLuint fbo = 0;
 		RenderTarget screen_rt;
 		RenderTarget screen_depth_rt;
