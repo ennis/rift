@@ -172,6 +172,7 @@ enum class BufferUsage
 };
 
 struct Submesh {
+	PrimitiveType primitiveType;
 	// Index du premier vertex 
 	unsigned int startVertex;
 	// Index du premier index (dans la table des indices)

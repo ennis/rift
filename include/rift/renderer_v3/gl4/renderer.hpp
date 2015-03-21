@@ -42,11 +42,30 @@ namespace gl4
 	class ParameterBlock;
 	class ConstantBuffer;
 	class Renderer;
+	class InputLayout;
 
 	// WORKAROUND for vs2013
 	// VS2013 does not support implicit generation of move constructors and move assignment operators
 	// so the unique_resource pattern and the 'rule of zero' (http://flamingdangerzone.com/cxx11/2012/08/15/rule-of-zero.html)
 	// is effectively useless
+
+
+	class InputLayout
+	{
+	public:
+		using Ptr = std::unique_ptr<InputLayout>;
+
+		InputLayout(util::array_ref<Attribute> attribs);
+
+		static Ptr create(util::array_ref<Attribute> attribs)
+		{
+			return std::make_unique<InputLayout>(attribs);
+		}
+
+	// protected:
+		GLuint vao;
+		int stride;
+	};
 
 	class Buffer
 	{
@@ -57,7 +76,8 @@ namespace gl4
 		Buffer(
 			int size,
 			ResourceUsage resourceUsage,
-			BufferUsage usage
+			BufferUsage usage,
+			void *initialData
 			);
 
 		~Buffer()
@@ -73,10 +93,12 @@ namespace gl4
 		static Ptr create(
 			int size,
 			ResourceUsage resourceUsage,
-			BufferUsage usage
+			BufferUsage usage,
+			void *initialData
 			);
 
 	//protected:
+		int size;
 		GLbitfield flags;
 		GLenum target;
 		GLuint id;
@@ -547,6 +569,17 @@ namespace gl4
 		const Shader *shader;
 	};
 
+	struct RenderItem2
+	{
+		uint64_t sort_key;
+		const Buffer *vbuf;
+		const Buffer *ibuf;
+		const InputLayout *layout;
+		Submesh submesh;
+		const ParameterBlock *param_block;
+		const Shader *shader;
+	};
+
 	class RenderQueue
 	{
 		friend class Renderer;
@@ -561,6 +594,16 @@ namespace gl4
 			uint64_t sortHint
 			);
 
+		void draw2(
+			const Buffer &vertexBuffer,
+			const Buffer &indexBuffer,
+			const InputLayout &inputLayout,
+			const Submesh &submesh,
+			const Shader &shader,
+			const ParameterBlock &parameterBlock,
+			uint64_t sortHint
+			);
+
 		void clear();
 
 	//protected:
@@ -568,6 +611,7 @@ namespace gl4
 
 		std::vector<int> sort_list;
 		std::vector<RenderItem> items;
+		std::vector<RenderItem2> dyn_items;
 
 		static Ptr create() { return std::make_unique<RenderQueue>(); }
 	};
@@ -622,6 +666,7 @@ namespace gl4
 		
 
 		void drawItem(const RenderItem &item);
+		void drawItem2(const RenderItem2 &item);
 
 		GLuint fbo = 0;
 		RenderTarget screen_rt;
@@ -643,6 +688,7 @@ namespace gl4
 // TODO move this somewhere else (utils?)
 std::string loadEffectSource(const char *fileName);
 
+using InputLayout = gl4::InputLayout;
 using Renderer = gl4::Renderer;
 using Buffer = gl4::Buffer;
 using Shader = gl4::Shader;

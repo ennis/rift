@@ -1,7 +1,7 @@
 #include <font.hpp>
 #include <cstring>	// 
 #include <string>	// string
-#include <serialization.hpp>	// Unpacker
+#include <serialization.hpp>
 
 //=============================================================================
 Font::~Font()

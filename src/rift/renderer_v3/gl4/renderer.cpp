@@ -248,6 +248,101 @@ namespace
 	int shader_cache_index = 0;
 }
 
+
+InputLayout::InputLayout(util::array_ref<Attribute> attribs)
+{
+	// create VAO
+	gl::GenVertexArrays(1, &vao);
+	if (!gl::exts::var_EXT_direct_state_access) {
+		gl::BindVertexArray(vao);
+	}
+	int offset = 0;
+	for (int attribindex = 0; attribindex < attribs.size(); ++attribindex)
+	{
+		const auto& attrib = attribs[attribindex];
+		const auto& fmt = getElementFormatInfoGL(attrib.format);
+		if (gl::exts::var_EXT_direct_state_access) {
+			gl::EnableVertexArrayAttribEXT(
+				vao,
+				attribindex);
+			gl::VertexArrayVertexAttribFormatEXT(
+				vao,
+				attribindex,
+				fmt.size,
+				fmt.type,
+				fmt.normalize,
+				offset);
+			gl::VertexArrayVertexAttribBindingEXT(
+				vao,
+				attribindex,
+				0);
+		}
+		else {
+			gl::EnableVertexAttribArray(
+				attribindex);
+			gl::VertexAttribFormat(
+				attribindex,
+				fmt.size,
+				fmt.type,
+				fmt.normalize,
+				offset);
+			gl::VertexAttribBinding(
+				attribindex,
+				0);
+		}
+		offset += getElementFormatSize(attrib.format);
+	}
+	if (!gl::exts::var_EXT_direct_state_access) {
+		gl::BindVertexArray(0);
+	}
+	stride = offset;
+}
+
+Buffer::Buffer(
+	int size_,
+	ResourceUsage resourceUsage_,
+	BufferUsage usage_,
+	void *initialData_) :
+	target(bufferUsageToBindingPoint(usage_)), size(size_)
+{
+	gl::GenBuffers(1, &id);
+	gl::BindBuffer(target, id);
+	// allocate immutable storage
+	if (resourceUsage_ == ResourceUsage::Dynamic)
+		flags = gl::DYNAMIC_STORAGE_BIT;
+	gl::BufferStorage(target, size, initialData_, flags);
+	/*if (usage_ == ResourceUsage::Dynamic)
+	gl::BufferData(bindingPoint, size, data, gl::STREAM_DRAW);
+	else
+	gl::BufferData(bindingPoint, size, data, gl::STATIC_DRAW);*/
+	gl::BindBuffer(target, 0);
+}
+
+void Buffer::update(
+	int offset,
+	int size,
+	const void *data)
+{
+	if (gl::exts::var_EXT_direct_state_access) {
+		gl::NamedBufferSubDataEXT(id, offset, size, data);
+	}
+	else {
+		gl::BindBuffer(target, id);
+		gl::BufferSubData(target, offset, size, data);
+	}
+}
+
+Buffer::Ptr Buffer::create(
+	int size,
+	ResourceUsage resourceUsage,
+	BufferUsage usage,
+	void *initialData
+	)
+{
+	auto ptr = std::make_unique<Buffer>(size, resourceUsage, usage, initialData);
+	return ptr;
+}
+
 //=============================================================================
 //=============================================================================
 // Renderer::createMesh
@@ -823,6 +918,27 @@ void RenderQueue::draw(
 }
 
 
+void RenderQueue::draw2(
+	const Buffer &vertexBuffer,
+	const Buffer &indexBuffer,
+	const InputLayout &inputLayout,
+	const Submesh &submesh,
+	const Shader &shader,
+	const ParameterBlock &parameterBlock,
+	uint64_t sortHint
+	)
+{
+	RenderItem2 i2;
+	i2.sort_key = sortHint;
+	i2.vbuf = &vertexBuffer;
+	i2.ibuf = &indexBuffer;
+	i2.layout = &inputLayout;
+	i2.submesh = submesh;
+	i2.shader = &shader;
+	i2.param_block = &parameterBlock;
+	dyn_items.push_back(i2);
+}
+
 void Renderer::drawItem(const RenderItem &item)
 {
 	// TODO multi-bind
@@ -883,6 +999,67 @@ void Renderer::drawItem(const RenderItem &item)
 	}
 }
 
+
+void Renderer::drawItem2(const RenderItem2 &item)
+{
+	// TODO multi-bind
+	// bind vertex buffers
+	gl::BindVertexArray(item.layout->vao);
+	gl::BindVertexBuffer(0, item.vbuf->id, 0, item.layout->stride);
+
+	gl::BindBuffersRange(
+		gl::UNIFORM_BUFFER,
+		0,
+		kMaxUniformBufferBindings,
+		&item.param_block->ubo[0],
+		&item.param_block->ubo_offsets[0],
+		&item.param_block->ubo_sizes[0]
+		);
+
+	gl::BindTextures(0, kMaxTextureUnits, &item.param_block->textures[0]);
+	gl::BindSamplers(0, kMaxTextureUnits, &item.param_block->samplers[0]);
+
+	// shaders
+	gl::UseProgram(item.shader->program);
+	// Rasterizer
+	if (item.shader->rs_state.cullMode == CullMode::None) {
+		gl::Disable(gl::CULL_FACE);
+	}
+	else {
+		gl::Enable(gl::CULL_FACE);
+		gl::CullFace(cullModeToGLenum(item.shader->rs_state.cullMode));
+	}
+	gl::PolygonMode(gl::FRONT_AND_BACK, fillModeToGLenum(item.shader->rs_state.fillMode));
+	/*if (item.shader->ds_state.depthTestEnable)
+		gl::Enable(gl::DEPTH_TEST);
+	else
+		gl::Disable(gl::DEPTH_TEST);*/
+	/*if (item.shader->ds_state.depthWriteEnable)
+		gl::DepthMask(true);
+	else
+		gl::DepthMask(false);*/
+
+	const auto &sm = item.submesh;
+
+	if (item.ibuf->size != 0) {
+		gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, item.ibuf->id);
+		gl::DrawElementsBaseVertex(
+			primitiveTypeToGLenum(sm.primitiveType),
+			sm.numIndices,
+			gl::UNSIGNED_SHORT,
+			reinterpret_cast<void*>(sm.startIndex),
+			sm.startVertex
+			);
+	}
+	else {
+		gl::DrawArrays(
+			primitiveTypeToGLenum(sm.primitiveType),
+			sm.startVertex,
+			sm.numVertices
+			);
+	}
+}
+
 //=============================================================================
 //=============================================================================
 // Renderer::clearRenderQueue
@@ -909,6 +1086,16 @@ void Renderer::submitRenderQueue(
 
 	for (const auto &ri : renderQueue.items) {
 		drawItem(ri);
+	}
+	
+
+	// dynamic items
+	std::sort(renderQueue.dyn_items.begin(), renderQueue.dyn_items.end(), [](const RenderItem2 &i1, const RenderItem2 &i2) {
+		return i1.sort_key < i2.sort_key;
+	});
+
+	for (const auto &ri : renderQueue.dyn_items) {
+		drawItem2(ri);
 	}
 }
 
