@@ -62,12 +62,13 @@ Sky::Sky()
 	cbSkyParams = ConstantBuffer::create(sizeof(SkyParams), nullptr);
 
 	skybox = Mesh::create(
-		PrimitiveType::Triangle, 
 		{ Attribute{ ElementFormat::Float3, ResourceUsage::Static } },
 		36, 
 		skycubeVertices, 
 		0, 
-		nullptr
+		nullptr,
+		{ Submesh{PrimitiveType::Triangle, 0, 0, 36, 0} },
+		ResourceUsage::Static
 	); 
 	
 	paramBlock = ParameterBlock::create(*skyShader);
@@ -93,6 +94,6 @@ void Sky::render(
 	params.sunColor = vec3(1.0f, 1.0f, 1.0f);
 	cbSkyParams->update(0, sizeof(SkyParams), &params);
 	paramBlock->setConstantBuffer(0, cbSceneData);
-	rq.draw(*skybox, Submesh{ PrimitiveType::Triangle, 0, 0, 36, 0 }, *skyShader, *paramBlock, 0);
+	rq.draw(*skybox, 0, *skyShader, *paramBlock, 0);
 }
 

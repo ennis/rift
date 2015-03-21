@@ -32,9 +32,7 @@ private:
 		glm::vec4 outlineColor;
 	};
 
-	InputLayout::Ptr layout;
-	Buffer::Ptr vb;
-	Buffer::Ptr ib;
+	Mesh::Ptr mesh;
 	Shader::Ptr shader;
 	ParameterBlock::Ptr pb;
 	ConstantBuffer::Ptr cbParams;

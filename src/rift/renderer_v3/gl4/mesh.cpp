@@ -52,6 +52,7 @@ Mesh::Ptr Mesh::loadFromArchive(serialization::IArchive &ar)
 			>> submeshes[i].startIndex 
 			>> submeshes[i].numVertices 
 			>> read16(submeshes[i].numIndices);
+		submeshes[i].primitiveType = PrimitiveType::Triangle;
 	}
 
 	std::vector<VertexType1> vs(num_vertices);
@@ -70,7 +71,6 @@ Mesh::Ptr Mesh::loadFromArchive(serialization::IArchive &ar)
 
 	// create mesh
 	auto ptr = Mesh::create(
-		PrimitiveType::Triangle,
 		{ 
 			{ElementFormat::Float3, ResourceUsage::Static},
 			{ElementFormat::Float3, ResourceUsage::Static},
@@ -81,6 +81,8 @@ Mesh::Ptr Mesh::loadFromArchive(serialization::IArchive &ar)
 		num_vertices,
 		vs.data(),
 		num_indices,
-		is.data());
+		is.data(),
+		submeshes,
+		ResourceUsage::Static);
 	return ptr;
 }

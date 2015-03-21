@@ -169,6 +169,23 @@ namespace
 		gl::BindBuffer(bindingPoint, 0);
 		return id;
 	}
+	
+	void updateBuffer(
+		GLuint buf,
+		GLenum target,
+		int offset,
+		int size,
+		const void *data
+		)
+	{
+		if (gl::exts::var_EXT_direct_state_access) {
+			gl::NamedBufferSubDataEXT(buf, offset, size, data);
+		}
+		else {
+			gl::BindBuffer(target, buf);
+			gl::BufferSubData(target, offset, size, data);
+		}
+	}
 
 	//=========================================================================
 	//=========================================================================
@@ -343,21 +360,35 @@ Buffer::Ptr Buffer::create(
 	return ptr;
 }
 
+void Mesh::setSubmesh(int index, const Submesh &submesh)
+{
+	submeshes[index] = submesh;
+}
+
+void Mesh::updateVertices(int offset, int size, const void *data)
+{
+	updateBuffer(vb, gl::ARRAY_BUFFER, offset*stride, size*stride, data);
+}
+
+void Mesh::updateIndices(int offset, int size, const uint16_t *data)
+{
+	updateBuffer(ib, gl::ELEMENT_ARRAY_BUFFER, offset*2, size*2, data);
+}
+
 //=============================================================================
 //=============================================================================
 // Renderer::createMesh
 //=============================================================================
 //=============================================================================
 Mesh::Mesh(
-	PrimitiveType primitiveType,
 	util::array_ref<Attribute> layout,
 	int numVertices,
 	const void *vertexData,
 	int numIndices,
-	const void *indexData)
+	const void *indexData,
+	util::array_ref<Submesh> submeshes_,
+	ResourceUsage usage)
 {
-	mode = primitiveTypeToGLenum(primitiveType);
-
 	// create VAO
 	GLuint vao_;
 	gl::GenVertexArrays(1, &vao_);
@@ -409,12 +440,21 @@ Mesh::Mesh(
 	nbvertex = numVertices;
 	vbsize = stride*numVertices;
 
+	vb_flags = 0;
+	ib_flags = 0;
+
+	if (usage == ResourceUsage::Dynamic) 
+	{
+		vb_flags |= gl::DYNAMIC_STORAGE_BIT;
+		ib_flags |= gl::DYNAMIC_STORAGE_BIT;
+	}
+
 	// VBO
 	nbvb = 1;
 	vb = createBuffer(
 				gl::ARRAY_BUFFER, 
 				vbsize,
-				gl::DYNAMIC_STORAGE_BIT,
+				vb_flags,
 				vertexData
 				);
 
@@ -425,10 +465,12 @@ Mesh::Mesh(
 		ib = createBuffer(
 				gl::ELEMENT_ARRAY_BUFFER,
 				ibsize,
-				gl::DYNAMIC_STORAGE_BIT,
+				ib_flags,
 				indexData
 				);
 	}
+
+	submeshes.assign(submeshes_.begin(), submeshes_.end());
 }
 
 TextureCubeMap::TextureCubeMap(
@@ -902,7 +944,7 @@ void Renderer::setRenderTargets(
 //=============================================================================
 void RenderQueue::draw(
 	const Mesh &mesh,
-	const Submesh &submesh,
+	int submesh_index,
 	const Shader &shader,
 	const ParameterBlock &parameterBlock,
 	uint64_t sortHint
@@ -911,33 +953,13 @@ void RenderQueue::draw(
 	RenderItem item;
 	item.shader = &shader;
 	item.mesh = &mesh;
-	item.submesh = submesh;
+	item.submesh_index = submesh_index;
 	item.param_block = &parameterBlock;
 	item.sort_key = sortHint;
+	assert(item.submesh_index < mesh.submeshes.size());
 	items.push_back(item);
 }
 
-
-void RenderQueue::draw2(
-	const Buffer &vertexBuffer,
-	const Buffer &indexBuffer,
-	const InputLayout &inputLayout,
-	const Submesh &submesh,
-	const Shader &shader,
-	const ParameterBlock &parameterBlock,
-	uint64_t sortHint
-	)
-{
-	RenderItem2 i2;
-	i2.sort_key = sortHint;
-	i2.vbuf = &vertexBuffer;
-	i2.ibuf = &indexBuffer;
-	i2.layout = &inputLayout;
-	i2.submesh = submesh;
-	i2.shader = &shader;
-	i2.param_block = &parameterBlock;
-	dyn_items.push_back(i2);
-}
 
 void Renderer::drawItem(const RenderItem &item)
 {
@@ -978,12 +1000,12 @@ void Renderer::drawItem(const RenderItem &item)
 	else
 		gl::DepthMask(false);
 
-	const auto &sm = item.submesh;
+	const auto &sm = item.mesh->submeshes[item.submesh_index];
 
 	if (item.mesh->ibsize != 0) {
 		gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, item.mesh->ib);
 		gl::DrawElementsBaseVertex(
-			item.mesh->mode, 
+			primitiveTypeToGLenum(sm.primitiveType), 
 			sm.numIndices,
 			gl::UNSIGNED_SHORT, 
 			reinterpret_cast<void*>(sm.startIndex),
@@ -992,73 +1014,13 @@ void Renderer::drawItem(const RenderItem &item)
 	}
 	else {
 		gl::DrawArrays(
-			item.mesh->mode,
-			sm.startVertex,
-			sm.numVertices
-			);
-	}
-}
-
-
-void Renderer::drawItem2(const RenderItem2 &item)
-{
-	// TODO multi-bind
-	// bind vertex buffers
-	gl::BindVertexArray(item.layout->vao);
-	gl::BindVertexBuffer(0, item.vbuf->id, 0, item.layout->stride);
-
-	gl::BindBuffersRange(
-		gl::UNIFORM_BUFFER,
-		0,
-		kMaxUniformBufferBindings,
-		&item.param_block->ubo[0],
-		&item.param_block->ubo_offsets[0],
-		&item.param_block->ubo_sizes[0]
-		);
-
-	gl::BindTextures(0, kMaxTextureUnits, &item.param_block->textures[0]);
-	gl::BindSamplers(0, kMaxTextureUnits, &item.param_block->samplers[0]);
-
-	// shaders
-	gl::UseProgram(item.shader->program);
-	// Rasterizer
-	if (item.shader->rs_state.cullMode == CullMode::None) {
-		gl::Disable(gl::CULL_FACE);
-	}
-	else {
-		gl::Enable(gl::CULL_FACE);
-		gl::CullFace(cullModeToGLenum(item.shader->rs_state.cullMode));
-	}
-	gl::PolygonMode(gl::FRONT_AND_BACK, fillModeToGLenum(item.shader->rs_state.fillMode));
-	/*if (item.shader->ds_state.depthTestEnable)
-		gl::Enable(gl::DEPTH_TEST);
-	else
-		gl::Disable(gl::DEPTH_TEST);*/
-	/*if (item.shader->ds_state.depthWriteEnable)
-		gl::DepthMask(true);
-	else
-		gl::DepthMask(false);*/
-
-	const auto &sm = item.submesh;
-
-	if (item.ibuf->size != 0) {
-		gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, item.ibuf->id);
-		gl::DrawElementsBaseVertex(
-			primitiveTypeToGLenum(sm.primitiveType),
-			sm.numIndices,
-			gl::UNSIGNED_SHORT,
-			reinterpret_cast<void*>(sm.startIndex),
-			sm.startVertex
-			);
-	}
-	else {
-		gl::DrawArrays(
 			primitiveTypeToGLenum(sm.primitiveType),
 			sm.startVertex,
 			sm.numVertices
 			);
 	}
 }
+
 
 //=============================================================================
 //=============================================================================
@@ -1086,16 +1048,6 @@ void Renderer::submitRenderQueue(
 
 	for (const auto &ri : renderQueue.items) {
 		drawItem(ri);
-	}
-	
-
-	// dynamic items
-	std::sort(renderQueue.dyn_items.begin(), renderQueue.dyn_items.end(), [](const RenderItem2 &i1, const RenderItem2 &i2) {
-		return i1.sort_key < i2.sort_key;
-	});
-
-	for (const auto &ri : renderQueue.dyn_items) {
-		drawItem2(ri);
 	}
 }
 

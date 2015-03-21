@@ -155,13 +155,16 @@ void RiftGame::init()
 		{ ElementFormat::Float2, ResourceUsage::Static },
 	};
 
+	Submesh sm { PrimitiveType::Triangle, 0, 0, 8, 36 };
+
 	mesh = Mesh::create(
-		PrimitiveType::Triangle,
 		attribs,
 		8,
 		cubeMeshData,
 		36,
-		cubeIndices);
+		cubeIndices,
+		{ sm },
+		ResourceUsage::Static);
 
 	std::ifstream mokou_file("resources/models/mokou/mokou.mesh", std::ios::binary);
 	serialization::IArchive arc(mokou_file);
@@ -253,8 +256,8 @@ void RiftGame::render(float dt)
 
 	hud->renderString("Hello world!", *font, { 100.0, 100.0 }, Color::White, Color::Black, *renderQueue, sceneData, *cbSceneData);
 
-	renderQueue->draw(*mesh, Submesh{ PrimitiveType::Triangle, 0, 0, 8, 36 }, *shaderEnvCube, *paramBlockEnvCube, 0);
-	renderQueue->draw(*mokou, Submesh{ PrimitiveType::Triangle, 0, 0, 100, 100 }, *shaderPBR, *paramBlockPBR, 0);
+	renderQueue->draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
+	renderQueue->draw(*mokou, 2, *shaderPBR, *paramBlockPBR, 0);
 
 	//sky.render(*renderQueue, sceneData, *cbSceneData);
 	R.submitRenderQueue(*renderQueue);

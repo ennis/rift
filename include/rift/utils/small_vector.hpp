@@ -108,6 +108,7 @@ namespace util
 			size_type i = 0;
 			// construct remaining objects
 			while (first != last) {
+				assert(i < N);
 				new (storage_ptr(i++)) T(std::move(*first++));
 			}
 			length = i;

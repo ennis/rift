@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <serialization.hpp>
 #include <unique_resource.hpp>
+#include <small_vector.hpp>
 
 namespace std {
 	template <> struct hash<SamplerDesc>
@@ -267,12 +268,13 @@ namespace gl4
 
 		using Ptr = std::unique_ptr < Mesh > ;
 
-		Mesh(PrimitiveType primitiveType,
-			util::array_ref<Attribute> layout,
+		Mesh(util::array_ref<Attribute> layout,
 			int numVertices,
 			const void *vertexData,
 			int numIndices,
-			const void *indexData);
+			const void *indexData,
+			util::array_ref<Submesh> submeshes,
+			ResourceUsage usage);
 
 		// VS2013
 		/*Mesh(Mesh &&rhs) :
@@ -313,21 +315,28 @@ namespace gl4
 			gl::DeleteBuffers(1, &ib);
 		}
 
+		void setSubmesh(int index, const Submesh &submesh);
+
+		void updateVertices(int offset, int size, const void *data);
+		void updateIndices(int offset, int size, const uint16_t *data);
+
 		static Ptr create(
-			PrimitiveType primitiveType,
 			util::array_ref<Attribute> layout,
 			int numVertices,
 			const void *vertexData,
 			int numIndices,
-			const void *indexData)
+			const void *indexData,
+			util::array_ref<Submesh> submeshes,
+			ResourceUsage usage)
 		{
 			return std::make_unique<Mesh>(
-				primitiveType, 
 				layout, 
 				numVertices, 
 				vertexData, 
 				numIndices, 
-				indexData);
+				indexData, 
+				submeshes,
+				usage);
 		}
 
 		static Ptr loadFromArchive(serialization::IArchive &ar);
@@ -335,7 +344,8 @@ namespace gl4
 		static const auto kMaxVertexBuffers = 16u;
 
 		// TODO multiple buffers?
-		GLenum mode;
+		GLbitfield vb_flags;
+		GLbitfield ib_flags;
 		GLuint vb;
 		GLuint ib;
 		GLuint vao;
@@ -346,6 +356,7 @@ namespace gl4
 		int nbindex;
 		int stride;
 		GLenum index_format;
+		std::vector<Submesh> submeshes;
 	};
 
 	class Parameter
@@ -564,18 +575,7 @@ namespace gl4
 	{
 		uint64_t sort_key;
 		const Mesh *mesh;
-		Submesh submesh;
-		const ParameterBlock *param_block;
-		const Shader *shader;
-	};
-
-	struct RenderItem2
-	{
-		uint64_t sort_key;
-		const Buffer *vbuf;
-		const Buffer *ibuf;
-		const InputLayout *layout;
-		Submesh submesh;
+		int submesh_index;
 		const ParameterBlock *param_block;
 		const Shader *shader;
 	};
@@ -588,21 +588,12 @@ namespace gl4
 
 		void draw(
 			const Mesh &mesh,
-			const Submesh &submesh,
+			int submesh_index,
 			const Shader &shader,
 			const ParameterBlock &parameterBlock,
 			uint64_t sortHint
 			);
 
-		void draw2(
-			const Buffer &vertexBuffer,
-			const Buffer &indexBuffer,
-			const InputLayout &inputLayout,
-			const Submesh &submesh,
-			const Shader &shader,
-			const ParameterBlock &parameterBlock,
-			uint64_t sortHint
-			);
 
 		void clear();
 
@@ -611,7 +602,6 @@ namespace gl4
 
 		std::vector<int> sort_list;
 		std::vector<RenderItem> items;
-		std::vector<RenderItem2> dyn_items;
 
 		static Ptr create() { return std::make_unique<RenderQueue>(); }
 	};
@@ -663,10 +653,7 @@ namespace gl4
 		GLuint getSampler(SamplerDesc desc);
 
 	private:
-		
-
 		void drawItem(const RenderItem &item);
-		void drawItem2(const RenderItem2 &item);
 
 		GLuint fbo = 0;
 		RenderTarget screen_rt;

@@ -5,11 +5,24 @@
 
 HUDTextRenderer::HUDTextRenderer() 
 {
-	layout = InputLayout::create({ Attribute{ ElementFormat::Float4 } });
-	vb = Buffer::create(kMaxNumGlyphs * 4 * 4 * sizeof(float), ResourceUsage::Dynamic, BufferUsage::VertexBuffer, nullptr);
-	ib = Buffer::create(kMaxNumGlyphs * 6 * sizeof(uint16_t), ResourceUsage::Dynamic, BufferUsage::IndexBuffer, nullptr);
+	mesh = Mesh::create(
+		{ Attribute{ ElementFormat::Float4 } }, 
+		kMaxNumGlyphs * 4, 
+		nullptr, 
+		kMaxNumGlyphs * 6,
+		nullptr, 
+		{ Submesh{ PrimitiveType::Triangle, 0, 0, 0, 0 } }, 
+		ResourceUsage::Dynamic);
+
 	auto effect = gl4::Effect::loadFromFile("resources/shaders/text.glsl");
-	shader = effect->compileShader();
+	RasterizerDesc rs;
+	rs.cullMode = CullMode::None;
+	rs.depthClipEnable = true;
+	rs.fillMode = PolygonFillMode::Fill;
+	DepthStencilDesc ds;
+	//ds.depthTestEnable = false;
+	//ds.depthWriteEnable = false;
+	shader = effect->compileShader({}, rs, ds);
 	pb = ParameterBlock::create(*shader);
 	cbParams = ConstantBuffer::create(sizeof(Params), nullptr);
 	pb->setConstantBuffer(0, *cbParams);
@@ -69,8 +82,13 @@ void HUDTextRenderer::renderString(
 		ibuf[i*6+5]=i*4+2;
 		x+=g->xAdvance;
 	}
-	vb->update(0, len * 4 * sizeof(float) * 4, vbuf);
-	ib->update(0, len * 6 * sizeof(uint16_t), ibuf);
+	mesh->updateVertices(0, len * 4, vbuf);
+	mesh->updateIndices(0, len * 6, ibuf);
+	mesh->setSubmesh(0, Submesh{ PrimitiveType::Triangle, 0, 0, len*4, len*6 });
+
+	// create a mesh
+	// update the mesh (set submesh 0)
+	// call shader with updated parameters
 
 	Params p;
 	p.transform = glm::ortho(0.f, sceneData.viewportSize.x, sceneData.viewportSize.y, 0.f);
@@ -79,12 +97,11 @@ void HUDTextRenderer::renderString(
 	cbParams->update(0, sizeof(p), &p);
 
 	gl::Enable(gl::BLEND);
-	gl::DepthMask(gl::FALSE_);
 	gl::BlendEquationSeparate(gl::FUNC_ADD, gl::FUNC_ADD);
 	gl::BlendFuncSeparate(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA, gl::ONE, gl::ZERO);
 
 	pb->setTextureParameter(0, &font.getTexture(), SamplerDesc{});
-	renderQueue.draw2(*vb, *ib, *layout, Submesh{ PrimitiveType::Triangle, 0, 0, len*4, len * 6 }, *shader, *pb, 0);
+	renderQueue.draw(*mesh, 0, *shader, *pb, 0);
 
 	gl::DepthMask(gl::TRUE_);
 }
