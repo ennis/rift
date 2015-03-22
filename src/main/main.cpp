@@ -207,7 +207,7 @@ void RiftGame::init()
 	shadowMap = Texture2D::create(win_size, 1, ElementFormat::Depth16, nullptr);
 	shadowRT = RenderTarget::createRenderTarget2D(*shadowMap, 0);
 
-	font = Font::loadFromFile("resources/img/fonts/special_elite.fnt");
+	font = Font::loadFromFile("resources/img/fonts/arno_pro.fnt");
 	hud = std::make_unique<HUDTextRenderer>();
 
 	DepthStencilDesc ds_fx;
@@ -256,7 +256,7 @@ void RiftGame::render(float dt)
 	spinAngle = fmodf(spinAngle + 0.1f*3.14159f*dt, 2 * 3.14159);
 	perObjPBR.modelMatrix = glm::rotate(glm::mat4(1.0f), spinAngle, glm::vec3{ 0, 1, 0 });
 	perObjPBR.objectColor = glm::vec4(1.0f);
-	perObjPBR.eta = 1.10f;
+	perObjPBR.eta = 1.40f;
 	cbPerObjPBR->update(0, sizeof(PerObjectPBR), &perObjPBR);
 
 	envCubeParams.modelMatrix = 
@@ -294,7 +294,6 @@ void RiftGame::render(float dt)
 		//renderQueue->draw(*mesh, 0, *shader, *paramBlock, 0);
 	}
 
-	hud->renderString("Hello world!", *font, { 100.0, 100.0 }, Color::White, Color::Black, *renderQueue, sceneData, *cbSceneData);
 
 	renderQueue->draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
 
@@ -321,6 +320,7 @@ void RiftGame::render(float dt)
 	fxp.rt_h = 720;
 	fxCB->update(0, sizeof(FXParams), &fxp);
 	renderQueue->drawProcedural(PrimitiveType::Triangle, 3, *passthrough, *fxPB, 0);
+	hud->renderString("Hello world!", *font, { 100.0, 100.0 }, Color::White, Color::Black, *renderQueue, sceneData, *cbSceneData);
 	R.submitRenderQueue(*renderQueue);
 	renderQueue->clear();
 
