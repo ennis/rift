@@ -132,6 +132,7 @@ namespace modelconverter
             int vertexbase = 0, indexbase = 0;
             foreach (var mesh in scene.Meshes)
             {
+                Console.WriteLine("{0}", mesh);
                 // find matching node in hierarchy
                 var node = scene.RootNode.FindNode(mesh.Name);
                 if (node != null)

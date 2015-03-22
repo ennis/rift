@@ -1028,7 +1028,7 @@ void Renderer::drawItem(const RenderItem &item)
 				primitiveTypeToGLenum(sm.primitiveType),
 				sm.numIndices,
 				gl::UNSIGNED_SHORT,
-				reinterpret_cast<void*>(sm.startIndex),
+				reinterpret_cast<void*>(sm.startIndex*2),
 				sm.startVertex
 				);
 		}

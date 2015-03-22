@@ -291,7 +291,7 @@ void RiftGame::render(float dt)
 	renderQueue->draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
 
 	for (auto submesh = 0u; submesh < mokou->getNumSubmeshes(); ++submesh)
-		renderQueue->draw(*mokou, submesh, *shader, *paramBlock, 0);
+		renderQueue->draw(*mokou, submesh, *shaderPBR, *paramBlockPBR, 0);
 
 	//sky.render(*renderQueue, sceneData, *cbSceneData);
 	R.submitRenderQueue(*renderQueue);
