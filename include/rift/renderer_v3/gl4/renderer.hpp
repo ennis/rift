@@ -315,6 +315,10 @@ namespace gl4
 			gl::DeleteBuffers(1, &ib);
 		}
 
+		unsigned getNumSubmeshes() const {
+			return submeshes.size();
+		}
+
 		void setSubmesh(int index, const Submesh &submesh);
 
 		void updateVertices(int offset, int size, const void *data);

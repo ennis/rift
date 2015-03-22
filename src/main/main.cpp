@@ -183,7 +183,7 @@ void RiftGame::init()
 		{ sm },
 		ResourceUsage::Static);
 
-	std::ifstream mokou_file("resources/models/mokou/mokou.mesh", std::ios::binary);
+	std::ifstream mokou_file("resources/models/animated/mokou.mesh", std::ios::binary);
 	serialization::IArchive arc(mokou_file);
 	mokou = Mesh::loadFromArchive(arc);
 
@@ -212,7 +212,7 @@ void RiftGame::init()
 	ds_fx.depthWriteEnable = false;
 	passthrough = gl4::Effect::loadFromFile("resources/shaders/fxaa.glsl")->compileShader({}, RasterizerDesc{}, ds_fx, BlendDesc{});
 	screenColorTexture = Texture2D::create({ 1280, 720 }, 1, ElementFormat::Unorm8x4, nullptr);
-	screenDepthTexture = Texture2D::create({ 1280, 720 }, 1, ElementFormat::Depth16, nullptr);
+	screenDepthTexture = Texture2D::create({ 1280, 720 }, 1, ElementFormat::Depth24, nullptr);
 	colorRT = RenderTarget::createRenderTarget2D(*screenColorTexture, 0);
 	depthRT = RenderTarget::createRenderTarget2D(*screenDepthTexture, 0);
 	fxCB = ConstantBuffer::create(sizeof(FXParams), nullptr);
@@ -289,7 +289,9 @@ void RiftGame::render(float dt)
 	hud->renderString("Hello world!", *font, { 100.0, 100.0 }, Color::White, Color::Black, *renderQueue, sceneData, *cbSceneData);
 
 	renderQueue->draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
-	renderQueue->draw(*mokou, 2, *shaderPBR, *paramBlockPBR, 0);
+
+	for (auto submesh = 0u; submesh < mokou->getNumSubmeshes(); ++submesh)
+		renderQueue->draw(*mokou, submesh, *shader, *paramBlock, 0);
 
 	//sky.render(*renderQueue, sceneData, *cbSceneData);
 	R.submitRenderQueue(*renderQueue);
