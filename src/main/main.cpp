@@ -140,7 +140,10 @@ void RiftGame::init()
 	effectPBR = gl4::Effect::loadFromFile("resources/shaders/pbr.glsl");
 	shaderPBR = effectPBR->compileShader();
 	effectEnvCube = gl4::Effect::loadFromFile("resources/shaders/envcube.glsl");
-	shaderEnvCube = effectEnvCube->compileShader();
+	DepthStencilDesc envcube_ds;
+	envcube_ds.depthTestEnable = true;
+	envcube_ds.depthWriteEnable = false;
+	shaderEnvCube = effectEnvCube->compileShader({}, RasterizerDesc{}, envcube_ds, BlendDesc{});
 
 	// buffer contenant les données des vertex (c'est un cube, pour info)
 	// ici: position (x,y,z), normales (x,y,z), coordonnées de texture (x,y) 
@@ -183,7 +186,7 @@ void RiftGame::init()
 		{ sm },
 		ResourceUsage::Static);
 
-	std::ifstream mokou_file("resources/models/animated/mokou.mesh", std::ios::binary);
+	std::ifstream mokou_file("resources/models/rock/crystal.mesh", std::ios::binary);
 	serialization::IArchive arc(mokou_file);
 	mokou = Mesh::loadFromArchive(arc);
 
@@ -253,10 +256,15 @@ void RiftGame::render(float dt)
 	spinAngle = fmodf(spinAngle + 0.1f*3.14159f*dt, 2 * 3.14159);
 	perObjPBR.modelMatrix = glm::rotate(glm::mat4(1.0f), spinAngle, glm::vec3{ 0, 1, 0 });
 	perObjPBR.objectColor = glm::vec4(1.0f);
-	perObjPBR.eta = 4.0f;
+	perObjPBR.eta = 1.10f;
 	cbPerObjPBR->update(0, sizeof(PerObjectPBR), &perObjPBR);
 
-	envCubeParams.modelMatrix = glm::translate(glm::scale(glm::vec3{ 1000.0f, 1000.0f, 1000.0f }), glm::vec3{ -0.5f, -0.5f, -0.5f });
+	envCubeParams.modelMatrix = 
+		glm::translate(
+			glm::scale(
+				glm::translate(glm::vec3(sceneData.eyePos.x, sceneData.eyePos.y, sceneData.eyePos.z)),
+				glm::vec3{ 1000.0f, 1000.0f, 1000.0f }),
+			glm::vec3{ -0.5f, -0.5f, -0.5f });
 	cbEnvCube->update(0, sizeof(EnvCubeParams), &envCubeParams);
 
 	// create parameter block
