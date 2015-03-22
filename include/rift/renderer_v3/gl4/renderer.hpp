@@ -445,6 +445,7 @@ namespace gl4
 		ParameterBlock() = default;
 
 		Shader * shader;
+		int num_ubo;
 		GLuint ubo[kMaxUniformBufferBindings];
 		GLintptr ubo_offsets[kMaxUniformBufferBindings];
 		GLintptr ubo_sizes[kMaxUniformBufferBindings];

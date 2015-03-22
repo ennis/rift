@@ -135,11 +135,13 @@ namespace
 		std::string sev_str = "Unknown";
 		if (gl_debug_severity_names.count(severity)) sev_str = gl_debug_severity_names.at(severity);
 
-		LOG << "(GL debug: " << id << ", " << src_str << ", " << type_str << ", " << sev_str << ") " << msg;
+		if (severity != gl::DEBUG_SEVERITY_LOW && severity != gl::DEBUG_SEVERITY_NOTIFICATION)
+			LOG << "(GL debug: " << id << ", " << src_str << ", " << type_str << ", " << sev_str << ") " << msg;
 	}
 
 	void setDebugCallback()
 	{
+		gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
 		gl::DebugMessageCallback(debugCallback, nullptr);
 		gl::DebugMessageControl(gl::DONT_CARE, gl::DONT_CARE, gl::DONT_CARE, 0, nullptr, true);
 		gl::DebugMessageInsert(
@@ -713,6 +715,7 @@ ConstantBuffer::ConstantBuffer(
 //=============================================================================
 ParameterBlock::ParameterBlock(Shader &shader_) : shader(&shader_)
 {
+	num_ubo = 0;
 	std::fill(ubo, ubo + kMaxUniformBufferBindings, 0);
 	std::fill(ubo_offsets, ubo_offsets + kMaxUniformBufferBindings, 0);
 	std::fill(ubo_sizes, ubo_sizes + kMaxUniformBufferBindings, 0);
@@ -731,6 +734,8 @@ void ParameterBlock::setConstantBuffer(
 	)
 {
 	//assert(param.size == constantBuffer.size);
+
+	num_ubo = std::max(num_ubo, binding+1);
 	ubo[binding] = constantBuffer.ubo;
 	ubo_offsets[binding] = 0;
 	ubo_sizes[binding] = constantBuffer.size;
@@ -905,8 +910,15 @@ void Renderer::setRenderTargets(
 			gl::COLOR_ATTACHMENT0 + 6,
 			gl::COLOR_ATTACHMENT0 + 7
 		};
-		
-		gl::DrawBuffers(colorTargets.size(), drawBuffers);
+
+		const GLenum noDrawBuffers = gl::NONE;
+
+		if (colorTargets.size() == 0) {
+			gl::DrawBuffers(1, &noDrawBuffers);
+		}
+		else {
+			gl::DrawBuffers(colorTargets.size(), drawBuffers);
+		}
 		GLenum err;
 		err = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
 		assert(err == gl::FRAMEBUFFER_COMPLETE);
@@ -974,7 +986,7 @@ void Renderer::drawItem(const RenderItem &item)
 	gl::BindBuffersRange(
 		gl::UNIFORM_BUFFER,
 		0,
-		kMaxUniformBufferBindings,
+		item.param_block->num_ubo,
 		&item.param_block->ubo[0],
 		&item.param_block->ubo_offsets[0],
 		&item.param_block->ubo_sizes[0]

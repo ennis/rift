@@ -18,7 +18,7 @@ HUDTextRenderer::HUDTextRenderer()
 	RasterizerDesc rs;
 	rs.fillMode = PolygonFillMode::Fill;
 	DepthStencilDesc ds;
-	ds.depthTestEnable = true;
+	ds.depthTestEnable = false;
 	ds.depthWriteEnable = false;
 	BlendDesc om{};
 	shader = effect->compileShader({}, rs, ds, om);

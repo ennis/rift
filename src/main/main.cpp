@@ -303,11 +303,11 @@ void RiftGame::render(float dt)
 	//sky.render(*renderQueue, sceneData, *cbSceneData);
 	R.submitRenderQueue(*renderQueue);
 
-	R.setRenderTargets({}, shadowRT.get());
-	R.clearDepth(1.0f);
-	R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
+	//R.setRenderTargets({}, shadowRT.get());
+	//R.clearDepth(1.0f);
+	//R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
 	// resubmit
-	R.submitRenderQueue(*renderQueue);
+	//R.submitRenderQueue(*renderQueue);
 
 	renderQueue->clear();
 
