@@ -21,6 +21,7 @@
 #include <boundingsphere.hpp>
 #include <boundingcapsule.hpp>
 #include <boost/filesystem.hpp>
+#include <physicsystem.h>
 
 //============================================================================
 // Classe de base du jeu
@@ -67,6 +68,10 @@ private:
 	bool sphere_colliding = false;
 	BoundingCapsule *capsule_test1, *capsule_test2;
 	bool capsule_colliding = false;
+
+	BoundingSphere *sphere_42;
+	BoundingSphere *sphere_10, *sphere_11;
+	PhysicSystem *ps;
 
 	float twSunDirection[3];
 	float twTimeOfDay;
@@ -169,6 +174,22 @@ void RiftGame::init()
 	sphere_test2 = new BoundingSphere(glm::vec3(7, 0, 0), 1);
 	capsule_test1 = new BoundingCapsule(glm::vec3(0, 3, 0), 1, 4);
 	capsule_test2 = new BoundingCapsule(glm::vec3(0, 6, 0), 1, 4);
+
+	//Init du system physique
+	sphere_42 = new BoundingSphere(glm::vec3(35, 2, 35), 0.5);
+	sphere_42->Speed() = glm::vec3(2.5,0,2.5);
+
+	sphere_10 = new BoundingSphere(glm::vec3(10, 0.5, 20), 0.5);
+	sphere_11 = new BoundingSphere(glm::vec3(10.5, 0.5, 35), 0.5);
+	sphere_10->Speed() = glm::vec3(0, 0, +1);
+	sphere_11->Speed() = glm::vec3(0, 0, -1);
+	ps = new PhysicSystem();
+	std::vector<BoundingVolume *> vec;
+	vec.push_back(sphere_42);
+	vec.push_back(sphere_10);
+	vec.push_back(sphere_11);
+	ps->addBoundingVolumes(vec);
+	ps->setTerrain(terrain);
 }
 
 
@@ -248,9 +269,12 @@ void RiftGame::render(float dt)
 	//cuboid_test2->render(rc,cube_colliding);
 	//sphere_test1->render(rc, sphere_colliding);
 	//sphere_test2->render(rc, sphere_colliding);
-	capsule_test1->render(rc, capsule_colliding);
+	//capsule_test1->render(rc, capsule_colliding);
 	//capsule_test2->render(rc, capsule_colliding);
 
+	sphere_42->render(rc, false);
+	sphere_10->render(rc, false);
+	sphere_11->render(rc, false);
 
 	// render tweak bar
 	//TwDraw();
@@ -269,14 +293,16 @@ void RiftGame::update(float dt)
 	}
 
 	//collision test
-	if (cuboid_test1->isColliding(cuboid_test2)){
+	/*if (cuboid_test1->isColliding(cuboid_test2)){
 		//std::cout << "cube collision" << std::endl;
 		cube_colliding = true;
 	}
 	if (sphere_test1->isColliding(sphere_test2)){
 		//std::cout << "sphere collision" << std::endl;
 		sphere_colliding = true;
-	}
+	}*/
+
+	ps->update(dt);
 
 	sky->setTimeOfDay(twTimeOfDay);
 }

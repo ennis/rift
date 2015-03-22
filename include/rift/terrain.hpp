@@ -14,6 +14,14 @@ public:
 
 	void render(RenderContext const &renderContext);
 
+	// height receive the height of the terrain at a given position
+	// return true if there was an error (out of boundaries...)
+	bool getHeight(glm::vec2 pos, float &height);
+
+	// normal receive the normal of the terrain at a given position
+	// return true if there was an error (out of boundaries...)
+	bool Terrain::getNormal(glm::vec2 pos, glm::vec3 &normal);
+
 private:
 	Renderer &mRenderer;
 

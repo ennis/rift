@@ -257,3 +257,52 @@ void Terrain::calculateLodRanges()
 		LOG << "LOD " << i << " upto " << mLodRanges[i];
 	}
 }
+
+//=================================================================
+// Je suppose qu'on a un ratio 1:1 entre l'image et le terrain...
+bool Terrain::getHeight(glm::vec2 pos, float &height){
+	if (pos.x < 0 || pos.y < 0
+		|| pos.x > mHeightmapView.size().x
+		|| pos.y > mHeightmapView.size().y){
+		// We are outside the map: to treat ?
+		return true;
+	}
+
+	glm::vec2 lower(floor(pos.x), floor(pos.y));
+	if (pos == lower){
+		height = (float)mHeightmapView(pos.x, pos.y);
+		return false;
+	}
+
+	//Bilinear Interpolation 
+	glm::vec2 upper(lower + glm::vec2(1, 1));
+	float temp_x1 = (upper.x - pos.x)*mHeightmapView(lower.x, lower.y)
+		+ (pos.x - lower.x)*mHeightmapView(upper.x, lower.y);
+	float temp_x2 = (upper.x - pos.x)*mHeightmapView(lower.x, upper.y)
+		+ (pos.x - lower.x)*mHeightmapView(upper.x, upper.y);
+	height = (upper.y - pos.y)*temp_x1 + (pos.y - lower.y) * temp_x2;
+
+	//TODO: this method is false (need to use the way the terrain is rendered)
+	return false;
+}
+
+// Approxition: we consider the normal to be the same on the whole square
+//TODO : we need to know in which triangle we are...
+bool Terrain::getNormal(glm::vec2 pos, glm::vec3 &normal){
+	if (pos.x < 0 || pos.y < 0
+		|| pos.x > mHeightmapView.size().x
+		|| pos.y > mHeightmapView.size().y){
+		// We are outside the map: to treat ?
+		return true;
+	}
+
+	glm::vec2 lower(floor(pos.x), floor(pos.y));
+
+	glm::vec3 corner(lower.x,mHeightmapView(lower.x, lower.y),lower.y);
+	glm::vec3 corner_xplus(lower.x + 1, mHeightmapView(lower.x + 1, lower.y), lower.y);
+	glm::vec3 corner_yplus(lower.x, mHeightmapView(lower.x, lower.y + 1), lower.y + 1);
+
+	glm::vec3 cross = glm::cross(corner_yplus - corner, corner_xplus - corner);
+	normal = glm::normalize(cross);
+	return false;
+}

@@ -8,6 +8,7 @@ BoundingCuboid::BoundingCuboid(glm::vec3 position, glm::vec3 dimensions)
 	VolumeType() = CUBOID_TYPE;
 	this->_dimensions = dimensions;
 	getTransform().setPosition(position);
+	_last_position = position;
 
 	//Initialization: mesh
 	static float boundingCuboidMeshData[] = {
@@ -61,10 +62,10 @@ glm::vec3 BoundingCuboid::Dimensions() const
 	return _dimensions;
 }
 
-bool BoundingCuboid::isColliding(BoundingVolume* target)
+bool BoundingCuboid::isColliding(BoundingVolume* target, float & penetration_distance)
 {
 	if (target->VolumeType() == CUBOID_TYPE){ // TO REDO
-		BoundingCuboid * c = dynamic_cast<BoundingCuboid *>(target);
+		BoundingCuboid * c = static_cast<BoundingCuboid *>(target);
 		// A and B are corner of the two cuboids
 		glm::vec3 A = this->getTransform().position - 0.5f * this->Dimensions();
 		glm::vec3 B = c->getTransform().position - 0.5f * c->Dimensions();
@@ -74,7 +75,7 @@ bool BoundingCuboid::isColliding(BoundingVolume* target)
 			&& ((A.z + this->Dimensions().z >= B.z) && (A.z  <= B.z + c->Dimensions().z))); //Z colliding
 	}
 	else if (target->VolumeType() == SPHERE_TYPE){
-		BoundingSphere * s = dynamic_cast<BoundingSphere *>(target);
+		BoundingSphere * s = static_cast<BoundingSphere *>(target);
 
 		glm::vec3 closestP = closestPoint(s->getTransform().position);
 		return (glm::distance(closestP, s->getTransform().position) <= s->Radius());

@@ -7,6 +7,7 @@ BoundingSphere::BoundingSphere(glm::vec3 position, float radius)
 		VolumeType() = SPHERE_TYPE;
 		this->_radius = radius;
 		getTransform().setPosition(position);
+		_last_position = position;
 
 		//Initialization: mesh
 		const int nb_lines = 10; // must be >= 1
@@ -93,19 +94,20 @@ float BoundingSphere::Radius() const
 	return _radius;
 }
 
-bool BoundingSphere::isColliding(BoundingVolume* target)
+bool BoundingSphere::isColliding(BoundingVolume* target, float & penetration_distance)
 {
 	if (target->VolumeType() == CUBOID_TYPE){
-		return target->isColliding(this);
+		return target->isColliding(this, penetration_distance);
 	}
 	else if (target->VolumeType() == SPHERE_TYPE){ // OK
-		BoundingSphere * s = dynamic_cast<BoundingSphere *>(target);
+		BoundingSphere * s = static_cast<BoundingSphere *>(target);
 		//Compute the distance between the two centers
 		float distance = glm::distance(this->getTransform().position, s->getTransform().position);
-		return (distance <= (s->Radius() + this->Radius()));
+		penetration_distance = 0.5f * ((s->Radius() + this->Radius()) - distance);
+		return (penetration_distance > 0);
 	}
 	else if (target->VolumeType() == CAPSULE_TYPE){
-		BoundingCapsule * cap = dynamic_cast<BoundingCapsule *>(target);
+		BoundingCapsule * cap = static_cast<BoundingCapsule *>(target);
 
 		glm::vec3 s_center = this->getTransform().position;
 		glm::vec3 cap_center = cap->getTransform().position;
@@ -130,6 +132,64 @@ bool BoundingSphere::isColliding(BoundingVolume* target)
 	else{
 		// error
 		return false; // pour ne pas avoir de warning
+	}
+}
+
+void BoundingSphere::MakeCollision(BoundingVolume* target, const float penetration_distance, float CoR){
+	if (target->VolumeType() == CUBOID_TYPE){
+		//return target->MakeCollision(this, penetration_distance, rebound);
+		//TODO
+		return;
+	}
+	else if (target->VolumeType() == SPHERE_TYPE){
+		BoundingSphere * s = static_cast<BoundingSphere *>(target);
+
+		// The normal goes from this volume to the target volume
+		glm::vec3 normal = glm::normalize(target->getTransform().position - this->getTransform().position);
+
+		if (target->isFixed()){
+			this->getTransform().move(-penetration_distance * normal);
+
+			float norm_speed = glm::dot(this->Speed(), normal);
+			this->Speed() -=  (1+CoR)*norm_speed * normal;
+		}
+		else if (this->isFixed()){
+			target->getTransform().move(+penetration_distance * normal);
+
+			float norm_speed_target = glm::dot(target->Speed(), normal);
+			target->Speed() -= (1+CoR) * norm_speed_target * normal;
+		}
+		else{ // no spheres are fixed
+			float m1 = this->Mass(), m2 = target->Mass();
+			float total_mass = m1 + m2;
+			float mr1 = m1 / total_mass; // mass_ratios for faster computation
+			float mr2 = m2 / total_mass;
+
+			this->getTransform().move(-0.5f* penetration_distance * mr2 * normal);
+			target->getTransform().move(+0.5f* penetration_distance * mr1 * normal);
+
+			// compute the normal components of the speed
+			float ns1 = glm::dot(this->Speed(), normal);
+			float ns2 = glm::dot(target->Speed(), normal);
+
+			//float new_ns1 = ((m1 - m2)*ns1 + 2 * m2 * ns2) / total_mass;
+			//float new_ns2 = ((m2 - m1)*ns2 + 2 * m1 * ns1) / total_mass;
+			float new_ns1 = CoR * mr2 * (ns2 - ns1) + mr1*ns1 + mr2 * ns2;
+			float new_ns2 = CoR * mr1 * (ns1 - ns2) + mr1*ns1 + mr2 * ns2;
+
+			//change the final speeds
+			this->Speed() += (new_ns1 - ns1) * normal;
+			target->Speed() += (new_ns2 - ns2) * normal;
+		}
+	}
+	else if (target->VolumeType() == CAPSULE_TYPE){
+		BoundingCapsule * cap = static_cast<BoundingCapsule *>(target);
+		//TODO
+		return;
+	}
+	else{
+		// error
+		return;
 	}
 }
 

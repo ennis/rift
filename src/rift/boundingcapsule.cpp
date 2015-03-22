@@ -7,6 +7,7 @@ BoundingCapsule::BoundingCapsule(glm::vec3 position, float radius, float length)
 	this->_radius = radius;
 	this->_length = length; // must be > 2 * radius
 	getTransform().setPosition(position);
+	_last_position = position;
 
 	//Initialization: mesh
 	const int nb_lines_sphere = 9; // must be >= 1, and of odd parity
@@ -134,12 +135,12 @@ float BoundingCapsule::Length() const
 	return _length;
 }
 
-bool BoundingCapsule::isColliding(BoundingVolume* target){
+bool BoundingCapsule::isColliding(BoundingVolume* target, float & penetration_distance){
 	if (target->VolumeType() == CUBOID_TYPE){
-		return target->isColliding(this);
+		return target->isColliding(this,penetration_distance);
 	}
 	else if (target->VolumeType() == SPHERE_TYPE){
-		return target->isColliding(this);
+		return target->isColliding(this, penetration_distance);
 	}
 	else if (target->VolumeType() == CAPSULE_TYPE){
 		// TODO

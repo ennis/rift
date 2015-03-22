@@ -11,7 +11,10 @@ public:
 
 	float Radius() const;
 
-	bool isColliding(BoundingVolume* target);
+	bool isColliding(BoundingVolume* target, float & penetration_distance);
+
+	void MakeCollision(BoundingVolume* target,
+		const float penetration_distance, float CoR);
 
 	void render(RenderContext const &renderContext, bool isColliding);
 
