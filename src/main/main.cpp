@@ -18,6 +18,7 @@
 #include <hudtext.hpp>
 #include <colors.hpp>
 #include <small_vector.hpp>
+#include <skeleton.hpp>
 
 //============================================================================
 // Classe de base du jeu
@@ -110,6 +111,8 @@ private:
 	std::unique_ptr<HUDTextRenderer> hud;
 
 	Sky sky;
+
+	std::unique_ptr<Skeleton> skel;
 };
 
 //============================================================================
@@ -218,8 +221,12 @@ void RiftGame::init()
 	fxCB = ConstantBuffer::create(sizeof(FXParams), nullptr);
 	fxPB = ParameterBlock::create(*passthrough);
 	fxPB->setConstantBuffer(0, *fxCB);
+
 	fxPB->setTextureParameter(0, &screenRT2->getColorTexture(0), SamplerDesc{});
 	fxPB->setTextureParameter(1, &screenRT2->getDepthTexture(), SamplerDesc{});
+
+	std::vector<Mapping> mappings;
+	skel = Skeleton::createFromFile("resources/models/bvh/man_skeleton.bvh", mappings);
 }
 
 
