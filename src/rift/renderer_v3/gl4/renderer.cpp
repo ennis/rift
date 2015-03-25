@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 #include <log.hpp>
+#include <engine.hpp>
 
 std::unique_ptr<Renderer> Renderer::instance;
 
@@ -679,6 +680,131 @@ RenderTarget::Ptr RenderTarget::createRenderTargetCubeMap(
 	r->u.texture_cubemap = &cubeMap;
 	return r;
 }
+
+RenderTarget2::RenderTarget2() :
+fbo(0),
+depth_target(nullptr),
+render_queue(RenderQueue::create()),
+clear_depth(1.0)
+{
+
+}
+
+RenderTarget2::RenderTarget2(
+	glm::ivec2 size_,
+	util::array_ref<ElementFormat> colorTargetFormats) :
+	size(size_),
+	render_queue(RenderQueue::create()),
+	clear_depth(1.0)
+{
+	assert(colorTargetFormats.size() < 8);
+	for (auto format : colorTargetFormats) {
+		color_targets.push_back(Texture2D::create(size, 1, format, nullptr));
+	}
+	init();
+}
+
+RenderTarget2::RenderTarget2(
+	glm::ivec2 size_,
+	util::array_ref<ElementFormat> colorTargetFormats,
+	ElementFormat depthTargetFormat) :
+	size(size_),
+	depth_target(nullptr),
+	render_queue(RenderQueue::create()),
+	clear_depth(1.0)
+{
+	assert(colorTargetFormats.size() < 8);
+	for (auto format : colorTargetFormats) {
+		color_targets.push_back(Texture2D::create(size, 1, format, nullptr));
+	}
+	depth_target = Texture2D::create(size, 1, depthTargetFormat, nullptr);
+	init();
+}
+
+RenderTarget2::Ptr RenderTarget2::create(
+	glm::ivec2 size,
+	util::array_ref<ElementFormat> colorTargetFormats, 
+	ElementFormat depthTargetFormat)
+{
+	auto ptr = std::make_unique<RenderTarget2>(size, colorTargetFormats, depthTargetFormat);
+	return ptr;
+}
+
+RenderTarget2::Ptr RenderTarget2::createNoDepth(
+	glm::ivec2 size, 
+	util::array_ref<ElementFormat> colorTargetFormats)
+{
+	auto ptr = std::make_unique<RenderTarget2>(size, colorTargetFormats);
+	return ptr;
+}
+
+RenderTarget2 &RenderTarget2::getDefaultRenderTarget()
+{
+	if (!default_rt)
+		default_rt = std::make_unique<RenderTarget2>();
+	return *default_rt;
+}
+
+void RenderTarget2::init()
+{
+	gl::GenFramebuffers(1, &fbo);
+	gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
+
+	for (int i = 0; i < color_targets.size(); ++i)
+	{
+		auto &&target = color_targets[i];
+		gl::FramebufferTexture(
+			gl::FRAMEBUFFER,
+			gl::COLOR_ATTACHMENT0 + i,
+			target->id,
+			0);
+	}
+	gl::FramebufferTexture(
+		gl::FRAMEBUFFER,
+		gl::DEPTH_ATTACHMENT,
+		depth_target->id,
+		0);
+
+	// check fb completeness
+	// enable draw buffers
+	static const GLenum drawBuffers[8] = {
+		gl::COLOR_ATTACHMENT0,
+		gl::COLOR_ATTACHMENT0 + 1,
+		gl::COLOR_ATTACHMENT0 + 2,
+		gl::COLOR_ATTACHMENT0 + 3,
+		gl::COLOR_ATTACHMENT0 + 4,
+		gl::COLOR_ATTACHMENT0 + 5,
+		gl::COLOR_ATTACHMENT0 + 6,
+		gl::COLOR_ATTACHMENT0 + 7
+	};
+
+	gl::DrawBuffers(color_targets.size(), drawBuffers);
+
+	GLenum err;
+	err = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
+	assert(err == gl::FRAMEBUFFER_COMPLETE);
+}
+
+void RenderTarget2::flush()
+{
+	gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
+	if (fbo == 0) {
+		// TODO feels like a hack
+		auto screen_size = Engine::instance().getWindow().size();
+		gl::Viewport(0, 0, screen_size.x, screen_size.y);
+	}
+	else {
+		gl::Viewport(0, 0, size.x, size.y);
+	}
+	gl::DepthMask(gl::TRUE_);
+	gl::ClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
+	gl::ClearDepth(clear_depth);
+	gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+	Renderer::getInstance().submitRenderQueue(*render_queue);
+	render_queue->clear();
+}
+
+RenderTarget2::Ptr RenderTarget2::default_rt;
 
 Shader::Shader(
 	const char *vsSource,

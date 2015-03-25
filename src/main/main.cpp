@@ -17,6 +17,7 @@
 #include <font.hpp>
 #include <hudtext.hpp>
 #include <colors.hpp>
+#include <small_vector.hpp>
 
 //============================================================================
 // Classe de base du jeu
@@ -84,17 +85,14 @@ private:
 	ConstantBuffer::Ptr cbPerObjPBR;
 	ConstantBuffer::Ptr cbEnvCube;
 
-	RenderQueue::Ptr renderQueue;
 	Texture2D::Ptr tex;
 	TextureCubeMap::Ptr envmap;
 	
 	Texture2D::Ptr shadowMap;
 	RenderTarget::Ptr shadowRT;
 
-	Texture2D::Ptr screenColorTexture;
-	Texture2D::Ptr screenDepthTexture;
-	RenderTarget::Ptr colorRT;
-	RenderTarget::Ptr depthRT;
+	RenderTarget2::Ptr screenRT2;
+
 	Shader::Ptr passthrough;
 
 	struct FXParams
@@ -118,6 +116,8 @@ private:
 void RiftGame::init()
 {
 	boost::filesystem::path path(".");
+
+	util::small_vector<int, 16> ints;
 
 	// create the camera object
 	
@@ -201,7 +201,6 @@ void RiftGame::init()
 	paramBlock = ParameterBlock::create(*shader);
 	paramBlockPBR = ParameterBlock::create(*shaderPBR);
 	paramBlockEnvCube = ParameterBlock::create(*shaderEnvCube);
-	renderQueue = RenderQueue::create();
 
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	shadowMap = Texture2D::create(win_size, 1, ElementFormat::Depth16, nullptr);
@@ -214,15 +213,13 @@ void RiftGame::init()
 	ds_fx.depthTestEnable = false;
 	ds_fx.depthWriteEnable = false;
 	passthrough = gl4::Effect::loadFromFile("resources/shaders/fxaa.glsl")->compileShader({}, RasterizerDesc{}, ds_fx, BlendDesc{});
-	screenColorTexture = Texture2D::create({ 1280, 720 }, 1, ElementFormat::Unorm8x4, nullptr);
-	screenDepthTexture = Texture2D::create({ 1280, 720 }, 1, ElementFormat::Depth24, nullptr);
-	colorRT = RenderTarget::createRenderTarget2D(*screenColorTexture, 0);
-	depthRT = RenderTarget::createRenderTarget2D(*screenDepthTexture, 0);
+	screenRT2 = RenderTarget2::create({ 1280, 720 }, { ElementFormat::Unorm8x4 }, ElementFormat::Depth24);
+
 	fxCB = ConstantBuffer::create(sizeof(FXParams), nullptr);
 	fxPB = ParameterBlock::create(*passthrough);
 	fxPB->setConstantBuffer(0, *fxCB);
-	fxPB->setTextureParameter(0, screenColorTexture.get(), SamplerDesc{});
-	fxPB->setTextureParameter(1, screenDepthTexture.get(), SamplerDesc{});
+	fxPB->setTextureParameter(0, &screenRT2->getColorTexture(0), SamplerDesc{});
+	fxPB->setTextureParameter(1, &screenRT2->getDepthTexture(), SamplerDesc{});
 }
 
 
@@ -232,11 +229,10 @@ void RiftGame::render(float dt)
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	auto &R = Renderer::getInstance();
 
-	//R.setRenderTargets({}, nullptr);
-	R.setRenderTargets({colorRT.get()}, depthRT.get());
-	R.clearColor(0.25f, 0.25f, 0.2f, 0.0f);
-	R.clearDepth(1.0f);
-	R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
+	screenRT2->clearColor(0.25f, 0.25f, 0.2f, 0.0f);
+	screenRT2->clearDepth(1.0f);
+	auto &&rq = screenRT2->getRenderQueue();
+	//R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
 
 	// update scene data buffer
 	auto cam = cameraEntity->getComponent<Camera>();
@@ -294,35 +290,26 @@ void RiftGame::render(float dt)
 		//renderQueue->draw(*mesh, 0, *shader, *paramBlock, 0);
 	}
 
-
-	renderQueue->draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
+	rq.draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
 
 	for (auto submesh = 0u; submesh < mokou->getNumSubmeshes(); ++submesh)
-		renderQueue->draw(*mokou, submesh, *shaderPBR, *paramBlockPBR, 0);
+		rq.draw(*mokou, submesh, *shaderPBR, *paramBlockPBR, 0);
 
 	//sky.render(*renderQueue, sceneData, *cbSceneData);
-	R.submitRenderQueue(*renderQueue);
-
-	//R.setRenderTargets({}, shadowRT.get());
-	//R.clearDepth(1.0f);
-	//R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
-	// resubmit
-	//R.submitRenderQueue(*renderQueue);
-
-	renderQueue->clear();
+	screenRT2->flush();
 
 	// PostFX pass
-	R.setRenderTargets({}, nullptr);
+	auto &&screen_rt = RenderTarget2::getDefaultRenderTarget();
+	auto &&screen_rq = screen_rt.getRenderQueue();
 	FXParams fxp;
 	fxp.thing = 2.0;
 	fxp.vx_offset = 1.0;
 	fxp.rt_w = 1280;
 	fxp.rt_h = 720;
 	fxCB->update(0, sizeof(FXParams), &fxp);
-	renderQueue->drawProcedural(PrimitiveType::Triangle, 3, *passthrough, *fxPB, 0);
-	hud->renderString("Hello world!", *font, { 100.0, 100.0 }, Color::White, Color::Black, *renderQueue, sceneData, *cbSceneData);
-	R.submitRenderQueue(*renderQueue);
-	renderQueue->clear();
+	screen_rq.drawProcedural(PrimitiveType::Triangle, 3, *passthrough, *fxPB, 0);
+	hud->renderString("Hello world!", *font, { 100.0, 100.0 }, Color::White, Color::Black, screen_rq, sceneData, *cbSceneData);
+	screen_rt.flush();
 
 	// render tweak bar
 	//TwDraw();
