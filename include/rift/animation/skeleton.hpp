@@ -6,49 +6,62 @@
 #include <vector>
 #include <memory>
 
-struct CurrentTransform{
+struct CurrentTransform {
 	glm::vec3 current_translation;
 	glm::vec3 current_rotation;
 };
 
-enum DofMapping{
-	TRANSX, TRANSY, TRANSZ, ROTX, ROTY, ROTZ
+enum class DOF
+{
+	TranslationX,
+	TranslationY,
+	TranslationZ,
+	RotationX,
+	RotationY,
+	RotationZ
 };
 
-struct Mapping{
-	int num_joint;
-	DofMapping dof_mapping;
-	Mapping(int num_joint_, DofMapping dof_mapping_){
-		this->num_joint = num_joint_;
-		this->dof_mapping = dof_mapping_;
-	}
+struct BVHMapping
+{
+	DOF dof;
+	int joint_index;
+
+	BVHMapping() = default;
+	BVHMapping(int joint_index_, DOF dof_) :
+		dof(dof_),
+		joint_index(joint_index_)
+	{}
 };
 
-struct Joint{
-	std::string name;
-	glm::vec3 init_offset;
-
-	int parent;
-	std::vector<int> children;
-
+struct Joint
+{
 	//-------Constructors
-	Joint(){
-		parent = -1;
-		init_offset = glm::vec3();
+	Joint() = default;
+
+	Joint(std::string name_) :
+		name(std::move(name_)),
+		parent(-1)
+	{
 	}
-	Joint(std::string _name){
-		parent = -1;
-		name = _name;
-		init_offset = glm::vec3();
-	}
+
+	std::string name = "root";
+	glm::vec3 init_offset;
+	int parent = -1;
+	// TODO smallvector?
+	std::vector<int> children;
 };
 
 class Skeleton
 {
 public:
-	std::vector<Joint> joints;
+	using Ptr = std::unique_ptr<Skeleton>;
 
-	static std::unique_ptr<Skeleton> createFromFile(std::string filename, std::vector<Mapping> &mappings);
+	static Ptr loadFromBVH(
+		std::istream &streamIn, 
+		std::vector<BVHMapping> &bvhMappings);
+
+private:
+	std::vector<Joint> joints;
 };
 
 

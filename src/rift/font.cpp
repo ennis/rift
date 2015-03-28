@@ -103,7 +103,7 @@ Font::Ptr Font::loadFromFile(const char *fontFilePath)
 				}
 			}
 		default:
-			WARNING << "BMF: ignored block type";
+			WARNING << "BMF: ignored block type " << static_cast<int>(blockType);
 			// skip unknown block
 			fileIn.ignore(blockSize);
 			break;

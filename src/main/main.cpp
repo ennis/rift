@@ -19,6 +19,7 @@
 #include <colors.hpp>
 #include <small_vector.hpp>
 #include <skeleton.hpp>
+#include <animationcurve.hpp>
 
 //============================================================================
 // Classe de base du jeu
@@ -225,8 +226,12 @@ void RiftGame::init()
 	fxPB->setTextureParameter(0, &screenRT2->getColorTexture(0), SamplerDesc{});
 	fxPB->setTextureParameter(1, &screenRT2->getDepthTexture(), SamplerDesc{});
 
-	std::vector<Mapping> mappings;
-	skel = Skeleton::createFromFile("resources/models/bvh/man_skeleton.bvh", mappings);
+	std::vector<BVHMapping> mappings;
+	std::ifstream bvh("resources/models/bvh/man_skeleton.bvh");
+	skel = Skeleton::loadFromBVH(bvh, mappings);
+
+	std::ifstream motion_file("resources/models/bvh/man_walk.bvh");
+	auto curves = AnimationCurve<float>::loadCurvesFromBVH(motion_file, mappings.size());
 }
 
 
