@@ -20,6 +20,60 @@
 #include <small_vector.hpp>
 #include <skeleton.hpp>
 #include <animationcurve.hpp>
+#include <skeletonanimation.hpp>
+
+
+// utils
+namespace
+{
+	Mesh::Ptr generateCylinderMesh()
+	{
+		// HA!
+		std::ifstream fileIn("resources/models/cylinder.mesh", std::ios::binary);
+		serialization::IArchive arc(fileIn);
+		return Mesh::loadFromArchive(arc);
+	}
+}
+
+class SkeletonDebug
+{
+public:
+	static const unsigned kMaxJoints = 60;
+
+	SkeletonDebug()
+	{
+		shader = gl4::Effect::loadFromFile("resources/shaders/skeleton_debug.glsl")->compileShader();
+		cylinder = generateCylinderMesh();
+		// Max 60 bones
+		cb_bone_transforms = ConstantBuffer::create(kMaxJoints * sizeof(glm::mat4), nullptr);
+		paramBlock = ParameterBlock::create(*shader);
+	}
+
+	void drawSkeleton(
+		const Skeleton &skeleton,
+		const SkeletonAnimationSampler &animSampler,
+		RenderTarget2 &renderTarget,
+		const SceneData &sceneData,
+		const ConstantBuffer &sceneDataCB)
+	{
+		assert(skeleton.joints.size() < kMaxJoints);
+		// compute pose
+		auto pose = animSampler.getPose(skeleton, glm::mat4(1.0));
+
+		// upload list of transforms
+		cb_bone_transforms->update(0, pose.size() * sizeof(glm::mat4), pose.data());
+		// draw instanced (num joints)
+		paramBlock->setConstantBuffer(0, sceneDataCB);
+		paramBlock->setConstantBuffer(1, *cb_bone_transforms);
+		renderTarget.getRenderQueue().drawInstanced(*cylinder, 0, *shader, *paramBlock, pose.size(), 0);
+	}
+
+private:
+	Shader::Ptr shader;
+	Mesh::Ptr cylinder;
+	ParameterBlock::Ptr paramBlock;
+	ConstantBuffer::Ptr cb_bone_transforms;
+};
 
 //============================================================================
 // Classe de base du jeu
@@ -112,8 +166,10 @@ private:
 	std::unique_ptr<HUDTextRenderer> hud;
 
 	Sky sky;
-
 	std::unique_ptr<Skeleton> skel;
+	std::unique_ptr<SkeletonDebug>  skel_debug;
+	SkeletonAnimation skel_animation;
+	std::unique_ptr<SkeletonAnimationSampler> skel_anim_sampler;
 };
 
 //============================================================================
@@ -231,7 +287,10 @@ void RiftGame::init()
 	skel = Skeleton::loadFromBVH(bvh, mappings);
 
 	std::ifstream motion_file("resources/models/bvh/man_walk.bvh");
-	auto curves = AnimationCurve<float>::loadCurvesFromBVH(motion_file, mappings.size());
+	skel_debug = std::make_unique<SkeletonDebug>();
+	skel_animation = SkeletonAnimation::loadFromBVH(motion_file, *skel, mappings);
+	skel_anim_sampler = std::make_unique<SkeletonAnimationSampler>(*skel, skel_animation, 0.01f);
+	skel_anim_sampler->nextFrame();
 }
 
 
@@ -302,17 +361,19 @@ void RiftGame::render(float dt)
 		//renderQueue->draw(*mesh, 0, *shader, *paramBlock, 0);
 	}
 
+	skel_anim_sampler->nextFrame();
+	skel_debug->drawSkeleton(*skel, *skel_anim_sampler, *screenRT2, sceneData, *cbSceneData);
 	rq.draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
 
-	for (auto submesh = 0u; submesh < mokou->getNumSubmeshes(); ++submesh)
-		rq.draw(*mokou, submesh, *shaderPBR, *paramBlockPBR, 0);
+	/*for (auto submesh = 0u; submesh < mokou->getNumSubmeshes(); ++submesh)
+		rq.draw(*mokou, submesh, *shaderPBR, *paramBlockPBR, 0);*/
 
 	//sky.render(*renderQueue, sceneData, *cbSceneData);
 	screenRT2->flush();
 
 	// PostFX pass
-	auto &&screen_rt = RenderTarget2::getDefaultRenderTarget();
-	auto &&screen_rq = screen_rt.getRenderQueue();
+	auto &screen_rt = RenderTarget2::getDefaultRenderTarget();
+	auto &screen_rq = screen_rt.getRenderQueue();
 	FXParams fxp;
 	fxp.thing = 2.0;
 	fxp.vx_offset = 1.0;

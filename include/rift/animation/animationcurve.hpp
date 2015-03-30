@@ -38,7 +38,7 @@ public:
 	}
 
 	std::pair<int, int>
-	findKeys(T time)
+	findKeys(T time) const
 	{
 		// dichotomy
 		int l = 0;
@@ -58,14 +58,32 @@ public:
 			p = l + (u - l) / 2;
 		}
 
-		return std::pair<int,int>(p,std::min(p+1,keys.size()-1));
+		return std::pair<int,int>(p,std::min<int>(p+1,keys.size()-1));
 	}
 
-	T evaluate(T time)
+	T evaluate(T time) const
 	{
 		// hermite interpolation
-		// TODO
-		return T();
+		auto pair = findKeys(time);
+		auto p0 = keys[pair.first].value;
+		auto x0 = keys[pair.first].time;
+		auto p1 = keys[pair.second].value;
+		auto x1 = keys[pair.second].time;
+
+		auto dx = x1 - x0;
+		auto tt = (time - x0) / dx;
+		auto tt2 = tt*tt;
+		auto tt3 = tt2*tt;
+		auto h00 = 2 * tt3 - 3 * tt2 + 1;
+		auto h10 = tt3 - 2 * tt2 + tt;
+		auto h01 = -2 * tt3 + 3 * tt2;
+		auto h11 = tt3 - tt2;
+
+		// TODO non-flat tangents
+		auto m0 = T(0.0);
+		auto m1 = T(0.0);
+
+		return h00*p0 + h10*dx*m0 + h01*p1 + h11*dx*m1;
 	}
 
 	// BVH loader
@@ -99,10 +117,6 @@ public:
 			}
 		}
 	
-		// read num entries
-		// read frame time
-		// read entries
-		// return vector (move / RVO)
 		return curves;
 	}
 

@@ -60,7 +60,6 @@ public:
 		std::istream &streamIn, 
 		std::vector<BVHMapping> &bvhMappings);
 
-private:
 	std::vector<Joint> joints;
 };
 

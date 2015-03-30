@@ -364,38 +364,6 @@ namespace gl4
 		std::vector<Submesh> submeshes;
 	};
 
-	class Parameter
-	{
-		friend class Renderer;
-		friend class ParameterBlock;
-	public:
-		using Ptr = std::unique_ptr < Parameter >;
-
-	//protected:
-		Parameter() = default;
-
-		const Shader *shader;
-		GLuint location = 0;
-		GLuint binding = 0;
-		int size = 0;	// in bytes
-	};
-
-	class TextureParameter
-	{
-		friend class Renderer;
-		friend class ParameterBlock;
-	public:
-
-		using Ptr = std::unique_ptr < TextureParameter > ;
-
-	//protected:
-		TextureParameter() = default;
-
-		const Shader *shader = nullptr;
-		GLuint location = 0;
-		GLuint texunit = 0;
-	};
-
 	class ParameterBlock
 	{
 		friend class Renderer;
@@ -404,26 +372,10 @@ namespace gl4
 		using Ptr = std::unique_ptr < ParameterBlock > ;
 
 		ParameterBlock(Shader &shader);
-
-		void setParameter(
-			const Parameter &param,
-			const void *data
-			);
-
-		void setConstantBuffer(
-			const Parameter &param,
-			const ConstantBuffer &constantBuffer
-			);
-
+		
 		void setConstantBuffer(
 			int binding,
 			const ConstantBuffer &constantBuffer
-			);
-
-		void setTextureParameter(
-			const TextureParameter &param,
-			const Texture2D *texture,
-			const SamplerDesc &samplerDesc
 			);
 
 		void setTextureParameter(
@@ -578,6 +530,7 @@ namespace gl4
 		const ParameterBlock *param_block;
 		const Shader *shader;
 		int procedural_count;	// == 0 if mesh == nullptr
+		int num_instances;
 		GLenum procedural_mode;
 	};
 
@@ -592,6 +545,15 @@ namespace gl4
 			int submesh_index,
 			const Shader &shader,
 			const ParameterBlock &parameterBlock,
+			uint64_t sortHint
+			);
+
+		void drawInstanced(
+			const Mesh &mesh,
+			int submesh_index,
+			const Shader &shader,
+			const ParameterBlock &parameterBlock,
+			int num_instances, 
 			uint64_t sortHint
 			);
 

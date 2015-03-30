@@ -32,6 +32,9 @@ private:
 		glm::vec4 outlineColor;
 	};
 
+	int frame = 0;
+	GLsync sync;
+	GLsync sync2;
 	Mesh::Ptr mesh;
 	Shader::Ptr shader;
 	ParameterBlock::Ptr pb;

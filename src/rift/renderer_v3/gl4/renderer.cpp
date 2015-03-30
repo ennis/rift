@@ -6,6 +6,7 @@
 #include <string>
 #include <log.hpp>
 #include <engine.hpp>
+#include <array>
 
 std::unique_ptr<Renderer> Renderer::instance;
 
@@ -690,6 +691,24 @@ clear_depth(1.0)
 
 }
 
+namespace
+{
+	void checkForUnusualColorFormats(ElementFormat f)
+	{
+		if (f == ElementFormat::Uint8x4 ||
+			f == ElementFormat::Uint8x3 ||
+			f == ElementFormat::Uint8x2 ||
+			f == ElementFormat::Uint8 ||
+			f == ElementFormat::Uint16x2 ||
+			f == ElementFormat::Uint16 ||
+			f == ElementFormat::Uint32)
+		{
+			WARNING << "Unusual integer color format (" << getElementFormatName(f) << ") used for render target.\n";
+			WARNING << "-> Did you mean to use UnormXxY ?";
+		}
+	}
+}
+
 RenderTarget2::RenderTarget2(
 	glm::ivec2 size_,
 	util::array_ref<ElementFormat> colorTargetFormats) :
@@ -699,6 +718,7 @@ RenderTarget2::RenderTarget2(
 {
 	assert(colorTargetFormats.size() < 8);
 	for (auto format : colorTargetFormats) {
+		checkForUnusualColorFormats(format);
 		color_targets.push_back(Texture2D::create(size, 1, format, nullptr));
 	}
 	init();
@@ -715,6 +735,7 @@ RenderTarget2::RenderTarget2(
 {
 	assert(colorTargetFormats.size() < 8);
 	for (auto format : colorTargetFormats) {
+		checkForUnusualColorFormats(format);
 		color_targets.push_back(Texture2D::create(size, 1, format, nullptr));
 	}
 	depth_target = Texture2D::create(size, 1, depthTargetFormat, nullptr);
@@ -806,6 +827,57 @@ void RenderTarget2::flush()
 
 RenderTarget2::Ptr RenderTarget2::default_rt;
 
+namespace
+{
+	std::array<GLenum, 37> samplerTypes = {
+		gl::SAMPLER_1D,
+		gl::SAMPLER_2D,
+		gl::SAMPLER_3D,
+		gl::SAMPLER_CUBE,
+		gl::SAMPLER_1D_SHADOW,
+		gl::SAMPLER_2D_SHADOW,
+		gl::SAMPLER_1D_ARRAY,
+		gl::SAMPLER_2D_ARRAY,
+		gl::SAMPLER_1D_ARRAY_SHADOW,
+		gl::SAMPLER_2D_ARRAY_SHADOW,
+		gl::SAMPLER_2D_MULTISAMPLE,
+		gl::SAMPLER_2D_MULTISAMPLE_ARRAY,
+		gl::SAMPLER_CUBE_SHADOW,
+		gl::SAMPLER_BUFFER,
+		gl::SAMPLER_2D_RECT,
+		gl::SAMPLER_2D_RECT_SHADOW,
+		gl::INT_SAMPLER_1D,
+		gl::INT_SAMPLER_2D,
+		gl::INT_SAMPLER_3D,
+		gl::INT_SAMPLER_CUBE,
+		gl::INT_SAMPLER_1D_ARRAY,
+		gl::INT_SAMPLER_2D_ARRAY,
+		gl::INT_SAMPLER_2D_MULTISAMPLE,
+		gl::INT_SAMPLER_2D_MULTISAMPLE_ARRAY,
+		gl::INT_SAMPLER_BUFFER,
+		gl::INT_SAMPLER_2D_RECT,
+		gl::UNSIGNED_INT_SAMPLER_1D,
+		gl::UNSIGNED_INT_SAMPLER_2D,
+		gl::UNSIGNED_INT_SAMPLER_3D,
+		gl::UNSIGNED_INT_SAMPLER_CUBE,
+		gl::UNSIGNED_INT_SAMPLER_1D_ARRAY,
+		gl::UNSIGNED_INT_SAMPLER_2D_ARRAY,
+		gl::UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE,
+		gl::UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY,
+		gl::UNSIGNED_INT_SAMPLER_BUFFER,
+		gl::UNSIGNED_INT_SAMPLER_2D_RECT
+	};
+
+	bool isSamplerType(GLenum type)
+	{
+		for (auto e : samplerTypes) {
+			if (type == e)
+				return true;
+		}
+		return false;
+	}
+}
+
 Shader::Shader(
 	const char *vsSource,
 	const char *psSource,
@@ -819,13 +891,50 @@ Shader::Shader(
 	om_state = blendState;
 	// preprocess source
 	program = glslCreateProgram(vsSource, psSource);
+
+	// query some informations
+	int num_ubo = 0;
+	gl::GetProgramInterfaceiv(program, gl::UNIFORM_BLOCK, gl::ACTIVE_RESOURCES, &num_ubo);
+	GLenum bufferProps[] = { gl::BUFFER_BINDING, gl::BUFFER_DATA_SIZE };
+	for (auto block_index = 0; block_index < num_ubo; ++block_index) {
+		int len;
+		int val[2];
+		gl::GetProgramResourceiv(
+			program, 
+			gl::UNIFORM_BLOCK, 
+			block_index, 
+			2, 
+			bufferProps, 
+			2*sizeof(int), 
+			&len, 
+			val);
+		LOG << "Block index #" << block_index << ": slot=" << val[0] << ", size=" << val[1];
+	}
+
+	int num_uniforms = 0;
+	gl::GetProgramInterfaceiv(program, gl::UNIFORM, gl::ACTIVE_RESOURCES, &num_uniforms);
+	GLenum uniformProps[] = { gl::TYPE, gl::LOCATION };
+	for (auto uindex = 0; uindex < num_uniforms; ++uindex) {
+		int len;
+		int val[2];
+		gl::GetProgramResourceiv(
+			program,
+			gl::UNIFORM,
+			uindex,
+			2,
+			uniformProps,
+			2 * sizeof(int),
+			&len,
+			val);
+		LOG << "Uniform index #" << uindex << ": type=" << val[0] << ", location=" << val[1];
+		if (isSamplerType(val[0])) {
+			int tex_unit;
+			gl::GetUniformiv(program, val[1], &tex_unit);
+			LOG << " -- Sampler bound to texture unit " << tex_unit;
+		}
+	}
 }
 
-//=============================================================================
-//=============================================================================
-// Renderer::createEffectTextureParameter
-//=============================================================================
-//=============================================================================
 ConstantBuffer::ConstantBuffer(
 	int size_,
 	const void *initialData)
@@ -1071,6 +1180,7 @@ void RenderQueue::draw(
 	item.param_block = &parameterBlock;
 	item.sort_key = sortHint;
 	item.procedural_count = 0;
+	item.num_instances = 1;
 	assert(item.submesh_index < mesh.submeshes.size());
 	items.push_back(item);
 }
@@ -1090,6 +1200,28 @@ void RenderQueue::drawProcedural(
 	item.sort_key = sortHint;
 	item.procedural_count = count;
 	item.procedural_mode = primitiveTypeToGLenum(primitiveType);
+	item.num_instances = 0;
+	items.push_back(item);
+}
+
+void RenderQueue::drawInstanced(
+	const Mesh &mesh,
+	int submesh_index,
+	const Shader &shader,
+	const ParameterBlock &parameterBlock,
+	int num_instances,
+	uint64_t sortHint
+	)
+{
+	RenderItem item;
+	item.shader = &shader;
+	item.mesh = &mesh;
+	item.submesh_index = submesh_index;
+	item.param_block = &parameterBlock;
+	item.sort_key = sortHint;
+	item.procedural_count = 0;
+	item.num_instances = num_instances;
+	assert(item.submesh_index < mesh.submeshes.size());
 	items.push_back(item);
 }
 
@@ -1162,13 +1294,25 @@ void Renderer::drawItem(const RenderItem &item)
 
 		if (item.mesh->ibsize != 0) {
 			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, item.mesh->ib);
-			gl::DrawElementsBaseVertex(
-				primitiveTypeToGLenum(sm.primitiveType),
-				sm.numIndices,
-				gl::UNSIGNED_SHORT,
-				reinterpret_cast<void*>(sm.startIndex*2),
-				sm.startVertex
-				);
+			if (item.num_instances != 1)
+			{
+				gl::DrawElementsBaseVertex(
+					primitiveTypeToGLenum(sm.primitiveType),
+					sm.numIndices,
+					gl::UNSIGNED_SHORT,
+					reinterpret_cast<void*>(sm.startIndex * 2),
+					sm.startVertex
+					);
+			}
+			else {
+				gl::DrawElementsInstancedBaseVertex(
+					primitiveTypeToGLenum(sm.primitiveType), 
+					sm.numIndices, 
+					gl::UNSIGNED_SHORT,
+					reinterpret_cast<void*>(sm.startIndex * 2), 
+					item.num_instances, 
+					sm.startVertex);
+			}
 		}
 		else {
 			gl::DrawArrays(

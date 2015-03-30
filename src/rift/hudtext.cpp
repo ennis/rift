@@ -81,8 +81,26 @@ void HUDTextRenderer::renderString(
 		ibuf[i*6+5]=i*4+2;
 		x+=g->xAdvance;
 	}
+
+	/*if (frame >= 2) {
+		auto result = gl::ClientWaitSync(sync, gl::SYNC_FLUSH_COMMANDS_BIT, 0);
+		auto result2 = gl::ClientWaitSync(sync2, gl::SYNC_FLUSH_COMMANDS_BIT, 10000000);
+		if (result == gl::TIMEOUT_EXPIRED && (result2 != gl::TIMEOUT_EXPIRED)) {
+			WARNING << "LOCK FRAME N-1 " << frame;
+		}
+		if (result2 == gl::TIMEOUT_EXPIRED) {
+			WARNING << "LOCK FRAME N-2 " << frame;
+		}
+	}*/
+	++frame;
 	mesh->updateVertices(0, len * 4, vbuf);
 	mesh->updateIndices(0, len * 6, ibuf);
+	// quick check
+	/*if (frame >= 2)
+		gl::DeleteSync(sync2);
+	sync2 = sync;
+	sync = gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0);*/
+
 	mesh->setSubmesh(0, Submesh{ PrimitiveType::Triangle, 0, 0, len*4, len*6 });
 
 	// create a mesh

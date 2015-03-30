@@ -287,6 +287,7 @@ namespace gl4
 		util::array_ref<Effect::Keyword> keywords_)
 	{
 		Effect::Ptr eff = std::make_unique<Effect>();
+		LOG << "Loading effect " << combinedSourcePath;
 		eff->keywords = keywords_.vec();
 		eff->vs_source = loadEffectSource(combinedSourcePath);
 		eff->combined_source = true;
