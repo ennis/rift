@@ -33,6 +33,14 @@ namespace
 		serialization::IArchive arc(fileIn);
 		return Mesh::loadFromArchive(arc);
 	}
+
+	/*glm::mat4 match2points(glm::vec3 s0, glm::vec3 s1, glm::vec3 t0, glm::vec3 t1)
+	{
+		// estimate scale
+		auto ds = s1 - s0;
+		auto dt = t1 - t0;
+		float scaling = dt.length() / ds.length();
+	}*/
 }
 
 class SkeletonDebug
@@ -59,6 +67,10 @@ public:
 		assert(skeleton.joints.size() < kMaxJoints);
 		// compute pose
 		auto pose = animSampler.getPose(skeleton, glm::mat4(1.0));
+		for (size_t i = 0; i < pose.size(); i++)
+		{
+			pose[i] *= glm::scale(glm::vec3(0.01*skeleton.joints[i].init_offset.length()));
+		}
 
 		// upload list of transforms
 		cb_bone_transforms->update(0, pose.size() * sizeof(glm::mat4), pose.data());
