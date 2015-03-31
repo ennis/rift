@@ -71,35 +71,37 @@ namespace
 		std::vector<Joint> &joints,
 		std::vector<BVHMapping> &mappings)
 	{
-		auto &cur_joint = joints.back();
+		auto cur_joint_index = joints.size()-1;
 		std::string buf;
 		streamIn >> buf;
 		if (buf.compare("{") != 0)
-			ERROR << "missing { in readJoint: " << cur_joint.name;
+			ERROR << "missing { in readJoint: " << joints[cur_joint_index].name;
 
 		int index_parent = joints.size() - 1;
-		readOffset(streamIn, cur_joint);
+		readOffset(streamIn, joints[cur_joint_index]);
 		readChannels(streamIn, joints, mappings);
 		streamIn >> buf; // peut contenir JOINT ou End
 
-		if (buf.compare("End") == 0){ // Cas d'arret
+		if (buf.compare("End") == 0)
+		{ // Cas d'arret
 			streamIn >> buf;
 			if (buf.compare("Site") != 0)
 				ERROR << "missing Site: " << joints.back().name;
 
 			Joint joint("EndSite");
+			joint.parent = index_parent;
+			joints[cur_joint_index].children.push_back(joints.size());
 			joints.push_back(joint);
 			readEndSite(streamIn, joints);
-			joints[joints.size() - 1].parent = index_parent;
-			joints[index_parent].children.push_back(joints.size() - 1);
 		}
-		else if (buf.compare("JOINT") == 0){ // 1 ou plus Joint successifs
+		else if (buf.compare("JOINT") == 0)
+		{ // 1 ou plus Joint successifs
 			streamIn >> buf; //contient le nom
 			Joint joint(buf);
+			joint.parent = index_parent;
+			joints[cur_joint_index].children.push_back(joints.size());
 			joints.push_back(joint);
 			readJoint(streamIn, joints, mappings);
-			joints[joints.size() - 1].parent = index_parent;
-			joints[index_parent].children.push_back(joints.size() - 1);
 
 			while ((streamIn >> std::ws).peek() != '}')
 			{
@@ -108,13 +110,13 @@ namespace
 					ERROR << "missing JOINT: " << joints.back().name;
 				streamIn >> buf; //contient le nom
 				Joint joint(buf);
+				joint.parent = index_parent;
+				joints[cur_joint_index].children.push_back(joints.size());
 				joints.push_back(joint);
 				readJoint(streamIn, joints, mappings);
-				joints[joints.size() - 1].parent = index_parent;
-				joints[index_parent].children.push_back(joints.size() - 1);
 			}
 		}
-		else{ // impossible
+		else { // impossible
 			ERROR << "Syntax error: unexpected symbol: " << joints.back().name;
 		}
 

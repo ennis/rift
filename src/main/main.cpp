@@ -289,7 +289,7 @@ void RiftGame::init()
 	std::ifstream motion_file("resources/models/bvh/man_walk.bvh");
 	skel_debug = std::make_unique<SkeletonDebug>();
 	skel_animation = SkeletonAnimation::loadFromBVH(motion_file, *skel, mappings);
-	skel_anim_sampler = std::make_unique<SkeletonAnimationSampler>(*skel, skel_animation, 0.01f);
+	skel_anim_sampler = std::make_unique<SkeletonAnimationSampler>(*skel, skel_animation, 0.003f);
 	skel_anim_sampler->nextFrame();
 }
 

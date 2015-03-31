@@ -1294,7 +1294,7 @@ void Renderer::drawItem(const RenderItem &item)
 
 		if (item.mesh->ibsize != 0) {
 			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, item.mesh->ib);
-			if (item.num_instances != 1)
+			if (item.num_instances == 1)
 			{
 				gl::DrawElementsBaseVertex(
 					primitiveTypeToGLenum(sm.primitiveType),
