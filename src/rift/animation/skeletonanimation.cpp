@@ -3,7 +3,7 @@
 SkeletonAnimation SkeletonAnimation::loadFromBVH(std::istream &streamIn, const Skeleton &skel, util::array_ref<BVHMapping> mappings)
 {
 	SkeletonAnimation result;
-	result.animation_curves = AnimationCurve<float>::loadCurvesFromBVH(streamIn, mappings.size());
+	result.animation_curves = AnimationCurve<float>::loadCurvesFromBVH(streamIn, mappings);
 	result.mappings = mappings.vec();
 	return result;
 }
@@ -57,9 +57,9 @@ namespace
 		Transform t;
 		t.rotation = glm::quat(rotations[joint_index]);
 		t.position = translations[joint_index];
-		out_transforms[joint_index] = current_transform * t.toMatrix();
+		out_transforms[joint_index] = current_transform * glm::translate(joint.init_offset) * t.toMatrix();
 		for (auto child_index : joint.children) {
-			auto child_tf = current_transform * glm::translate(joints[child_index].init_offset);
+			auto child_tf = out_transforms[joint_index];
 			calculateTransformsRec(joints, translations, rotations, out_transforms, child_tf, child_index);
 		}
 	}

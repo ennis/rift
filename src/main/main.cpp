@@ -29,7 +29,7 @@ namespace
 	Mesh::Ptr generateCylinderMesh()
 	{
 		// HA!
-		std::ifstream fileIn("resources/models/cylinder.mesh", std::ios::binary);
+		std::ifstream fileIn("resources/models/sphere.mesh", std::ios::binary);
 		serialization::IArchive arc(fileIn);
 		return Mesh::loadFromArchive(arc);
 	}
@@ -69,7 +69,7 @@ public:
 		auto pose = animSampler.getPose(skeleton, glm::mat4(1.0));
 		for (size_t i = 0; i < pose.size(); i++)
 		{
-			pose[i] *= glm::scale(glm::vec3(0.01*skeleton.joints[i].init_offset.length()));
+			pose[i] = pose[i] * glm::scale(glm::vec3(0.01*skeleton.joints[i].init_offset.length()));
 		}
 
 		// upload list of transforms

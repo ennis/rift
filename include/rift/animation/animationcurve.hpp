@@ -5,7 +5,7 @@
 #include <vector>
 #include <istream>
 #include <skeleton.hpp>
-#include <bvh.hpp>
+#include <array_ref.hpp>
 
 //
 // Base class for all kinds of animation tracks (list of keyframes)
@@ -84,12 +84,14 @@ public:
 		auto m1 = T(0.0);
 
 		return h00*p0 + h10*dx*m0 + h01*p1 + h11*dx*m1;
+		//return p0;
 	}
 
 	// BVH loader
-	static std::vector<AnimationCurve> loadCurvesFromBVH(std::istream &streamIn, int numChannels)
+	static std::vector<AnimationCurve> loadCurvesFromBVH(std::istream &streamIn, util::array_ref<BVHMapping> mappings)
 	{
-		std::vector<AnimationCurve> curves(numChannels);
+		auto num_channels = mappings.size();
+		std::vector<AnimationCurve> curves(num_channels);
 		// TODO this is ugly
 		int numFrames;
 		T frameTime;
@@ -110,10 +112,17 @@ public:
 
 		for (int frame = 0; frame < numFrames; ++frame) {
 			current_time = frameTime * frame;
-			for (int i = 0; i < numChannels; ++i) {
+			for (int i = 0; i < num_channels; ++i) {
 				T v;
 				streamIn >> v;
-				curves[i].keys.push_back(Key{ current_time, v });
+				if (mappings[i].dof == DOF::RotationX ||
+					mappings[i].dof == DOF::RotationY ||
+					mappings[i].dof == DOF::RotationZ) {
+					curves[i].keys.push_back(Key{ current_time, glm::radians(v) });
+				}
+				else {
+					curves[i].keys.push_back(Key{ current_time, v });
+				}
 			}
 		}
 	
