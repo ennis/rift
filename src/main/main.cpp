@@ -258,7 +258,7 @@ void RiftGame::init()
 		{ sm },
 		ResourceUsage::Static);
 
-	std::ifstream mokou_file("resources/models/rock/crystal.mesh", std::ios::binary);
+	std::ifstream mokou_file("resources/models/animated/mokou.mesh", std::ios::binary);
 	serialization::IArchive arc(mokou_file);
 	mokou = Mesh::loadFromArchive(arc);
 
@@ -377,8 +377,8 @@ void RiftGame::render(float dt)
 	skel_debug->drawSkeleton(*skel, *skel_anim_sampler, *screenRT2, sceneData, *cbSceneData);
 	rq.draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
 
-	/*for (auto submesh = 0u; submesh < mokou->getNumSubmeshes(); ++submesh)
-		rq.draw(*mokou, submesh, *shaderPBR, *paramBlockPBR, 0);*/
+	for (auto submesh = 0u; submesh < mokou->getNumSubmeshes(); ++submesh)
+		rq.draw(*mokou, submesh, *shaderPBR, *paramBlockPBR, 0);
 
 	//sky.render(*renderQueue, sceneData, *cbSceneData);
 	screenRT2->flush();
