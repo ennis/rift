@@ -34,6 +34,9 @@ namespace util
 			if (ins.second) {
 				res = loader.load(key);
 			}
+			else {
+				LOG << "Already loaded: " << key;
+			}
 			return res.get();
 		}
 

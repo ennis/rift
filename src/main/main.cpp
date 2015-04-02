@@ -21,7 +21,7 @@
 #include <skeleton.hpp>
 #include <animationcurve.hpp>
 #include <skeletonanimation.hpp>
-#include <resourcemanager.hpp>
+#include <resources.hpp>
 
 // utils
 namespace
@@ -42,53 +42,6 @@ namespace
 		float scaling = dt.length() / ds.length();
 	}*/
 }
-
-struct Texture2DLoader
-{
-	using pointer = Texture2D::Ptr;
-	using key_type = std::string;
-	using resource_type = Texture2D;
-
-	Texture2D::Ptr load(const std::string &path)
-	{
-		Image img = Image::loadFromFile(path.data());
-		return img.convertToTexture2D();
-	}
-};
-
-struct TextureCubeMapLoader
-{
-	using pointer = TextureCubeMap::Ptr;
-	using key_type = std::string;
-	using resource_type = TextureCubeMap;
-
-	TextureCubeMap::Ptr load(const std::string &path)
-	{
-		Image img = Image::loadFromFile(path.data());
-		return img.convertToTextureCubeMap();
-	}
-};
-
-struct MeshLoader
-{
-	using pointer = Mesh::Ptr;
-	using key_type = std::string;
-	using resource_type = Mesh;
-
-	Mesh::Ptr load(const std::string &path)
-	{
-		std::ifstream fileIn(path.data(), std::ios::binary);
-		serialization::IArchive arc(fileIn);
-		return Mesh::loadFromArchive(arc);
-	}
-};
-
-struct Resources
-{
-	util::resource_manager<Texture2DLoader> textures;
-	util::resource_manager<TextureCubeMapLoader> cubeMaps;
-	util::resource_manager<MeshLoader> meshes;
-};
 
 class SkeletonDebug
 {
@@ -308,9 +261,10 @@ void RiftGame::init()
 	/*std::ifstream mokou_file("resources/models/animated/mokou.mesh", std::ios::binary);
 	serialization::IArchive arc(mokou_file);
 	mokou = Mesh::loadFromArchive(arc);*/
-	mokou = resources->meshes.load("resources/models/animated/mokou.mesh");
+	mokou = resources->meshes.load("resources/models/rock/crystal.mesh");
 	tex = resources->textures.load("resources/img/brick_wall.jpg");
 	envmap = resources->cubeMaps.load("resources/img/env/uffizi/env.dds");
+	envmap = resources->cubeMaps.load("resources/img/env/uffizi/env.dds");	// TEST
 
 	cbSceneData = ConstantBuffer::create(sizeof(SceneData), nullptr);
 	cbPerObj = ConstantBuffer::create(sizeof(PerObject), nullptr);
