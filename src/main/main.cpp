@@ -21,7 +21,7 @@
 #include <skeleton.hpp>
 #include <animationcurve.hpp>
 #include <skeletonanimation.hpp>
-
+#include <resourcemanager.hpp>
 
 // utils
 namespace
@@ -42,6 +42,53 @@ namespace
 		float scaling = dt.length() / ds.length();
 	}*/
 }
+
+struct Texture2DLoader
+{
+	using pointer = Texture2D::Ptr;
+	using key_type = std::string;
+	using resource_type = Texture2D;
+
+	Texture2D::Ptr load(const std::string &path)
+	{
+		Image img = Image::loadFromFile(path.data());
+		return img.convertToTexture2D();
+	}
+};
+
+struct TextureCubeMapLoader
+{
+	using pointer = TextureCubeMap::Ptr;
+	using key_type = std::string;
+	using resource_type = TextureCubeMap;
+
+	TextureCubeMap::Ptr load(const std::string &path)
+	{
+		Image img = Image::loadFromFile(path.data());
+		return img.convertToTextureCubeMap();
+	}
+};
+
+struct MeshLoader
+{
+	using pointer = Mesh::Ptr;
+	using key_type = std::string;
+	using resource_type = Mesh;
+
+	Mesh::Ptr load(const std::string &path)
+	{
+		std::ifstream fileIn(path.data(), std::ios::binary);
+		serialization::IArchive arc(fileIn);
+		return Mesh::loadFromArchive(arc);
+	}
+};
+
+struct Resources
+{
+	util::resource_manager<Texture2DLoader> textures;
+	util::resource_manager<TextureCubeMapLoader> cubeMaps;
+	util::resource_manager<MeshLoader> meshes;
+};
 
 class SkeletonDebug
 {
@@ -111,6 +158,8 @@ private:
 	float spinAngle = 0.f;
 	unsigned long numFrames;
 
+	std::unique_ptr<Resources> resources;
+
 	struct PerObject
 	{
 		glm::mat4 modelMatrix;
@@ -133,7 +182,7 @@ private:
 
 	Entity *cameraEntity;
 	Mesh::Ptr mesh;
-	Mesh::Ptr mokou;
+	Mesh *mokou = nullptr;
 
 	gl4::Effect::Ptr effect;
 	gl4::Effect::Ptr effectEnvCube;
@@ -153,12 +202,10 @@ private:
 	ConstantBuffer::Ptr cbPerObjPBR;
 	ConstantBuffer::Ptr cbEnvCube;
 
-	Texture2D::Ptr tex;
-	TextureCubeMap::Ptr envmap;
+	Texture2D *tex;
+	TextureCubeMap *envmap;
 	
-	Texture2D::Ptr shadowMap;
-	RenderTarget::Ptr shadowRT;
-
+	RenderTarget2::Ptr shadowRT;
 	RenderTarget2::Ptr screenRT2;
 
 	Shader::Ptr passthrough;
@@ -189,7 +236,7 @@ void RiftGame::init()
 {
 	boost::filesystem::path path(".");
 
-	util::small_vector<int, 16> ints;
+	resources = std::make_unique<Resources>();
 
 	// create the camera object
 	
@@ -258,12 +305,12 @@ void RiftGame::init()
 		{ sm },
 		ResourceUsage::Static);
 
-	std::ifstream mokou_file("resources/models/animated/mokou.mesh", std::ios::binary);
+	/*std::ifstream mokou_file("resources/models/animated/mokou.mesh", std::ios::binary);
 	serialization::IArchive arc(mokou_file);
-	mokou = Mesh::loadFromArchive(arc);
-
-	tex = Image::loadFromFile("resources/img/brick_wall.jpg").convertToTexture2D();
-	envmap = Image::loadFromFile("resources/img/env/uffizi/env.dds").convertToTextureCubeMap();
+	mokou = Mesh::loadFromArchive(arc);*/
+	mokou = resources->meshes.load("resources/models/animated/mokou.mesh");
+	tex = resources->textures.load("resources/img/brick_wall.jpg");
+	envmap = resources->cubeMaps.load("resources/img/env/uffizi/env.dds");
 
 	cbSceneData = ConstantBuffer::create(sizeof(SceneData), nullptr);
 	cbPerObj = ConstantBuffer::create(sizeof(PerObject), nullptr);
@@ -275,8 +322,7 @@ void RiftGame::init()
 	paramBlockEnvCube = ParameterBlock::create(*shaderEnvCube);
 
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
-	shadowMap = Texture2D::create(win_size, 1, ElementFormat::Depth16, nullptr);
-	shadowRT = RenderTarget::createRenderTarget2D(*shadowMap, 0);
+	shadowRT = RenderTarget2::create(win_size, {}, ElementFormat::Depth16);
 
 	font = Font::loadFromFile("resources/img/fonts/arno_pro.fnt");
 	hud = std::make_unique<HUDTextRenderer>();
@@ -349,16 +395,16 @@ void RiftGame::render(float dt)
 	// create parameter block
 	paramBlock->setConstantBuffer(0, *cbSceneData);
 	paramBlock->setConstantBuffer(1, *cbPerObj);
-	paramBlock->setTextureParameter(0, tex.get(), SamplerDesc{});
+	paramBlock->setTextureParameter(0, tex, SamplerDesc{});
 
 	paramBlockPBR->setConstantBuffer(0, *cbSceneData);
 	paramBlockPBR->setConstantBuffer(1, *cbPerObjPBR);
-	paramBlockPBR->setTextureParameter(0, tex.get(), SamplerDesc{});
-	paramBlockPBR->setTextureParameter(1, envmap.get(), SamplerDesc{});
+	paramBlockPBR->setTextureParameter(0, tex, SamplerDesc{});
+	paramBlockPBR->setTextureParameter(1, envmap, SamplerDesc{});
 
 	paramBlockEnvCube->setConstantBuffer(0, *cbSceneData);
 	paramBlockEnvCube->setConstantBuffer(1, *cbEnvCube);
-	paramBlockEnvCube->setTextureParameter(0, envmap.get(), SamplerDesc{});
+	paramBlockEnvCube->setTextureParameter(0, envmap, SamplerDesc{});
 
 	// submit to render queue
 	if (glfwGetKey(Engine::instance().getWindow().getHandle(), GLFW_KEY_H)) {
