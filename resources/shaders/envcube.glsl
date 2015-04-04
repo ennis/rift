@@ -17,6 +17,7 @@ out vec3 wPos;
 
 void main() 
 {
+	// center on eye
 	vec4 modelPos = modelMatrix * vec4(position, 1.f);
 	gl_Position = viewProjMatrix * modelPos;
 	wPos = modelPos.xyz;

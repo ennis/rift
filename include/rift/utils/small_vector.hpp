@@ -97,6 +97,11 @@ namespace util
 			new (storage_ptr(length++)) T(t);
 		}
 
+		void push_back(T&& t) {
+			assert(length < N);
+			new (storage_ptr(length++)) T(std::move(t));
+		}
+
 		const T* data() const {
 			return storage_ptr(0);
 		}

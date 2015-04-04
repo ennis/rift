@@ -5,53 +5,52 @@
 #include <unordered_map>
 #include <log.hpp>
 #include <string>
-#include <resource.hpp>
+#include <string_ref.hpp>
 
-class ResourceManager
+namespace util
 {
-public:
-	~ResourceManager()
+	template <typename Loader>
+	class resource_manager
 	{
-	}
+	public:
+		using key_type = typename Loader::key_type;
+		using resource_type = typename Loader::resource_type;
+		// must have a get() method
+		using pointer = typename Loader::pointer;
 
-	// returns nullptr if not found
-	template <typename T, typename LoadCallback>
-	T *load(std::string key, LoadCallback loadCallback)
-	{
-		//return static_cast<T*>(loadImpl(key, loader));
-		// try to insert a resource block
-		auto ins = resourceMap.insert(std::pair<std::string, Resource*>(key, nullptr));
-
-		auto &res = ins.first->second;
-
-		// not yet loaded
-		if (ins.second) {
-			res = loadCallback(key);
-			//res->load();
-			res->setName(key);
+		resource_manager(Loader loader_ = Loader()) :
+			loader(loader_)
+		{
 		}
 
-		return static_cast<T*>(res);
-	}
+		// returns nullptr if not found
+		// TODO smart pointer type?
+		resource_type *load(key_type key)
+		{
+			// try to insert a resource block
+			auto ins = resource_map.insert(std::pair<key_type, pointer>(key, nullptr));
+			auto &res = ins.first->second;
+			// not yet loaded
+			if (ins.second) {
+				res = loader.load(key);
+			}
+			else {
+				LOG << "Already loaded: " << key;
+			}
+			return res.get();
+		}
 
-	void printResources();
+	private:
+		//
+		// resource loader
+		// must have methods load(): std::unique_ptr<T> and unload(): std::unique_ptr<T>
+		Loader loader;
 
-	static ResourceManager &getInstance() {
-		return sInstance;
-	}
+		//
+		// list of resource blocks
+		std::unordered_map<key_type, pointer> resource_map;
+	};
 
-private:
-	//
-	// list of resource blocks
-	std::unordered_map<std::string, Resource*> resourceMap;
-
-	typedef std::unordered_map<std::string, Resource*>::iterator map_iterator;
-
-	// resource manager instance
-	static ResourceManager sInstance;
-};
-
-std::string unique_key();
-
+}
 
 #endif

@@ -15,9 +15,20 @@ namespace
 		glm::vec3 tg;
 		glm::vec3 bitg;
 		glm::vec2 tex;
+	}; 
+	
+	struct VertexType2
+	{
+		glm::vec3 pos;
+		glm::vec3 norm;
+		glm::vec3 tg;
+		glm::vec3 bitg;
+		glm::vec2 tex;
+		glm::uint32 bone_ids;
+		glm::vec4 bone_weights;
 	};
 
-	struct VertexType2
+	struct VertexType3
 	{
 		glm::vec3 pos;
 		glm::uint32 norm; // packSnorm3x10_1x2
@@ -41,7 +52,7 @@ Mesh::Ptr Mesh::loadFromArchive(serialization::IArchive &ar)
 	    >> num_indices;
 
 	assert(version == 3);
-	assert(layout == 1);
+	assert((layout == 1) || (layout == 2));
 	assert(num_submeshes < 65536);
 	assert(num_vertices < 40*1024*1024);
 	assert(num_indices < 40*1024*1024);
@@ -55,34 +66,79 @@ Mesh::Ptr Mesh::loadFromArchive(serialization::IArchive &ar)
 		submeshes[i].primitiveType = PrimitiveType::Triangle;
 	}
 
-	std::vector<VertexType1> vs(num_vertices);
-	std::vector<uint16_t> is(num_indices);
-	for (auto i = 0u; i < num_vertices; ++i) {
-		auto &v = vs[i];
-		ar >> v.pos.x >> v.pos.y >> v.pos.z 
-			>> v.norm.x >> v.norm.y >> v.norm.z
-			>> v.tg.x >> v.tg.y >> v.tg.z
-			>> v.bitg.x >> v.bitg.y >> v.bitg.z
-			>> v.tex.x >> v.tex.y;
-	}
-	for (auto i = 0u; i < num_indices; ++i) {
-		ar >> read16(is[i]);
-	}
+	if (layout == 1)
+	{
+		// Layout type 1: not skinned
+		std::vector<VertexType1> vs(num_vertices);
+		std::vector<uint16_t> is(num_indices);
+		for (auto i = 0u; i < num_vertices; ++i) {
+			auto &v = vs[i];
+			ar >> v.pos.x >> v.pos.y >> v.pos.z
+				>> v.norm.x >> v.norm.y >> v.norm.z
+				>> v.tg.x >> v.tg.y >> v.tg.z
+				>> v.bitg.x >> v.bitg.y >> v.bitg.z
+				>> v.tex.x >> v.tex.y;
+		}
+		for (auto i = 0u; i < num_indices; ++i) {
+			ar >> read16(is[i]);
+		}
 
-	// create mesh
-	auto ptr = Mesh::create(
-		{ 
-			{ElementFormat::Float3, ResourceUsage::Static},
-			{ElementFormat::Float3, ResourceUsage::Static},
-			{ElementFormat::Float3, ResourceUsage::Static},
-			{ElementFormat::Float3, ResourceUsage::Static},
-			{ElementFormat::Float2, ResourceUsage::Static}
-		},
-		num_vertices,
-		vs.data(),
-		num_indices,
-		is.data(),
-		submeshes,
-		ResourceUsage::Static);
-	return ptr;
+		// create mesh
+		auto ptr = Mesh::create(
+			{
+				{ ElementFormat::Float3, ResourceUsage::Static },
+				{ ElementFormat::Float3, ResourceUsage::Static },
+				{ ElementFormat::Float3, ResourceUsage::Static },
+				{ ElementFormat::Float3, ResourceUsage::Static },
+				{ ElementFormat::Float2, ResourceUsage::Static }
+			},
+			num_vertices,
+			vs.data(),
+			num_indices,
+			is.data(),
+			submeshes,
+			ResourceUsage::Static);
+		return ptr;
+	}
+	else 
+	{
+		// Layout type 2: skinned mesh
+		std::vector<VertexType2> vs(num_vertices);
+		std::vector<uint16_t> is(num_indices);
+		for (auto i = 0u; i < num_vertices; ++i) {
+			auto &v = vs[i];
+			ar >> v.pos.x >> v.pos.y >> v.pos.z
+				>> v.norm.x >> v.norm.y >> v.norm.z
+				>> v.tg.x >> v.tg.y >> v.tg.z
+				>> v.bitg.x >> v.bitg.y >> v.bitg.z
+				>> v.tex.x >> v.tex.y 
+				>> v.bone_ids 
+				>> v.bone_weights.x
+				>> v.bone_weights.y
+				>> v.bone_weights.z
+				>> v.bone_weights.w;
+		}
+		for (auto i = 0u; i < num_indices; ++i) {
+			ar >> read16(is[i]);
+		}
+
+		// create mesh
+		auto ptr = Mesh::create(
+			{
+				{ ElementFormat::Float3, ResourceUsage::Static },
+				{ ElementFormat::Float3, ResourceUsage::Static },
+				{ ElementFormat::Float3, ResourceUsage::Static },
+				{ ElementFormat::Float3, ResourceUsage::Static },
+				{ ElementFormat::Float2, ResourceUsage::Static },
+				{ ElementFormat::Uint8x4, ResourceUsage::Static },
+				{ ElementFormat::Float4, ResourceUsage::Static }
+			},
+			num_vertices,
+			vs.data(),
+			num_indices,
+			is.data(),
+			submeshes,
+			ResourceUsage::Static);
+		return ptr;
+	}
 }

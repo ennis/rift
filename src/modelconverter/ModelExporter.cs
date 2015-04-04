@@ -132,6 +132,7 @@ namespace modelconverter
             int vertexbase = 0, indexbase = 0;
             foreach (var mesh in scene.Meshes)
             {
+                Console.WriteLine("{0}", mesh);
                 // find matching node in hierarchy
                 var node = scene.RootNode.FindNode(mesh.Name);
                 if (node != null)
@@ -202,7 +203,7 @@ namespace modelconverter
 
             if (bones.Count > byte.MaxValue)
             {
-                throw new InvalidOperationException("Too many bones (" + bones.Count.ToString() + " > " + byte.MaxValue.ToString() + ")");
+                throw new InvalidOperationException("Too many bones, not enough cash? (" + bones.Count.ToString() + " > " + byte.MaxValue.ToString() + ")");
             }
 
             if (isSkinned)
@@ -385,7 +386,10 @@ namespace modelconverter
                 BinaryWriter writer = new BinaryWriter(streamOut);
 
                 writer.Write((byte)3);      // V3
-                writer.Write((byte)1);      // Layout type 1
+                if (isSkinned)
+                    writer.Write((byte)2);      // Layout type 2 (skinned)
+                else
+                    writer.Write((byte)1);
                 writer.Write((ushort)submeshes.Count);
                 writer.Write(positions.Count);
                 writer.Write(indices.Count);
@@ -414,6 +418,18 @@ namespace modelconverter
                     writer.Write(bitangents[i].Z);
                     writer.Write(texcoords[i].X);
                     writer.Write(texcoords[i].Y);
+                    if (isSkinned)
+                    {
+                        writer.Write(boneIds[i][0]);
+                        writer.Write(boneIds[i][1]);
+                        writer.Write(boneIds[i][2]);
+                        writer.Write(boneIds[i][3]);
+
+                        writer.Write(boneWeights[i][0]);
+                        writer.Write(boneWeights[i][1]);
+                        writer.Write(boneWeights[i][2]);
+                        writer.Write(boneWeights[i][3]);
+                    }
                 }
 
                 foreach (var ix in indices)

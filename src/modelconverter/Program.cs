@@ -30,6 +30,8 @@ namespace modelconverter
                     options.InputFiles.Add(ofd.FileName);
                 }
             }
+            if (options.InputFiles.Count == 0)
+                return;
             options.OutputDirectory = options.OutputDirectory ?? Path.GetDirectoryName(options.InputFiles[0]);
             options.ModelName = options.ModelName ?? Path.GetFileNameWithoutExtension(options.InputFiles[0]);
             AssimpContext importer = new AssimpContext();
@@ -60,6 +62,8 @@ namespace modelconverter
             // Import master model 
             Scene masterScene = importer.ImportFile(options.InputFiles[0], 
                 PostProcessSteps.OptimizeGraph | 
+                PostProcessSteps.SortByPrimitiveType | 
+                PostProcessSteps.Triangulate |
                 PostProcessSteps.OptimizeMeshes | 
                 PostProcessSteps.CalculateTangentSpace);
 

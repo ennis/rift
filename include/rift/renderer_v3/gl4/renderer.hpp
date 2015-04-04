@@ -260,6 +260,7 @@ namespace gl4
 		int mipLevel;
 		int layer;	// -1 if no face or texture is a cube map and is bound as a layered image
 	};
+
 	
 	class Mesh
 	{
@@ -315,6 +316,10 @@ namespace gl4
 			gl::DeleteBuffers(1, &ib);
 		}
 
+		unsigned getNumSubmeshes() const {
+			return submeshes.size();
+		}
+
 		void setSubmesh(int index, const Submesh &submesh);
 
 		void updateVertices(int offset, int size, const void *data);
@@ -359,38 +364,6 @@ namespace gl4
 		std::vector<Submesh> submeshes;
 	};
 
-	class Parameter
-	{
-		friend class Renderer;
-		friend class ParameterBlock;
-	public:
-		using Ptr = std::unique_ptr < Parameter >;
-
-	//protected:
-		Parameter() = default;
-
-		const Shader *shader;
-		GLuint location = 0;
-		GLuint binding = 0;
-		int size = 0;	// in bytes
-	};
-
-	class TextureParameter
-	{
-		friend class Renderer;
-		friend class ParameterBlock;
-	public:
-
-		using Ptr = std::unique_ptr < TextureParameter > ;
-
-	//protected:
-		TextureParameter() = default;
-
-		const Shader *shader = nullptr;
-		GLuint location = 0;
-		GLuint texunit = 0;
-	};
-
 	class ParameterBlock
 	{
 		friend class Renderer;
@@ -399,26 +372,10 @@ namespace gl4
 		using Ptr = std::unique_ptr < ParameterBlock > ;
 
 		ParameterBlock(Shader &shader);
-
-		void setParameter(
-			const Parameter &param,
-			const void *data
-			);
-
-		void setConstantBuffer(
-			const Parameter &param,
-			const ConstantBuffer &constantBuffer
-			);
-
+		
 		void setConstantBuffer(
 			int binding,
 			const ConstantBuffer &constantBuffer
-			);
-
-		void setTextureParameter(
-			const TextureParameter &param,
-			const Texture2D *texture,
-			const SamplerDesc &samplerDesc
 			);
 
 		void setTextureParameter(
@@ -441,6 +398,7 @@ namespace gl4
 		ParameterBlock() = default;
 
 		Shader * shader;
+		int num_ubo;
 		GLuint ubo[kMaxUniformBufferBindings];
 		GLintptr ubo_offsets[kMaxUniformBufferBindings];
 		GLintptr ubo_sizes[kMaxUniformBufferBindings];
@@ -571,6 +529,9 @@ namespace gl4
 		int submesh_index;
 		const ParameterBlock *param_block;
 		const Shader *shader;
+		int procedural_count;	// == 0 if mesh == nullptr
+		int num_instances;
+		GLenum procedural_mode;
 	};
 
 	class RenderQueue
@@ -587,6 +548,22 @@ namespace gl4
 			uint64_t sortHint
 			);
 
+		void drawInstanced(
+			const Mesh &mesh,
+			int submesh_index,
+			const Shader &shader,
+			const ParameterBlock &parameterBlock,
+			int num_instances, 
+			uint64_t sortHint
+			);
+
+		void drawProcedural(
+			PrimitiveType primitiveType,
+			int count,
+			const Shader &shader,
+			const ParameterBlock &parameterBlock,
+			uint64_t sortHint);
+
 
 		void clear();
 
@@ -597,6 +574,89 @@ namespace gl4
 		std::vector<RenderItem> items;
 
 		static Ptr create() { return std::make_unique<RenderQueue>(); }
+	};
+
+	class RenderTarget2
+	{
+	public:
+		using Ptr = std::unique_ptr<RenderTarget2>;
+
+		RenderTarget2();
+		RenderTarget2(
+			glm::ivec2 size,
+			util::array_ref<ElementFormat> colorTargetFormats);
+		RenderTarget2(
+			glm::ivec2 size,
+			util::array_ref<ElementFormat> colorTargetFormats,
+			ElementFormat depthTargetFormat);
+
+		~RenderTarget2()
+		{
+			if (fbo)
+				gl::DeleteFramebuffers(1, &fbo);
+		}
+
+		bool hasDepthTexture() const {
+			return depth_target != nullptr;
+		}
+
+		const Texture2D &getColorTexture(int index) const {
+			assert(index < color_targets.size());
+			return *color_targets[index];
+		}
+		const Texture2D &getDepthTexture() const {
+			assert(hasDepthTexture());
+			return *depth_target;
+		}
+
+		static RenderTarget2::Ptr create(
+			glm::ivec2 size,
+			util::array_ref<ElementFormat> colorTargetFormats,
+			ElementFormat depthTargetFormat);
+		static RenderTarget2::Ptr createNoDepth(
+			glm::ivec2 size,
+			util::array_ref<ElementFormat> colorTargetFormats);
+		static RenderTarget2 &getDefaultRenderTarget();
+
+		RenderQueue &getRenderQueue() {
+			return *render_queue;
+		}
+
+		// issue a clear color command
+		void clearColor(
+			float r,
+			float g,
+			float b,
+			float a
+			)
+		{
+			clear_color = glm::vec4(r, g, b, a);
+		}
+
+		// issue a clear depth command
+		void clearDepth(
+			float z
+			)
+		{
+			clear_depth = z;
+		}
+
+		void flush();
+
+		//private:
+		void init();
+
+		GLuint fbo;
+		glm::ivec2 size;
+		// TODO viewport arrays
+		Viewport2 viewport;
+		util::small_vector<Texture2D::Ptr, 8> color_targets;
+		Texture2D::Ptr depth_target;
+		RenderQueue::Ptr render_queue;
+		glm::vec4 clear_color;
+		float clear_depth;
+
+		static RenderTarget2::Ptr default_rt;
 	};
 
 	class Renderer
@@ -648,6 +708,7 @@ namespace gl4
 	private:
 		void drawItem(const RenderItem &item);
 
+		GLuint dummy_vao;
 		GLuint fbo = 0;
 		RenderTarget screen_rt;
 		RenderTarget screen_depth_rt;
@@ -681,5 +742,7 @@ using ConstantBuffer = gl4::ConstantBuffer;
 using RenderQueue = gl4::RenderQueue;
 using Mesh = gl4::Mesh;
 using RenderTarget = gl4::RenderTarget;
+using RenderTarget2 = gl4::RenderTarget2;
+
  
 #endif /* end of include guard: RENDERER_HPP */

@@ -60,6 +60,8 @@ Sky::Sky()
 	skyShader = effect->compileShader();
 
 	cbSkyParams = ConstantBuffer::create(sizeof(SkyParams), nullptr);
+	// cbSkyParams = StreamingBuffer::create(sizeof(SkyParams), Update::PerFrame, nullptr);
+	// ckSkyParams.stream(&skyParams)
 
 	skybox = Mesh::create(
 		{ Attribute{ ElementFormat::Float3, ResourceUsage::Static } },
@@ -69,7 +71,7 @@ Sky::Sky()
 		nullptr,
 		{ Submesh{PrimitiveType::Triangle, 0, 0, 36, 0} },
 		ResourceUsage::Static
-	); 
+	);
 	
 	paramBlock = ParameterBlock::create(*skyShader);
 	paramBlock->setConstantBuffer(1, *cbSkyParams);

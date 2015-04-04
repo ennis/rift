@@ -65,7 +65,7 @@ float fresnel(float eta, float cosTheta)
 void main( void )
 {
 	vec3 wNn = normalize(wN);
-	vec3 wVn = normalize(wPos - wEye.xyz);
+	vec3 wVn = normalize(wEye.xyz - wPos);
 	vec4 Creflected = sampleEnvmap(reflect(-wVn, wNn));
 	vec3 wRrn = refract(-wVn, wNn, 1.0/eta);
 	vec4 Crefracted = sampleEnvmap(wRrn);

@@ -17,6 +17,75 @@
 #include <font.hpp>
 #include <hudtext.hpp>
 #include <colors.hpp>
+#include <small_vector.hpp>
+#include <skeleton.hpp>
+#include <animationcurve.hpp>
+#include <skeletonanimation.hpp>
+#include <resources.hpp>
+
+// utils
+namespace
+{
+	Mesh::Ptr generateCylinderMesh()
+	{
+		// HA!
+		std::ifstream fileIn("resources/models/sphere.mesh", std::ios::binary);
+		serialization::IArchive arc(fileIn);
+		return Mesh::loadFromArchive(arc);
+	}
+
+	/*glm::mat4 match2points(glm::vec3 s0, glm::vec3 s1, glm::vec3 t0, glm::vec3 t1)
+	{
+		// estimate scale
+		auto ds = s1 - s0;
+		auto dt = t1 - t0;
+		float scaling = dt.length() / ds.length();
+	}*/
+}
+
+class SkeletonDebug
+{
+public:
+	static const unsigned kMaxJoints = 60;
+
+	SkeletonDebug()
+	{
+		shader = gl4::Effect::loadFromFile("resources/shaders/skeleton_debug.glsl")->compileShader();
+		cylinder = generateCylinderMesh();
+		// Max 60 bones
+		cb_bone_transforms = ConstantBuffer::create(kMaxJoints * sizeof(glm::mat4), nullptr);
+		paramBlock = ParameterBlock::create(*shader);
+	}
+
+	void drawSkeleton(
+		const Skeleton &skeleton,
+		const SkeletonAnimationSampler &animSampler,
+		RenderTarget2 &renderTarget,
+		const SceneData &sceneData,
+		const ConstantBuffer &sceneDataCB)
+	{
+		assert(skeleton.joints.size() < kMaxJoints);
+		// compute pose
+		auto pose = animSampler.getPose(skeleton, glm::mat4(1.0));
+		for (size_t i = 0; i < pose.size(); i++)
+		{
+			pose[i] = pose[i] * glm::scale(glm::vec3(0.01*skeleton.joints[i].init_offset.length()));
+		}
+
+		// upload list of transforms
+		cb_bone_transforms->update(0, pose.size() * sizeof(glm::mat4), pose.data());
+		// draw instanced (num joints)
+		paramBlock->setConstantBuffer(0, sceneDataCB);
+		paramBlock->setConstantBuffer(1, *cb_bone_transforms);
+		renderTarget.getRenderQueue().drawInstanced(*cylinder, 0, *shader, *paramBlock, pose.size(), 0);
+	}
+
+private:
+	Shader::Ptr shader;
+	Mesh::Ptr cylinder;
+	ParameterBlock::Ptr paramBlock;
+	ConstantBuffer::Ptr cb_bone_transforms;
+};
 
 //============================================================================
 // Classe de base du jeu
@@ -42,6 +111,8 @@ private:
 	float spinAngle = 0.f;
 	unsigned long numFrames;
 
+	std::unique_ptr<Resources> resources;
+
 	struct PerObject
 	{
 		glm::mat4 modelMatrix;
@@ -64,7 +135,7 @@ private:
 
 	Entity *cameraEntity;
 	Mesh::Ptr mesh;
-	Mesh::Ptr mokou;
+	Mesh *mokou = nullptr;
 
 	gl4::Effect::Ptr effect;
 	gl4::Effect::Ptr effectEnvCube;
@@ -84,17 +155,33 @@ private:
 	ConstantBuffer::Ptr cbPerObjPBR;
 	ConstantBuffer::Ptr cbEnvCube;
 
-	RenderQueue::Ptr renderQueue;
-	Texture2D::Ptr tex;
-	TextureCubeMap::Ptr envmap;
+	Texture2D *tex;
+	TextureCubeMap *envmap;
 	
-	Texture2D::Ptr shadowMap;
-	RenderTarget::Ptr shadowRT;
+	RenderTarget2::Ptr shadowRT;
+	RenderTarget2::Ptr screenRT2;
+
+	Shader::Ptr passthrough;
+
+	struct FXParams
+	{
+		float thing;
+		float vx_offset;
+		float rt_w;
+		float rt_h;
+	};
+
+	ConstantBuffer::Ptr fxCB;
+	ParameterBlock::Ptr fxPB;
 
 	Font::Ptr font;
 	std::unique_ptr<HUDTextRenderer> hud;
 
 	Sky sky;
+	std::unique_ptr<Skeleton> skel;
+	std::unique_ptr<SkeletonDebug>  skel_debug;
+	SkeletonAnimation skel_animation;
+	std::unique_ptr<SkeletonAnimationSampler> skel_anim_sampler;
 };
 
 
@@ -153,6 +240,7 @@ void RiftGame::init()
 
 	w.delete_entity(e);
 	
+	resources = std::make_unique<Resources>();
 
 	// create the camera object
 	
@@ -175,7 +263,10 @@ void RiftGame::init()
 	effectPBR = gl4::Effect::loadFromFile("resources/shaders/pbr.glsl");
 	shaderPBR = effectPBR->compileShader();
 	effectEnvCube = gl4::Effect::loadFromFile("resources/shaders/envcube.glsl");
-	shaderEnvCube = effectEnvCube->compileShader();
+	DepthStencilDesc envcube_ds;
+	envcube_ds.depthTestEnable = true;
+	envcube_ds.depthWriteEnable = false;
+	shaderEnvCube = effectEnvCube->compileShader({}, RasterizerDesc{}, envcube_ds, BlendDesc{});
 
 	// buffer contenant les données des vertex (c'est un cube, pour info)
 	// ici: position (x,y,z), normales (x,y,z), coordonnées de texture (x,y) 
@@ -218,12 +309,13 @@ void RiftGame::init()
 		{ sm },
 		ResourceUsage::Static);
 
-	std::ifstream mokou_file("resources/models/mokou/mokou.mesh", std::ios::binary);
+	/*std::ifstream mokou_file("resources/models/animated/mokou.mesh", std::ios::binary);
 	serialization::IArchive arc(mokou_file);
-	mokou = Mesh::loadFromArchive(arc);
-
-	tex = Image::loadFromFile("resources/img/brick_wall.jpg").convertToTexture2D();
-	envmap = Image::loadFromFile("resources/img/env/uffizi/env.dds").convertToTextureCubeMap();
+	mokou = Mesh::loadFromArchive(arc);*/
+	mokou = resources->meshes.load("resources/models/rock/crystal.mesh");
+	tex = resources->textures.load("resources/img/brick_wall.jpg");
+	envmap = resources->cubeMaps.load("resources/img/env/uffizi/env.dds");
+	envmap = resources->cubeMaps.load("resources/img/env/uffizi/env.dds");	// TEST
 
 	//material = PhongMaterial(...);
 	//material.diffuse = tex;
@@ -237,14 +329,35 @@ void RiftGame::init()
 	paramBlock = ParameterBlock::create(*shader);
 	paramBlockPBR = ParameterBlock::create(*shaderPBR);
 	paramBlockEnvCube = ParameterBlock::create(*shaderEnvCube);
-	renderQueue = RenderQueue::create();
 
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
-	shadowMap = Texture2D::create(win_size, 1, ElementFormat::Depth16, nullptr);
-	shadowRT = RenderTarget::createRenderTarget2D(*shadowMap, 0);
+	shadowRT = RenderTarget2::create(win_size, {}, ElementFormat::Depth16);
 
-	font = Font::loadFromFile("resources/img/fonts/special_elite.fnt");
+	font = Font::loadFromFile("resources/img/fonts/arno_pro.fnt");
 	hud = std::make_unique<HUDTextRenderer>();
+
+	DepthStencilDesc ds_fx;
+	ds_fx.depthTestEnable = false;
+	ds_fx.depthWriteEnable = false;
+	passthrough = gl4::Effect::loadFromFile("resources/shaders/fxaa.glsl")->compileShader({}, RasterizerDesc{}, ds_fx, BlendDesc{});
+	screenRT2 = RenderTarget2::create({ 1280, 720 }, { ElementFormat::Unorm8x4 }, ElementFormat::Depth24);
+
+	fxCB = ConstantBuffer::create(sizeof(FXParams), nullptr);
+	fxPB = ParameterBlock::create(*passthrough);
+	fxPB->setConstantBuffer(0, *fxCB);
+
+	fxPB->setTextureParameter(0, &screenRT2->getColorTexture(0), SamplerDesc{});
+	fxPB->setTextureParameter(1, &screenRT2->getDepthTexture(), SamplerDesc{});
+
+	std::vector<BVHMapping> mappings;
+	std::ifstream bvh("resources/models/bvh/man_skeleton.bvh");
+	skel = Skeleton::loadFromBVH(bvh, mappings);
+
+	std::ifstream motion_file("resources/models/bvh/man_walk.bvh");
+	skel_debug = std::make_unique<SkeletonDebug>();
+	skel_animation = SkeletonAnimation::loadFromBVH(motion_file, *skel, mappings);
+	skel_anim_sampler = std::make_unique<SkeletonAnimationSampler>(*skel, skel_animation, 0.003f);
+	skel_anim_sampler->nextFrame();
 }
 
 
@@ -254,10 +367,10 @@ void RiftGame::render(float dt)
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	auto &R = Renderer::getInstance();
 
-	R.setRenderTargets({}, nullptr);
-	R.clearColor(0.25f, 0.25f, 0.2f, 0.0f);
-	R.clearDepth(1.0f);
-	R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
+	screenRT2->clearColor(0.25f, 0.25f, 0.2f, 0.0f);
+	screenRT2->clearDepth(1.0f);
+	auto &&rq = screenRT2->getRenderQueue();
+	//R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
 
 	// update scene data buffer
 	auto cam = cameraEntity->getComponent<Camera>();
@@ -277,25 +390,30 @@ void RiftGame::render(float dt)
 	spinAngle = fmodf(spinAngle + 0.1f*3.14159f*dt, 2 * 3.14159);
 	perObjPBR.modelMatrix = glm::rotate(glm::mat4(1.0f), spinAngle, glm::vec3{ 0, 1, 0 });
 	perObjPBR.objectColor = glm::vec4(1.0f);
-	perObjPBR.eta = 4.0f;
+	perObjPBR.eta = 1.40f;
 	cbPerObjPBR->update(0, sizeof(PerObjectPBR), &perObjPBR);
 
-	envCubeParams.modelMatrix = glm::translate(glm::scale(glm::vec3{ 1000.0f, 1000.0f, 1000.0f }), glm::vec3{ -0.5f, -0.5f, -0.5f });
+	envCubeParams.modelMatrix = 
+		glm::translate(
+			glm::scale(
+				glm::translate(glm::vec3(sceneData.eyePos.x, sceneData.eyePos.y, sceneData.eyePos.z)),
+				glm::vec3{ 1000.0f, 1000.0f, 1000.0f }),
+			glm::vec3{ -0.5f, -0.5f, -0.5f });
 	cbEnvCube->update(0, sizeof(EnvCubeParams), &envCubeParams);
 
 	// create parameter block
 	paramBlock->setConstantBuffer(0, *cbSceneData);
 	paramBlock->setConstantBuffer(1, *cbPerObj);
-	paramBlock->setTextureParameter(0, tex.get(), SamplerDesc{});
+	paramBlock->setTextureParameter(0, tex, SamplerDesc{});
 
 	paramBlockPBR->setConstantBuffer(0, *cbSceneData);
 	paramBlockPBR->setConstantBuffer(1, *cbPerObjPBR);
-	paramBlockPBR->setTextureParameter(0, tex.get(), SamplerDesc{});
-	paramBlockPBR->setTextureParameter(1, envmap.get(), SamplerDesc{});
+	paramBlockPBR->setTextureParameter(0, tex, SamplerDesc{});
+	paramBlockPBR->setTextureParameter(1, envmap, SamplerDesc{});
 
 	paramBlockEnvCube->setConstantBuffer(0, *cbSceneData);
 	paramBlockEnvCube->setConstantBuffer(1, *cbEnvCube);
-	paramBlockEnvCube->setTextureParameter(0, envmap.get(), SamplerDesc{});
+	paramBlockEnvCube->setTextureParameter(0, envmap, SamplerDesc{});
 
 	// submit to render queue
 	if (glfwGetKey(Engine::instance().getWindow().getHandle(), GLFW_KEY_H)) {
@@ -310,20 +428,28 @@ void RiftGame::render(float dt)
 		//renderQueue->draw(*mesh, 0, *shader, *paramBlock, 0);
 	}
 
-	hud->renderString("Hello world!", *font, { 100.0, 100.0 }, Color::White, Color::Black, *renderQueue, sceneData, *cbSceneData);
-	renderQueue->draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
-	renderQueue->draw(*mokou, 2, *shaderPBR, *paramBlockPBR, 0);
+	skel_anim_sampler->nextFrame();
+	skel_debug->drawSkeleton(*skel, *skel_anim_sampler, *screenRT2, sceneData, *cbSceneData);
+	rq.draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
+
+	for (auto submesh = 0u; submesh < mokou->getNumSubmeshes(); ++submesh)
+		rq.draw(*mokou, submesh, *shaderPBR, *paramBlockPBR, 0);
 
 	//sky.render(*renderQueue, sceneData, *cbSceneData);
-	R.submitRenderQueue(*renderQueue);
+	screenRT2->flush();
 
-	R.setRenderTargets({}, shadowRT.get());
-	R.clearDepth(1.0f);
-	R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
-	// resubmit
-	R.submitRenderQueue(*renderQueue);
-
-	renderQueue->clear();
+	// PostFX pass
+	auto &screen_rt = RenderTarget2::getDefaultRenderTarget();
+	auto &screen_rq = screen_rt.getRenderQueue();
+	FXParams fxp;
+	fxp.thing = 2.0;
+	fxp.vx_offset = 1.0;
+	fxp.rt_w = 1280;
+	fxp.rt_h = 720;
+	fxCB->update(0, sizeof(FXParams), &fxp);
+	screen_rq.drawProcedural(PrimitiveType::Triangle, 3, *passthrough, *fxPB, 0);
+	hud->renderString("Hello world!", *font, { 100.0, 100.0 }, Color::White, Color::Black, screen_rq, sceneData, *cbSceneData);
+	screen_rt.flush();
 
 	// render tweak bar
 	//TwDraw();
