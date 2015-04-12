@@ -59,22 +59,16 @@ Sky::Sky()
 	auto effect = gl4::Effect::loadFromFile("resources/shaders/sky.glsl");
 	skyShader = effect->compileShader();
 
-	cbSkyParams = ConstantBuffer::create(sizeof(SkyParams), nullptr);
-	// cbSkyParams = StreamingBuffer::create(sizeof(SkyParams), Update::PerFrame, nullptr);
-	// ckSkyParams.stream(&skyParams)
+	cbSkyParams = Stream::create(BufferUsage::ConstantBuffer, sizeof(SkyParams), 3);
 
 	skybox = Mesh::create(
-		{ Attribute{ ElementFormat::Float3, ResourceUsage::Static } },
+		{ Attribute{ ElementFormat::Float3 } },
 		36, 
 		skycubeVertices, 
 		0, 
 		nullptr,
-		{ Submesh{PrimitiveType::Triangle, 0, 0, 36, 0} },
-		ResourceUsage::Static
+		{ Submesh{PrimitiveType::Triangle, 0, 0, 36, 0} }
 	);
-	
-	paramBlock = ParameterBlock::create(*skyShader);
-	paramBlock->setConstantBuffer(1, *cbSkyParams);
 }
 
 
@@ -84,9 +78,7 @@ void Sky::setTimeOfDay(float hour)
 }
 
 void Sky::render(
-	RenderQueue &rq, 
-	const SceneData &sceneData,
-	const ConstantBuffer &cbSceneData
+	SceneRenderContext &context
 	)
 {
 	SkyParams params;
@@ -94,8 +86,12 @@ void Sky::render(
 	float sunAngle = timeOfDay / 24.0f * 2 * 3.14159f;
 	params.sunDirection = vec3(cosf(sunAngle), sinf(sunAngle), 0);
 	params.sunColor = vec3(1.0f, 1.0f, 1.0f);
-	cbSkyParams->update(0, sizeof(SkyParams), &params);
-	paramBlock->setConstantBuffer(0, cbSceneData);
-	rq.draw(*skybox, 0, *skyShader, *paramBlock, 0);
+	cbSkyParams->write(params);
+
+	auto &renderQueue = *context.opaqueRenderQueue;
+	renderQueue.beginCommand();
+	renderQueue.setUniformBuffers({ context.sceneDataCB, cbSkyParams->getDescriptor() });
+	renderQueue.setShader(*skyShader);
+	skybox->draw(renderQueue, 0);
 }
 

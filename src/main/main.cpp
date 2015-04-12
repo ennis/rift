@@ -22,6 +22,7 @@
 #include <animationcurve.hpp>
 #include <skeletonanimation.hpp>
 #include <resources.hpp>
+#include <mesh.hpp>
 
 // utils
 namespace
@@ -43,6 +44,27 @@ namespace
 	}*/
 }
 
+class SkinnedMesh
+{
+public:
+	SkinnedMesh(Resources &resources, const char *path, const char *invBindPosesPath, const Skeleton &skel) :
+		mesh(resources.meshes.load(path)),
+		skeleton(skel)
+	{
+		std::ifstream fileIn(invBindPosesPath);
+		serialization::IArchive arc(fileIn);
+		// load inverse bind poses
+		for (auto i = 0u; i < skeleton.joints.size(); ++i) {
+
+		}
+	}
+
+private:
+	const Skeleton &skeleton;
+	Mesh *mesh;
+	std::vector<glm::mat4> invBindPoses;
+};
+
 class SkeletonDebug
 {
 public:
@@ -53,16 +75,14 @@ public:
 		shader = gl4::Effect::loadFromFile("resources/shaders/skeleton_debug.glsl")->compileShader();
 		cylinder = generateCylinderMesh();
 		// Max 60 bones
-		cb_bone_transforms = ConstantBuffer::create(kMaxJoints * sizeof(glm::mat4), nullptr);
-		paramBlock = ParameterBlock::create(*shader);
+		//cb_bone_transforms = ConstantBuffer::create(kMaxJoints * sizeof(glm::mat4), nullptr);
 	}
 
 	void drawSkeleton(
 		const Skeleton &skeleton,
 		const SkeletonAnimationSampler &animSampler,
 		RenderTarget2 &renderTarget,
-		const SceneData &sceneData,
-		const ConstantBuffer &sceneDataCB)
+		const SceneData &sceneData)
 	{
 		assert(skeleton.joints.size() < kMaxJoints);
 		// compute pose
@@ -73,17 +93,25 @@ public:
 		}
 
 		// upload list of transforms
-		cb_bone_transforms->update(0, pose.size() * sizeof(glm::mat4), pose.data());
+		//cb_bone_transforms->update(0, pose.size() * sizeof(glm::mat4), pose.data());
 		// draw instanced (num joints)
-		paramBlock->setConstantBuffer(0, sceneDataCB);
-		paramBlock->setConstantBuffer(1, *cb_bone_transforms);
-		renderTarget.getRenderQueue().drawInstanced(*cylinder, 0, *shader, *paramBlock, pose.size(), 0);
+		//paramBlock->setConstantBuffer(0, sceneDataCB);
+		//paramBlock->setConstantBuffer(1, *cb_bone_transforms);
+		//renderTarget.getRenderQueue().drawInstanced(*cylinder, 0, *shader, *paramBlock, pose.size(), 0);
+
+		// VS
+		/*for (...)
+		{
+			cmdBuf.initRenderCommand();
+			params[i] = pose[i];
+			cmdBuf.setBuffers({BufferDesc(params, ptr, size)})
+			mesh.draw(cmdBuf);
+		}*/
 	}
 
 private:
 	Shader::Ptr shader;
 	Mesh::Ptr cylinder;
-	ParameterBlock::Ptr paramBlock;
 	ConstantBuffer::Ptr cb_bone_transforms;
 };
 
@@ -146,14 +174,11 @@ private:
 	Shader::Ptr shaderPBR;
 	Shader::Ptr shaderEnvCube;
 
-	ParameterBlock::Ptr paramBlock;
-	ParameterBlock::Ptr paramBlockPBR;
-	ParameterBlock::Ptr paramBlockEnvCube;
-
-	ConstantBuffer::Ptr cbSceneData;
-	ConstantBuffer::Ptr cbPerObj;
-	ConstantBuffer::Ptr cbPerObjPBR;
-	ConstantBuffer::Ptr cbEnvCube;
+	Stream::Ptr cbSceneData;
+	Stream::Ptr cbPerObj;
+	Stream::Ptr cbPerObjPBR;
+	Stream::Ptr cbEnvmap;
+	Stream::Ptr cbFxParams;
 
 	Texture2D *tex;
 	TextureCubeMap *envmap;
@@ -170,9 +195,6 @@ private:
 		float rt_w;
 		float rt_h;
 	};
-
-	ConstantBuffer::Ptr fxCB;
-	ParameterBlock::Ptr fxPB;
 
 	Font::Ptr font;
 	std::unique_ptr<HUDTextRenderer> hud;
@@ -242,9 +264,9 @@ void RiftGame::init()
 	};
 
 	Attribute attribs[] = {
-		{ ElementFormat::Float3, ResourceUsage::Static },
-		{ ElementFormat::Float3, ResourceUsage::Static },
-		{ ElementFormat::Float2, ResourceUsage::Static },
+		{ ElementFormat::Float3 },
+		{ ElementFormat::Float3 },
+		{ ElementFormat::Float2 },
 	};
 
 	Submesh sm { PrimitiveType::Triangle, 0, 0, 8, 36 };
@@ -255,8 +277,7 @@ void RiftGame::init()
 		cubeMeshData,
 		36,
 		cubeIndices,
-		{ sm },
-		ResourceUsage::Static);
+		{ sm });
 
 	/*std::ifstream mokou_file("resources/models/animated/mokou.mesh", std::ios::binary);
 	serialization::IArchive arc(mokou_file);
@@ -266,33 +287,24 @@ void RiftGame::init()
 	envmap = resources->cubeMaps.load("resources/img/env/uffizi/env.dds");
 	envmap = resources->cubeMaps.load("resources/img/env/uffizi/env.dds");	// TEST
 
-	cbSceneData = ConstantBuffer::create(sizeof(SceneData), nullptr);
-	cbPerObj = ConstantBuffer::create(sizeof(PerObject), nullptr);
-	cbPerObjPBR = ConstantBuffer::create(sizeof(PerObjectPBR), nullptr);
-	cbEnvCube = ConstantBuffer::create(sizeof(EnvCubeParams), nullptr);
+	cbSceneData = Stream::create(BufferUsage::ConstantBuffer, sizeof(SceneData), 3);
+	cbPerObj = Stream::create(BufferUsage::ConstantBuffer, sizeof(PerObject), 3);
+	cbPerObjPBR = Stream::create(BufferUsage::ConstantBuffer, sizeof(PerObjectPBR), 3);
+	cbEnvmap = Stream::create(BufferUsage::ConstantBuffer, sizeof(EnvCubeParams), 3);
+	cbFxParams = Stream::create(BufferUsage::ConstantBuffer, sizeof(FXParams), 3);
 
-	paramBlock = ParameterBlock::create(*shader);
-	paramBlockPBR = ParameterBlock::create(*shaderPBR);
-	paramBlockEnvCube = ParameterBlock::create(*shaderEnvCube);
 
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	shadowRT = RenderTarget2::create(win_size, {}, ElementFormat::Depth16);
 
 	font = Font::loadFromFile("resources/img/fonts/arno_pro.fnt");
-	hud = std::make_unique<HUDTextRenderer>();
+	//hud = std::make_unique<HUDTextRenderer>();
 
 	DepthStencilDesc ds_fx;
 	ds_fx.depthTestEnable = false;
 	ds_fx.depthWriteEnable = false;
 	passthrough = gl4::Effect::loadFromFile("resources/shaders/fxaa.glsl")->compileShader({}, RasterizerDesc{}, ds_fx, BlendDesc{});
 	screenRT2 = RenderTarget2::create({ 1280, 720 }, { ElementFormat::Unorm8x4 }, ElementFormat::Depth24);
-
-	fxCB = ConstantBuffer::create(sizeof(FXParams), nullptr);
-	fxPB = ParameterBlock::create(*passthrough);
-	fxPB->setConstantBuffer(0, *fxCB);
-
-	fxPB->setTextureParameter(0, &screenRT2->getColorTexture(0), SamplerDesc{});
-	fxPB->setTextureParameter(1, &screenRT2->getDepthTexture(), SamplerDesc{});
 
 	std::vector<BVHMapping> mappings;
 	std::ifstream bvh("resources/models/bvh/man_skeleton.bvh");
@@ -312,31 +324,33 @@ void RiftGame::render(float dt)
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	auto &R = Renderer::getInstance();
 
-	screenRT2->clearColor(0.25f, 0.25f, 0.2f, 0.0f);
-	screenRT2->clearDepth(1.0f);
-	auto &&rq = screenRT2->getRenderQueue();
-	//R.setViewports({ { 0.f, 0.f, float(win_size.x), float(win_size.y), 0.0f, 1.0f } });
+	RenderQueue2 opaqueRenderQueue;
+	RenderQueue2 overlayRenderQueue;
+	SceneRenderContext context;
+	context.opaqueRenderQueue = &opaqueRenderQueue;
+	context.overlayRenderQueue = &overlayRenderQueue;
 
 	// update scene data buffer
 	auto cam = cameraEntity->getComponent<Camera>();
-	sceneData.eyePos = glm::vec4(cameraEntity->getTransform().position, 1.0f);
-	sceneData.projMatrix = cam->getProjectionMatrix();
-	sceneData.viewMatrix = cam->getViewMatrix();
-	sceneData.viewProjMatrix = sceneData.projMatrix * sceneData.viewMatrix;
-	sceneData.viewportSize = win_size;
-	cbSceneData->update(0, sizeof(SceneData), &sceneData);
+	context.sceneData.eyePos = glm::vec4(cameraEntity->getTransform().position, 1.0f);
+	context.sceneData.projMatrix = cam->getProjectionMatrix();
+	context.sceneData.viewMatrix = cam->getViewMatrix();
+	context.sceneData.viewProjMatrix = sceneData.projMatrix * sceneData.viewMatrix;
+	context.sceneData.viewportSize = win_size;
+	cbSceneData->write(sceneData);
+	context.sceneDataCB = cbSceneData->getDescriptor();	
 
 	// update per-model buffer
 	perObj.modelMatrix = glm::mat4(1.0f);
 	perObj.objectColor = glm::vec4(1.0f);
-	cbPerObj->update(0, sizeof(PerObject), &perObj);
+	cbPerObj->write(perObj);
 
 	// update per-model buffer
 	spinAngle = fmodf(spinAngle + 0.1f*3.14159f*dt, 2 * 3.14159);
 	perObjPBR.modelMatrix = glm::rotate(glm::mat4(1.0f), spinAngle, glm::vec3{ 0, 1, 0 });
 	perObjPBR.objectColor = glm::vec4(1.0f);
 	perObjPBR.eta = 1.40f;
-	cbPerObjPBR->update(0, sizeof(PerObjectPBR), &perObjPBR);
+	cbPerObjPBR->write(perObjPBR);
 
 	envCubeParams.modelMatrix = 
 		glm::translate(
@@ -344,60 +358,54 @@ void RiftGame::render(float dt)
 				glm::translate(glm::vec3(sceneData.eyePos.x, sceneData.eyePos.y, sceneData.eyePos.z)),
 				glm::vec3{ 1000.0f, 1000.0f, 1000.0f }),
 			glm::vec3{ -0.5f, -0.5f, -0.5f });
-	cbEnvCube->update(0, sizeof(EnvCubeParams), &envCubeParams);
-
-	// create parameter block
-	paramBlock->setConstantBuffer(0, *cbSceneData);
-	paramBlock->setConstantBuffer(1, *cbPerObj);
-	paramBlock->setTextureParameter(0, tex, SamplerDesc{});
-
-	paramBlockPBR->setConstantBuffer(0, *cbSceneData);
-	paramBlockPBR->setConstantBuffer(1, *cbPerObjPBR);
-	paramBlockPBR->setTextureParameter(0, tex, SamplerDesc{});
-	paramBlockPBR->setTextureParameter(1, envmap, SamplerDesc{});
-
-	paramBlockEnvCube->setConstantBuffer(0, *cbSceneData);
-	paramBlockEnvCube->setConstantBuffer(1, *cbEnvCube);
-	paramBlockEnvCube->setTextureParameter(0, envmap, SamplerDesc{});
-
-	// submit to render queue
-	if (glfwGetKey(Engine::instance().getWindow().getHandle(), GLFW_KEY_H)) {
-		//renderQueue.debugPrint();
-	}
-
-	if (glfwGetKey(Engine::instance().getWindow().getHandle(), GLFW_KEY_W)) {
-		// XXX not the same parameter block!
-		//renderQueue->draw(*mesh, 0, *shaderWireframe, *paramBlock, 0);
-	}
-	else {
-		//renderQueue->draw(*mesh, 0, *shader, *paramBlock, 0);
-	}
+	cbEnvmap->write(envCubeParams);
 
 	skel_anim_sampler->nextFrame();
-	skel_debug->drawSkeleton(*skel, *skel_anim_sampler, *screenRT2, sceneData, *cbSceneData);
-	rq.draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
+	//skel_debug->drawSkeleton(*skel, *skel_anim_sampler, *screenRT2, sceneData, *cbSceneData);
+	//rq.draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
 
-	for (auto submesh = 0u; submesh < mokou->getNumSubmeshes(); ++submesh)
-		rq.draw(*mokou, submesh, *shaderPBR, *paramBlockPBR, 0);
+	for (auto submesh = 0u; submesh < mokou->submeshes.size(); ++submesh)
+	{
+		opaqueRenderQueue.beginCommand();
+		opaqueRenderQueue.setShader(*shaderPBR);
+		opaqueRenderQueue.setUniformBuffers({ context.sceneDataCB, cbPerObjPBR->getDescriptor() });
+		opaqueRenderQueue.setTexture2D(0, *tex, SamplerDesc{});
+		opaqueRenderQueue.setTextureCubeMap(1, *envmap, SamplerDesc{});
+		mokou->draw(opaqueRenderQueue, submesh);
+	}
 
-	//sky.render(*renderQueue, sceneData, *cbSceneData);
-	screenRT2->flush();
+	// fence all constant buffer streams
+	cbEnvmap->fence(opaqueRenderQueue);
+	cbSceneData->fence(opaqueRenderQueue);
+	cbPerObj->fence(opaqueRenderQueue);
+	cbPerObjPBR->fence(opaqueRenderQueue);
+
+	screenRT2->clearColor(0.25f, 0.25f, 0.2f, 0.0f);
+	screenRT2->clearDepth(1.0f);
+	screenRT2->commit(opaqueRenderQueue);
 
 	// PostFX pass
 	auto &screen_rt = RenderTarget2::getDefaultRenderTarget();
-	auto &screen_rq = screen_rt.getRenderQueue();
 	FXParams fxp;
 	fxp.thing = 2.0;
 	fxp.vx_offset = 1.0;
 	fxp.rt_w = 1280;
 	fxp.rt_h = 720;
-	fxCB->update(0, sizeof(FXParams), &fxp);
-	screen_rq.drawProcedural(PrimitiveType::Triangle, 3, *passthrough, *fxPB, 0);
-	hud->renderString("Hello world!", *font, { 100.0, 100.0 }, Color::White, Color::Black, screen_rq, sceneData, *cbSceneData);
-	screen_rt.flush();
-
-	// render tweak bar
-	//TwDraw();
+	cbFxParams->write(fxp);
+	overlayRenderQueue.beginCommand();
+	overlayRenderQueue.setShader(*passthrough);
+	overlayRenderQueue.setTexture2D(0, screenRT2->getColorTexture(0), SamplerDesc{});
+	overlayRenderQueue.setTexture2D(0, screenRT2->getDepthTexture(), SamplerDesc{});
+	overlayRenderQueue.setUniformBuffers({ cbFxParams->getDescriptor() });
+	overlayRenderQueue.draw(PrimitiveType::Triangle, 0, 3, 0, 1);
+	//hud->renderText(context, "Hello world!", *font, { 100.0, 100.0 }, Color::White, Color::Black);
+	//hud->renderText(context, "Frame " + std::to_string(numFrames), *font, { 100.0, 140.0 }, Color::White, Color::Black);
+	//hud->renderText(context, "dt " + std::to_string(dt), *font, { 100.0, 180.0 }, Color::White, Color::Black);
+	//hud->fence(context);
+	cbFxParams->fence(overlayRenderQueue);
+	screen_rt.clearColor(0.2, 0.7, 0.2, 1.0);
+	screen_rt.clearDepth(1.0);
+	screen_rt.commit(overlayRenderQueue);
 }
 
 void RiftGame::update(float dt)

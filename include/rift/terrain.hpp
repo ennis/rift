@@ -1,38 +1,27 @@
 #ifndef TERRAIN_HPP
 #define TERRAIN_HPP
 
-#include <renderer2.hpp>	// Renderer
-#include <buffer.hpp>	// Buffer
-#include <renderable.hpp>
+#include <gl4/renderer.hpp>	
 #include <image.hpp>
-#include <effect.hpp>
-
 #include <array>
+#include <scene.hpp>
+#include <small_vector.hpp>
 
 class Terrain
 {
 public:
 	Terrain(
-		Renderer &renderer, 
-		Image &&heightmapData,
+		Image heightmapData,
 		Texture2D *slopeTexture,
 		Texture2D *flatTexture);
 
-	Terrain(const Terrain &) = delete;
-	Terrain &operator=(const Terrain &) = delete;
-	// move-constructible
-	Terrain(Terrain &&rhs);
-	// nonmoveable
-	Terrain &operator=(Terrain &&rhs) = delete;
-	~Terrain();
-
-	void render(const RenderContext &renderContext);
+	void render(const SceneData &sceneData);
 	float getHeight(const glm::ivec2 &position);
 
 private:
-	void initHeightmap(Renderer &renderer);
-	void initEffect(Renderer &renderer);
-	void initGrid(Renderer &renderer);
+	void initHeightmap();
+	void initEffect();
+	void initGrid();
 
 	void calculateLodRanges();
 
@@ -42,50 +31,54 @@ private:
 		int x, y, size, lod;
 	};
 
-	void renderSelection(const RenderContext &renderContext);
-	void renderNode(const RenderContext &renderContext, const Node &node);
+	void renderSelection(SceneRenderContext &context);
+	void renderNode(SceneRenderContext &context, const Node &node);
 
 	void nodeLodSelect(
-		Node const &node, 
-		glm::vec3 const &eye, 
-		int currentLodLevel);
+		const Node &node, 
+		const glm::vec3 &eye, 
+		unsigned currentLodLevel);
 
-	bool nodeIntersectLodRange(Node const &node, glm::vec3 const &eye, int lod);
+	bool nodeIntersectLodRange(
+		const Node &node, 
+		const glm::vec3 &eye, 
+		unsigned lod);
 
-	void addNodeToSelection(Node const &node);
+	void addNodeToSelection(const Node &node);
 	void clearNodeSelection();
 
 	// Selected nodes
-	std::vector<Node> mSelectedNodes;
-	int mNumSelectedNodes;
-	// Patch data
-	int mPatchGridSize;
-	int mPatchNumVertices;
-	int mPatchNumIndices;
-	Buffer mPatchGridVB; 
-	Buffer mPatchGridIB; 
-	VertexLayout mVertexLayout;
+	std::vector<Node> selected_nodes;
+	int patch_grid_size;
+	int patch_num_vertices;
+	int patch_num_indices;
+	Buffer::Ptr patch_grid_vb; 
+	Buffer::Ptr patch_grid_ib; 
+	InputLayout::Ptr input_layout;
 	// Terrain heightmap data & texture
-	Image mHeightmapData;
-	ImageView<uint16_t> mHeightmapView;
+	Image hm_image;
+	ImageView<uint16_t> hm_view;
 	// Terrain normal map
-	Image mHeightmapNormals;
-	ImageView<glm::vec3> mHeightmapNormalsView;
-	Texture2D mHeightmapTexture; 
-	Texture2D mHeightmapNormalTexture;
-	Texture2D *mSlopeTexture;
-	Texture2D *mFlatTexture;
+	Image hm_normals;
+	ImageView<glm::vec3> hm_normals_view;
+	Texture2D::Ptr hm_tex; 
+	Texture2D::Ptr hm_normals_tex;
+	// resource_ptr
+	Texture2D *slope_tex;
+	Texture2D *flat_tex;
 	// Heightmap vertical scale
-	float mHeightmapVerticalScale;
+	float hm_vert_scale;
 	// Heightmap size in pixels
-	glm::ivec2 mHeightmapSize;
-	int mLog2HeightmapSize;
+	glm::ivec2 hm_size;
+	int log2_hm_size;
 	// LOD ranges
-	int mNumLodLevels;
-	static const int kMaxLodLevel = 16;
-	std::array<float,kMaxLodLevel> mLodRanges;
-	Effect mEffect;
-	Shader *mShader;
+	static const unsigned kMaxLodLevel = 16;
+	util::small_vector<float, kMaxLodLevel> lod_ranges;
+	Shader::Ptr shader;
+	Shader::Ptr shader_wireframe;
+	// shader parameters
+	Stream::Ptr terrain_uniforms;
+	Stream::Ptr terrain_patch_uniforms;
 };
 
 #endif

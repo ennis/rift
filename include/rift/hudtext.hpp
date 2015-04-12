@@ -11,34 +11,25 @@ class HUDTextRenderer
 public:
 	HUDTextRenderer();
 	
-	void renderString(
+	void renderText(
+		SceneRenderContext& context,
 		util::string_ref str,
-		const Font &font,
+		const Font& font,
 		glm::vec2 viewPos,
-		const glm::vec4 &color,
-		const glm::vec4 &outlineColor,
-		RenderQueue &renderQueue,
-		const SceneData &sceneData,
-		const ConstantBuffer &sceneDataCB);
+		const glm::vec4& color,
+		const glm::vec4& outlineColor);
+
+	void fence(SceneRenderContext& context);
 
 private:
-	static constexpr auto kMaxNumGlyphs = 128u;
+	static constexpr auto kMaxGlyphsPerFrame = 1024 * 1024u;
+	static constexpr auto kMaxCallsPerFrame = 1024;
 
-	// TODO auto-generation of parameter struct
-	struct Params
-	{
-		glm::mat4 transform;
-		glm::vec4 fillColor;
-		glm::vec4 outlineColor;
-	};
-
-	int frame = 0;
-	GLsync sync;
-	GLsync sync2;
-	Mesh::Ptr mesh;
+	Stream::Ptr vb_stream;
+	Stream::Ptr ib_stream;
+	InputLayout::Ptr layout;
 	Shader::Ptr shader;
-	ParameterBlock::Ptr pb;
-	ConstantBuffer::Ptr cbParams;
+	Stream::Ptr cb_stream;
 };
 
 #endif

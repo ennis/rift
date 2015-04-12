@@ -163,8 +163,8 @@ struct VertexElement2
 
 struct Attribute
 {
-    ElementFormat format;
-    ResourceUsage usage;
+	ElementFormat format;
+	unsigned inputSlot;
 };
 
 enum class BufferUsage

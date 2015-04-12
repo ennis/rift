@@ -7,6 +7,7 @@
 #include <log.hpp>
 #include <engine.hpp>
 #include <array>
+#include <algorithm>
 
 std::unique_ptr<Renderer> Renderer::instance;
 
@@ -24,7 +25,7 @@ bool operator==(const SamplerDesc &lhs, const SamplerDesc &rhs)
 namespace gl4
 {
 
-namespace 
+namespace detail
 {
 	GLint textureFilterToGL_[static_cast<int>(TextureFilter::Max)] = {
 		/* Nearest */ gl::NEAREST,
@@ -137,7 +138,7 @@ namespace
 		std::string sev_str = "Unknown";
 		if (gl_debug_severity_names.count(severity)) sev_str = gl_debug_severity_names.at(severity);
 
-		if (severity != gl::DEBUG_SEVERITY_LOW && severity != gl::DEBUG_SEVERITY_NOTIFICATION)
+		//if (severity != gl::DEBUG_SEVERITY_LOW && severity != gl::DEBUG_SEVERITY_NOTIFICATION)
 			LOG << "(GL debug: " << id << ", " << src_str << ", " << type_str << ", " << sev_str << ") " << msg;
 	}
 
@@ -302,8 +303,10 @@ namespace
 }
 
 
-InputLayout::InputLayout(util::array_ref<Attribute> attribs)
+InputLayout::InputLayout(unsigned num_buffers,util::array_ref<Attribute> attribs)
 {
+	strides.resize(num_buffers);
+	std::fill(strides.begin(), strides.end(), 0);
 	// create VAO
 	gl::GenVertexArrays(1, &vao);
 	if (!gl::exts::var_EXT_direct_state_access) {
@@ -324,11 +327,11 @@ InputLayout::InputLayout(util::array_ref<Attribute> attribs)
 				fmt.size,
 				fmt.type,
 				fmt.normalize,
-				offset);
+				strides[attrib.inputSlot]);
 			gl::VertexArrayVertexAttribBindingEXT(
 				vao,
 				attribindex,
-				0);
+				attrib.inputSlot);
 		}
 		else {
 			gl::EnableVertexAttribArray(
@@ -338,25 +341,24 @@ InputLayout::InputLayout(util::array_ref<Attribute> attribs)
 				fmt.size,
 				fmt.type,
 				fmt.normalize,
-				offset);
+				strides[attrib.inputSlot]);
 			gl::VertexAttribBinding(
 				attribindex,
-				0);
+				attrib.inputSlot);
 		}
-		offset += getElementFormatSize(attrib.format);
+		strides[attrib.inputSlot] += getElementFormatSize(attrib.format);
 	}
 	if (!gl::exts::var_EXT_direct_state_access) {
 		gl::BindVertexArray(0);
 	}
-	stride = offset;
 }
 
 Buffer::Buffer(
-	int size_,
+	size_t size_,
 	ResourceUsage resourceUsage_,
 	BufferUsage usage_,
-	void *initialData_) :
-	target(bufferUsageToBindingPoint(usage_)), size(size_)
+	const void *initialData_) :
+	target(detail::bufferUsageToBindingPoint(usage_)), size(size_), flags(0)
 {
 	gl::GenBuffers(1, &id);
 	gl::BindBuffer(target, id);
@@ -372,8 +374,8 @@ Buffer::Buffer(
 }
 
 void Buffer::update(
-	int offset,
-	int size,
+	size_t offset,
+	size_t size,
 	const void *data)
 {
 	if (gl::exts::var_EXT_direct_state_access) {
@@ -386,29 +388,14 @@ void Buffer::update(
 }
 
 Buffer::Ptr Buffer::create(
-	int size,
+	size_t size,
 	ResourceUsage resourceUsage,
 	BufferUsage usage,
-	void *initialData
+	const void *initialData
 	)
 {
 	auto ptr = std::make_unique<Buffer>(size, resourceUsage, usage, initialData);
 	return ptr;
-}
-
-void Mesh::setSubmesh(int index, const Submesh &submesh)
-{
-	submeshes[index] = submesh;
-}
-
-void Mesh::updateVertices(int offset, int size, const void *data)
-{
-	updateBuffer(vb, gl::ARRAY_BUFFER, offset*stride, size*stride, data);
-}
-
-void Mesh::updateIndices(int offset, int size, const uint16_t *data)
-{
-	updateBuffer(ib, gl::ELEMENT_ARRAY_BUFFER, offset*2, size*2, data);
 }
 
 //=============================================================================
@@ -416,7 +403,7 @@ void Mesh::updateIndices(int offset, int size, const uint16_t *data)
 // Renderer::createMesh
 //=============================================================================
 //=============================================================================
-Mesh::Mesh(
+/*Mesh::Mesh(
 	util::array_ref<Attribute> layout,
 	int numVertices,
 	const void *vertexData,
@@ -487,7 +474,7 @@ Mesh::Mesh(
 
 	// VBO
 	nbvb = 1;
-	vb = createBuffer(
+	vb = detail::createBuffer(
 				gl::ARRAY_BUFFER, 
 				vbsize,
 				vb_flags,
@@ -498,7 +485,7 @@ Mesh::Mesh(
 	ibsize = numIndices * 2;
 	nbindex = numIndices;
 	if (numIndices) {
-		ib = createBuffer(
+		ib = detail::createBuffer(
 				gl::ELEMENT_ARRAY_BUFFER,
 				ibsize,
 				ib_flags,
@@ -507,7 +494,7 @@ Mesh::Mesh(
 	}
 
 	submeshes.assign(submeshes_.begin(), submeshes_.end());
-}
+}*/
 
 TextureCubeMap::TextureCubeMap(
 	glm::ivec2 size_,
@@ -685,10 +672,8 @@ RenderTarget::Ptr RenderTarget::createRenderTargetCubeMap(
 RenderTarget2::RenderTarget2() :
 fbo(0),
 depth_target(nullptr),
-render_queue(RenderQueue::create()),
 clear_depth(1.0)
 {
-
 }
 
 namespace
@@ -713,7 +698,6 @@ RenderTarget2::RenderTarget2(
 	glm::ivec2 size_,
 	util::array_ref<ElementFormat> colorTargetFormats) :
 	size(size_),
-	render_queue(RenderQueue::create()),
 	clear_depth(1.0)
 {
 	assert(colorTargetFormats.size() < 8);
@@ -730,7 +714,6 @@ RenderTarget2::RenderTarget2(
 	ElementFormat depthTargetFormat) :
 	size(size_),
 	depth_target(nullptr),
-	render_queue(RenderQueue::create()),
 	clear_depth(1.0)
 {
 	assert(colorTargetFormats.size() < 8);
@@ -806,7 +789,7 @@ void RenderTarget2::init()
 	assert(err == gl::FRAMEBUFFER_COMPLETE);
 }
 
-void RenderTarget2::flush()
+void RenderTarget2::commit(RenderQueue2 &renderQueue)
 {
 	gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
 	if (fbo == 0) {
@@ -817,12 +800,7 @@ void RenderTarget2::flush()
 	else {
 		gl::Viewport(0, 0, size.x, size.y);
 	}
-	gl::DepthMask(gl::TRUE_);
-	gl::ClearColor(clear_color.r, clear_color.g, clear_color.b, clear_color.a);
-	gl::ClearDepth(clear_depth);
-	gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-	Renderer::getInstance().submitRenderQueue(*render_queue);
-	render_queue->clear();
+	Renderer::getInstance().commit(renderQueue);
 }
 
 RenderTarget2::Ptr RenderTarget2::default_rt;
@@ -885,12 +863,12 @@ Shader::Shader(
 	const DepthStencilDesc &depthStencilState,
 	const BlendDesc &blendState)
 {
-	cache_id = shader_cache_index++;
+	cache_id = detail::shader_cache_index++;
 	ds_state = depthStencilState;
 	rs_state = rasterizerState;
 	om_state = blendState;
 	// preprocess source
-	program = glslCreateProgram(vsSource, psSource);
+	program = detail::glslCreateProgram(vsSource, psSource);
 
 	// query some informations
 	int num_ubo = 0;
@@ -933,67 +911,6 @@ Shader::Shader(
 			LOG << " -- Sampler bound to texture unit " << tex_unit;
 		}
 	}
-}
-
-ConstantBuffer::ConstantBuffer(
-	int size_,
-	const void *initialData)
-{
-	ubo = createBuffer(gl::UNIFORM_BUFFER, size_, gl::DYNAMIC_STORAGE_BIT, initialData);
-	size = size_;
-}
-
-//=============================================================================
-//=============================================================================
-// Renderer::createParameterBlock
-//=============================================================================
-//=============================================================================
-ParameterBlock::ParameterBlock(Shader &shader_) : shader(&shader_)
-{
-	num_ubo = 0;
-	std::fill(ubo, ubo + kMaxUniformBufferBindings, 0);
-	std::fill(ubo_offsets, ubo_offsets + kMaxUniformBufferBindings, 0);
-	std::fill(ubo_sizes, ubo_sizes + kMaxUniformBufferBindings, 0);
-	std::fill(textures, textures + kMaxTextureUnits, 0);
-	std::fill(samplers, samplers + kMaxTextureUnits, 0);
-}
-
-//=============================================================================
-//=============================================================================
-// Renderer::setConstantBuffer
-//=============================================================================
-//=============================================================================
-void ParameterBlock::setConstantBuffer(
-	int binding,
-	const ConstantBuffer &constantBuffer
-	)
-{
-	//assert(param.size == constantBuffer.size);
-
-	num_ubo = std::max(num_ubo, binding+1);
-	ubo[binding] = constantBuffer.ubo;
-	ubo_offsets[binding] = 0;
-	ubo_sizes[binding] = constantBuffer.size;
-}
-
-void ParameterBlock::setTextureParameter(
-	int texunit,
-	const Texture2D *texture,
-	const SamplerDesc &samplerDesc
-	)
-{
-	textures[texunit] = texture->id;
-	samplers[texunit] = Renderer::getInstance().getSampler(samplerDesc);
-}
-
-void ParameterBlock::setTextureParameter(
-	int texunit,
-	const TextureCubeMap *texture,
-	const SamplerDesc &samplerDesc
-	)
-{
-	textures[texunit] = texture->id;
-	samplers[texunit] = Renderer::getInstance().getSampler(samplerDesc);
 }
 
 //=============================================================================
@@ -1057,7 +974,7 @@ void Renderer::clearDepth(
 // Renderer::setViewports
 //=============================================================================
 //=============================================================================
-void Renderer::setViewports(
+/*void Renderer::setViewports(
 	util::array_ref<Viewport2> viewports
 	)
 {
@@ -1072,7 +989,7 @@ void Renderer::setViewports(
 	//gl::DepthRangeIndexed(0, 0.0f, 1.0f);
 
 	// TODO more than 1 viewport
-	/*for (int i = 0; i < viewports.size(); ++i) {
+	for (int i = 0; i < viewports.size(); ++i) {
 	float vp[4] = {
 	viewports[i].topLeftX,
 	viewports[i].topLeftY,
@@ -1081,15 +998,15 @@ void Renderer::setViewports(
 	};
 	gl::ViewportIndexedfv(i, vp);
 	gl::DepthRangeIndexed(i, viewports[i].minDepth, viewports[i].maxDepth);
-	}*/
-}
+	}
+}*/
 
 //=============================================================================
 //=============================================================================
 // Renderer::setRenderTargets
 //=============================================================================
 //=============================================================================
-void Renderer::setRenderTargets(
+/*void Renderer::setRenderTargets(
 	util::array_ref<const RenderTarget*> colorTargets,
 	const RenderTarget *depthStencilTarget
 	)
@@ -1158,14 +1075,14 @@ void Renderer::setRenderTargets(
 		err = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
 		assert(err == gl::FRAMEBUFFER_COMPLETE);
 	}
-}
+}*/
 
 //=============================================================================
 //=============================================================================
 // Renderer::draw
 //=============================================================================
 //=============================================================================
-void RenderQueue::draw(
+/*void RenderQueue::draw(
 	const Mesh &mesh,
 	int submesh_index,
 	const Shader &shader,
@@ -1199,7 +1116,7 @@ void RenderQueue::drawProcedural(
 	item.param_block = &parameterBlock;
 	item.sort_key = sortHint;
 	item.procedural_count = count;
-	item.procedural_mode = primitiveTypeToGLenum(primitiveType);
+	item.procedural_mode = detail::primitiveTypeToGLenum(primitiveType);
 	item.num_instances = 0;
 	items.push_back(item);
 }
@@ -1223,9 +1140,9 @@ void RenderQueue::drawInstanced(
 	item.num_instances = num_instances;
 	assert(item.submesh_index < mesh.submeshes.size());
 	items.push_back(item);
-}
+}*/
 
-void Renderer::drawItem(const RenderItem &item)
+/*void Renderer::drawItem(const RenderItem &item)
 {
 	// TODO multi-bind
 	// bind vertex buffers
@@ -1260,9 +1177,9 @@ void Renderer::drawItem(const RenderItem &item)
 	}
 	else {
 		gl::Enable(gl::CULL_FACE);
-		gl::CullFace(cullModeToGLenum(item.shader->rs_state.cullMode));
+		gl::CullFace(detail::cullModeToGLenum(item.shader->rs_state.cullMode));
 	}
-	gl::PolygonMode(gl::FRONT_AND_BACK, fillModeToGLenum(item.shader->rs_state.fillMode));
+	gl::PolygonMode(gl::FRONT_AND_BACK, detail::fillModeToGLenum(item.shader->rs_state.fillMode));
 	gl::Enable(gl::DEPTH_TEST);
 	if (!item.shader->ds_state.depthTestEnable)
 		gl::DepthFunc(gl::ALWAYS);
@@ -1279,14 +1196,14 @@ void Renderer::drawItem(const RenderItem &item)
 	gl::Enable(gl::BLEND);
 	gl::BlendEquationSeparatei(
 		0,
-		blendOpToGL(item.shader->om_state.rgbOp),
-		blendOpToGL(item.shader->om_state.alphaOp));
+		detail::blendOpToGL(item.shader->om_state.rgbOp),
+		detail::blendOpToGL(item.shader->om_state.alphaOp));
 	gl::BlendFuncSeparatei(
 		0,
-		blendFactorToGL(item.shader->om_state.rgbSrcFactor),
-		blendFactorToGL(item.shader->om_state.rgbDestFactor),
-		blendFactorToGL(item.shader->om_state.alphaSrcFactor),
-		blendFactorToGL(item.shader->om_state.alphaDestFactor));
+		detail::blendFactorToGL(item.shader->om_state.rgbSrcFactor),
+		detail::blendFactorToGL(item.shader->om_state.rgbDestFactor),
+		detail::blendFactorToGL(item.shader->om_state.alphaSrcFactor),
+		detail::blendFactorToGL(item.shader->om_state.alphaDestFactor));
 
 	if (item.mesh)
 	{
@@ -1297,7 +1214,7 @@ void Renderer::drawItem(const RenderItem &item)
 			if (item.num_instances == 1)
 			{
 				gl::DrawElementsBaseVertex(
-					primitiveTypeToGLenum(sm.primitiveType),
+					detail::primitiveTypeToGLenum(sm.primitiveType),
 					sm.numIndices,
 					gl::UNSIGNED_SHORT,
 					reinterpret_cast<void*>(sm.startIndex * 2),
@@ -1306,7 +1223,7 @@ void Renderer::drawItem(const RenderItem &item)
 			}
 			else {
 				gl::DrawElementsInstancedBaseVertex(
-					primitiveTypeToGLenum(sm.primitiveType), 
+					detail::primitiveTypeToGLenum(sm.primitiveType),
 					sm.numIndices, 
 					gl::UNSIGNED_SHORT,
 					reinterpret_cast<void*>(sm.startIndex * 2), 
@@ -1316,7 +1233,7 @@ void Renderer::drawItem(const RenderItem &item)
 		}
 		else {
 			gl::DrawArrays(
-				primitiveTypeToGLenum(sm.primitiveType),
+				detail::primitiveTypeToGLenum(sm.primitiveType),
 				sm.startVertex,
 				sm.numVertices
 				);
@@ -1326,26 +1243,13 @@ void Renderer::drawItem(const RenderItem &item)
 	{
 		gl::DrawArrays(item.procedural_mode, 0, item.procedural_count);
 	}
-}
-
-
-//=============================================================================
-//=============================================================================
-// Renderer::clearRenderQueue
-//=============================================================================
-//=============================================================================
-void RenderQueue::clear(
-	)
-{
-	items.clear();
-}
-
+}*/
 //=============================================================================
 //=============================================================================
 // Renderer::submitRenderQueue
 //=============================================================================
 //=============================================================================
-void Renderer::submitRenderQueue(
+/*void Renderer::submitRenderQueue(
 	RenderQueue &renderQueue
 	)
 {
@@ -1356,7 +1260,7 @@ void Renderer::submitRenderQueue(
 	for (const auto &ri : renderQueue.items) {
 		drawItem(ri);
 	}
-}
+}*/
 
 GLuint Renderer::getSampler(SamplerDesc desc)
 {
@@ -1368,11 +1272,11 @@ GLuint Renderer::getSampler(SamplerDesc desc)
 	if (ins.second) {
 		GLuint id;
 		gl::GenSamplers(1, &id);
-		gl::SamplerParameteri(id, gl::TEXTURE_MIN_FILTER, textureFilterToGL(desc.minFilter));
-		gl::SamplerParameteri(id, gl::TEXTURE_MAG_FILTER, textureFilterToGL(desc.magFilter));
-		gl::SamplerParameteri(id, gl::TEXTURE_WRAP_R, textureAddressModeToGL(desc.addrU));
-		gl::SamplerParameteri(id, gl::TEXTURE_WRAP_S, textureAddressModeToGL(desc.addrV));
-		gl::SamplerParameteri(id, gl::TEXTURE_WRAP_T, textureAddressModeToGL(desc.addrW));
+		gl::SamplerParameteri(id, gl::TEXTURE_MIN_FILTER, detail::textureFilterToGL(desc.minFilter));
+		gl::SamplerParameteri(id, gl::TEXTURE_MAG_FILTER, detail::textureFilterToGL(desc.magFilter));
+		gl::SamplerParameteri(id, gl::TEXTURE_WRAP_R, detail::textureAddressModeToGL(desc.addrU));
+		gl::SamplerParameteri(id, gl::TEXTURE_WRAP_S, detail::textureAddressModeToGL(desc.addrV));
+		gl::SamplerParameteri(id, gl::TEXTURE_WRAP_T, detail::textureAddressModeToGL(desc.addrW));
 		res->second = util::unique_resource<GLuint, SamplerDeleter>(id);
 	}
 	return res->second.get();
@@ -1397,7 +1301,7 @@ Renderer::~Renderer()
 void Renderer::initialize()
 {
 	instance = std::make_unique<Renderer>();
-	setDebugCallback();
+	detail::setDebugCallback();
 }
 
 //=============================================================================

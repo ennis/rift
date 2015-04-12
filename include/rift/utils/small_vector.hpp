@@ -6,7 +6,7 @@
 
 namespace util
 {
-
+	// TODO use std::vector with stack allocators
 	template <typename T, std::size_t N>
 	class small_vector
 	{
@@ -119,10 +119,28 @@ namespace util
 			length = i;
 		}
 
+		void resize(size_type new_size)
+		{
+			assert(new_size <= N);
+			if (new_size < size()) {
+				// destroy objects
+				for (size_type i = new_size; i < length; ++i) {
+					static_cast<T*>(storage_ptr(i))->~T();
+				}
+			}
+			else {
+				// default-construct objects
+				for (size_type i = length; i < new_size; ++i) {
+					new (storage_ptr(i)) T();
+				}
+			}
+			length = new_size;
+		}
+
 		void clear()
 		{
 			for (size_type i = 0; i < length; ++i) {
-				*static_cast<T*>(storage_ptr(i++))->~T();
+				static_cast<T*>(storage_ptr(i))->~T();
 			}
 			length = 0;
 		}

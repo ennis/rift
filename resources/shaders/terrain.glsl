@@ -6,20 +6,31 @@ layout(binding = 0) uniform sampler2D heightmap;
 layout(binding = 1) uniform sampler2D normalMap;
 layout(binding = 2) uniform sampler2D slopeTex;
 layout(binding = 3) uniform sampler2D flatTex;
-uniform mat4 modelMatrix;
-// position of the grid in world space (in meters)
-uniform vec2 patchOffset;
-// size of the grid (in meters, scale)
-uniform float patchScale;
-// size of the heightmap in pixels
-uniform vec2 heightmapSize;
-// heightmap vertical scale in meters/unit
-uniform float heightmapScale;
-// LOD level
-uniform int lodLevel;
-// texture scale
-uniform float flatTextureScale;
-uniform float slopeTextureScale;
+
+// constant
+layout(std140, binding = 1) uniform TerrainUniforms
+{
+	mat4 modelMatrix;
+	// size of the heightmap in pixels
+	vec2 heightmapSize;
+	// heightmap vertical scale in meters/unit
+	float heightmapScale;
+	// texture scale
+	float flatTextureScale;
+	float slopeTextureScale;
+}
+
+// per-patch update
+layout(std140, binding = 2) uniform TerrainPatchUniforms
+{
+	// position of the grid in world space (in meters)
+	vec2 patchOffset;
+	// size of the grid (in meters, scale)
+	float patchScale;
+	// LOD level
+	int lodLevel;
+}
+
 
 //===================================================================
 #ifdef _VERTEX_

@@ -1,6 +1,8 @@
 #ifndef SCENE_HPP
 #define SCENE_HPP
 
+#include <gl4/renderer.hpp>
+
 // données partagées entre les shaders
 struct SceneData
 {
@@ -10,6 +12,20 @@ struct SceneData
 	glm::vec4 eyePos;	// in world space
 	glm::vec4 lightDir;
 	glm::vec2 viewportSize;
+};
+
+struct SceneRenderContext
+{
+	RenderTarget *renderTarget;
+	RenderTarget *overlayRenderTarget;
+	// drawn before postFX (opaque)
+	RenderQueue2 *opaqueRenderQueue;
+	// drawn after postFX (HUD)
+	RenderQueue2 *overlayRenderQueue;
+	// TODO
+	RenderQueue2 *shadowRenderQueue;
+	SceneData sceneData;
+	BufferDesc sceneDataCB;
 };
 
 class SceneRenderer

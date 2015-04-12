@@ -3,6 +3,7 @@
 
 #include <gl4/renderer.hpp>
 #include <scene.hpp>
+#include <mesh.hpp>
 
 class Sky
 {
@@ -26,15 +27,12 @@ public:
 	// -VS2013
 
 	void setTimeOfDay(float hour);
-	void render(RenderQueue &rq, 
-		const SceneData &sceneData,
-		const ConstantBuffer &cbSceneData);
+	void render(SceneRenderContext &context);
 
 private:
 	float timeOfDay;
 	Shader::Ptr skyShader;
-	ConstantBuffer::Ptr cbSkyParams;
-	ParameterBlock::Ptr paramBlock;
+	Stream::Ptr cbSkyParams;
 	Mesh::Ptr skybox;
 };
 

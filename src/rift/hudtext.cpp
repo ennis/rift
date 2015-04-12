@@ -3,16 +3,29 @@
 #include <effect.hpp>
 #include <transform.hpp>
 
+namespace
+{
+	// TODO auto-generation of parameter block
+	struct TextParams
+	{
+		glm::mat4 transform;
+		glm::vec4 fillColor;
+		glm::vec4 outlineColor;
+	}; 
+	
+	struct GlyphVertex
+	{
+		float x, y;
+		float tx, ty;
+	};
+}
+
 HUDTextRenderer::HUDTextRenderer() 
 {
-	mesh = Mesh::create(
-		{ Attribute{ ElementFormat::Float4 } }, 
-		kMaxNumGlyphs * 4, 
-		nullptr, 
-		kMaxNumGlyphs * 6,
-		nullptr, 
-		{ Submesh{ PrimitiveType::Triangle, 0, 0, 0, 0 } }, 
-		ResourceUsage::Dynamic);
+	vb_stream = Stream::create(BufferUsage::VertexBuffer, 4 * kMaxGlyphsPerFrame * sizeof(glm::vec4), 3);
+	ib_stream = Stream::create(BufferUsage::IndexBuffer, 6 * kMaxGlyphsPerFrame * sizeof(glm::vec4), 3);
+	cb_stream = Stream::create(BufferUsage::ConstantBuffer, kMaxCallsPerFrame * sizeof(TextParams), 3);
+	layout = InputLayout::create(1, { Attribute{ ElementFormat::Float4 } });
 
 	auto effect = gl4::Effect::loadFromFile("resources/shaders/text.glsl");
 	RasterizerDesc rs;
@@ -22,33 +35,26 @@ HUDTextRenderer::HUDTextRenderer()
 	ds.depthWriteEnable = false;
 	BlendDesc om{};
 	shader = effect->compileShader({}, rs, ds, om);
-	pb = ParameterBlock::create(*shader);
-	cbParams = ConstantBuffer::create(sizeof(Params), nullptr);
-	pb->setConstantBuffer(0, *cbParams);
 }
 
-void HUDTextRenderer::renderString(
+void HUDTextRenderer::renderText(
+	SceneRenderContext &context,
 	util::string_ref str,
 	const Font &font,
 	glm::vec2 viewPos,
 	const glm::vec4 &color,
-	const glm::vec4 &outlineColor,
-	RenderQueue &renderQueue,
-	const SceneData &sceneData,
-	const ConstantBuffer &sceneDataCB)
+	const glm::vec4 &outlineColor)
 {
 	auto len = str.size();
-	// TODO do not truncate
-	if (len>kMaxNumGlyphs) len=kMaxNumGlyphs;
-	struct {
-		float x,y;
-		float tx,ty;
-	} vbuf[kMaxNumGlyphs*4];
-	uint16_t ibuf[kMaxNumGlyphs*6];
+	if (len > kMaxGlyphsPerFrame) len = kMaxGlyphsPerFrame;
+	auto vbuf = vb_stream->reserve_many<GlyphVertex>(len * 4);
+	auto ibuf = ib_stream->reserve_many<uint16_t>(len * 6);
 	auto &metrics=font.getMetrics();
+
 	int x=0,y=0;
-	for (unsigned int i=0; i<len; ++i) {
-		Font::Glyph const *g=nullptr;
+	for (unsigned i = 0; i < len; ++i) 
+	{
+		const Font::Glyph *g = nullptr;
 		// TODO: real utf-8
 		if (!font.getGlyph(static_cast<char32_t>(str[i]),g)) {
 			WARNING<<"No glyph for character "<<str[i];
@@ -82,39 +88,29 @@ void HUDTextRenderer::renderString(
 		x+=g->xAdvance;
 	}
 
-	/*if (frame >= 2) {
-		auto result = gl::ClientWaitSync(sync, gl::SYNC_FLUSH_COMMANDS_BIT, 0);
-		auto result2 = gl::ClientWaitSync(sync2, gl::SYNC_FLUSH_COMMANDS_BIT, 10000000);
-		if (result == gl::TIMEOUT_EXPIRED && (result2 != gl::TIMEOUT_EXPIRED)) {
-			WARNING << "LOCK FRAME N-1 " << frame;
-		}
-		if (result2 == gl::TIMEOUT_EXPIRED) {
-			WARNING << "LOCK FRAME N-2 " << frame;
-		}
-	}*/
-	++frame;
-	mesh->updateVertices(0, len * 4, vbuf);
-	mesh->updateIndices(0, len * 6, ibuf);
-	// quick check
-	/*if (frame >= 2)
-		gl::DeleteSync(sync2);
-	sync2 = sync;
-	sync = gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0);*/
-
-	mesh->setSubmesh(0, Submesh{ PrimitiveType::Triangle, 0, 0, len*4, len*6 });
-
-	// create a mesh
-	// update the mesh (set submesh 0)
-	// call shader with updated parameters
-
-	Params p;
-	p.transform = glm::ortho(0.f, sceneData.viewportSize.x, sceneData.viewportSize.y, 0.f);
+	TextParams p;
+	p.transform = glm::ortho(
+		-viewPos.x, 
+		context.sceneData.viewportSize.x - viewPos.x,
+		context.sceneData.viewportSize.y - viewPos.y,
+		-viewPos.y);
 	p.fillColor = color;
 	p.outlineColor = outlineColor;
-	cbParams->update(0, sizeof(p), &p);
+	cb_stream->write(p);
 
-	pb->setTextureParameter(0, &font.getTexture(), SamplerDesc{});
-	renderQueue.draw(*mesh, 0, *shader, *pb, 100);	// Hackish
-
+	auto &renderQueue = *context.overlayRenderQueue;
+	renderQueue.beginCommand();
+	renderQueue.setVertexBuffers({ vb_stream->getDescriptor() }, *layout);
+	renderQueue.setIndexBuffer(ib_stream->getDescriptor());
+	renderQueue.setUniformBuffers({ cb_stream->getDescriptor() });
+	renderQueue.setTexture2D(0, font.getTexture(), {});
+	renderQueue.setShader(*shader);
+	renderQueue.drawIndexed(PrimitiveType::Triangle, 0, len * 6, 0, 0, 1);
 }
 
+void HUDTextRenderer::fence(SceneRenderContext &context)
+{
+	cb_stream->fence(*context.overlayRenderQueue);
+	vb_stream->fence(*context.overlayRenderQueue);
+	ib_stream->fence(*context.overlayRenderQueue);
+}

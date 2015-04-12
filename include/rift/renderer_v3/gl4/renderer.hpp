@@ -11,6 +11,7 @@
 #include <serialization.hpp>
 #include <unique_resource.hpp>
 #include <small_vector.hpp>
+#include <boost/circular_buffer.hpp>
 
 namespace std {
 	template <> struct hash<SamplerDesc>
@@ -29,6 +30,34 @@ namespace std {
 
 namespace gl4
 {
+	namespace detail
+	{
+		GLint textureFilterToGL(TextureFilter filter);
+		GLint textureAddressModeToGL(TextureAddressMode addr);
+		GLenum bufferUsageToBindingPoint(BufferUsage bufferUsage);
+		GLenum blendOpToGL(BlendOp bo);
+		GLenum blendFactorToGL(BlendFactor bf);
+		GLenum cullModeToGLenum(CullMode mode);
+		GLenum fillModeToGLenum(PolygonFillMode fillMode);
+		GLenum primitiveTypeToGLenum(PrimitiveType type);
+		GLuint createBuffer(
+			GLenum bindingPoint,
+			int size,
+			GLuint flags,
+			const void *initialData
+			);
+		void updateBuffer(
+			GLuint buf,
+			GLenum target,
+			int offset,
+			int size,
+			const void *data
+			);
+		GLuint glslCompileShader(const char *shaderSource, GLenum type);
+		void glslLinkProgram(GLuint program);
+		GLuint glslCreateProgram(const char *vertexShaderSource, const char *fragmentShaderSource);
+	}
+
 	// constexpr
 	constexpr auto kMaxUniformBufferBindings = 16u;
 	constexpr auto kMaxVertexBufferBindings = 16u;
@@ -44,28 +73,121 @@ namespace gl4
 	class ConstantBuffer;
 	class Renderer;
 	class InputLayout;
+	class RenderQueue2;
 
 	// WORKAROUND for vs2013
 	// VS2013 does not support implicit generation of move constructors and move assignment operators
 	// so the unique_resource pattern and the 'rule of zero' (http://flamingdangerzone.com/cxx11/2012/08/15/rule-of-zero.html)
 	// is effectively useless
 
+	struct BufferDesc
+	{
+		BufferDesc() = default;
+
+		BufferDesc(GLuint buffer_, size_t offset_, size_t size_) :
+			buffer(buffer_),
+			offset(offset_),
+			size(size_)
+		{}
+
+		GLuint buffer = 0;
+		size_t offset = 0;
+		size_t size = 0;
+	};
 
 	class InputLayout
 	{
 	public:
 		using Ptr = std::unique_ptr<InputLayout>;
 
-		InputLayout(util::array_ref<Attribute> attribs);
+		InputLayout(unsigned num_buffers, util::array_ref<Attribute> attribs);
 
-		static Ptr create(util::array_ref<Attribute> attribs)
+		static Ptr create(unsigned num_buffers, util::array_ref<Attribute> attribs)
 		{
-			return std::make_unique<InputLayout>(attribs);
+			return std::make_unique<InputLayout>(num_buffers, attribs);
 		}
 
 	// protected:
+		static constexpr auto kMaxVertexBuffers = 8u;
 		GLuint vao;
-		int stride;
+		util::small_vector<int, kMaxVertexBuffers> strides;
+	};
+
+	// write-only GPU buffer for pushing data to the GPU
+	struct Stream
+	{
+		using Ptr = std::unique_ptr<Stream>;
+		// usage ...
+		// size: size reserved for data
+	
+		Stream(BufferUsage usage_, size_t size_, unsigned num_buffers);
+
+		~Stream()
+		{
+			gl::DeleteBuffers(1, &buffer_object);
+		}
+
+		// reserve storage for an element of type T and copy arg in it 
+		template <typename T>
+		void write(const T& t)
+		{
+			T *ptr = reserve_one<T>();
+			*ptr = t;
+		}
+
+		// reserve some suitably aligned storage for an element of type T
+		template <typename T>
+		T *reserve_one()
+		{
+			// TODO aligned storage (std::align)
+			return static_cast<T*>(reserve(sizeof(T)));
+		}
+
+		// reserve some suitably aligned storage for an array of n elements of type T
+		template <typename T>
+		T *reserve_many(int array_size)
+		{
+			// TODO aligned storage
+			return static_cast<T*>(reserve(sizeof(T)*array_size));
+		}
+
+		// reserve some space 
+		// TODO suitably aligned storage
+		void *reserve(size_t size);
+		// get descriptor for active storage
+		BufferDesc getDescriptor() const
+		{
+			return BufferDesc{ buffer_object, current_offset, current_size };
+		}
+
+		// lock the reserved space and insert fence in command stream
+		// all pointers returned by reserve() are invalidated
+		// (buffer descriptors are still valid)
+		void fence(RenderQueue2 &queue);
+
+		static Ptr create(BufferUsage usage_, size_t size_, unsigned num_buffers)
+		{
+			return std::make_unique<Stream>(usage_, size_, num_buffers);
+		}
+
+		// max triple-buffering
+		static const unsigned kMaxSyncRingSize = 3;
+
+		struct Range
+		{
+			GLsync sync;
+		};
+
+		size_t current_offset;
+		size_t current_size;
+		unsigned current_range;
+		size_t buffer_size;
+		GLuint buffer_object;
+		util::small_vector<Range, kMaxSyncRingSize> ranges;
+		GLenum buffer_target;
+		// mapped memory pointer
+		// GL_MAP_WRITE, GL_MAP_PERSISTENT_BIT, etc.
+		void *mapped_ptr;
 	};
 
 	class Buffer
@@ -75,10 +197,10 @@ namespace gl4
 
 		Buffer() = default;
 		Buffer(
-			int size,
+			size_t size,
 			ResourceUsage resourceUsage,
 			BufferUsage usage,
-			void *initialData
+			const void *initialData
 			);
 
 		~Buffer()
@@ -87,19 +209,24 @@ namespace gl4
 		}
 
 		void update(
-			int offset,
-			int size,
+			size_t offset,
+			size_t size,
 			const void *data);
 
 		static Ptr create(
-			int size,
+			size_t size,
 			ResourceUsage resourceUsage,
 			BufferUsage usage,
-			void *initialData
+			const void *initialData
 			);
 
+		BufferDesc getDescriptor() const
+		{
+			return BufferDesc{ id, 0, size };
+		}
+
 	//protected:
-		int size;
+		size_t size;
 		GLbitfield flags;
 		GLenum target;
 		GLuint id;
@@ -261,109 +388,6 @@ namespace gl4
 		int layer;	// -1 if no face or texture is a cube map and is bound as a layered image
 	};
 
-	
-	class Mesh
-	{
-		friend class Renderer;
-	public:
-
-		using Ptr = std::unique_ptr < Mesh > ;
-
-		Mesh(util::array_ref<Attribute> layout,
-			int numVertices,
-			const void *vertexData,
-			int numIndices,
-			const void *indexData,
-			util::array_ref<Submesh> submeshes,
-			ResourceUsage usage);
-
-		// VS2013
-		/*Mesh(Mesh &&rhs) :
-			mode(rhs.mode),
-			vb(std::move(rhs.vb)),
-			ib(std::move(rhs.ib)),
-			vao(std::move(rhs.vao)),
-			vbsize(rhs.vbsize),
-			ibsize(rhs.ibsize),
-			nbvertex(rhs.nbvertex),
-			nbindex(rhs.nbindex),
-			stride(rhs.stride),
-			index_format(rhs.index_format),
-			submeshes(std::move(rhs.submeshes))
-		{}
-		Mesh &operator=(Mesh &&rhs) {
-			mode = rhs.mode;
-			vb = std::move(rhs.vb);
-			ib = std::move(rhs.ib);
-			vao = std::move(rhs.vao);
-			vbsize = rhs.vbsize;
-			ibsize = rhs.ibsize;
-			nbvertex = rhs.nbvertex;
-			nbindex = rhs.nbindex;
-			stride = rhs.stride;
-			index_format = rhs.index_format;
-			submeshes = std::move(rhs.submeshes);
-			return *this;
-		}*/
-		// -VS2013
-
-	//protected:
-		Mesh() = default;
-
-		~Mesh() {
-			gl::DeleteVertexArrays(1, &vao);
-			gl::DeleteBuffers(1, &vb);
-			gl::DeleteBuffers(1, &ib);
-		}
-
-		unsigned getNumSubmeshes() const {
-			return submeshes.size();
-		}
-
-		void setSubmesh(int index, const Submesh &submesh);
-
-		void updateVertices(int offset, int size, const void *data);
-		void updateIndices(int offset, int size, const uint16_t *data);
-
-		static Ptr create(
-			util::array_ref<Attribute> layout,
-			int numVertices,
-			const void *vertexData,
-			int numIndices,
-			const void *indexData,
-			util::array_ref<Submesh> submeshes,
-			ResourceUsage usage)
-		{
-			return std::make_unique<Mesh>(
-				layout, 
-				numVertices, 
-				vertexData, 
-				numIndices, 
-				indexData, 
-				submeshes,
-				usage);
-		}
-
-		static Ptr loadFromArchive(serialization::IArchive &ar);
-
-		static const auto kMaxVertexBuffers = 16u;
-
-		// TODO multiple buffers?
-		GLbitfield vb_flags;
-		GLbitfield ib_flags;
-		GLuint vb;
-		GLuint ib;
-		GLuint vao;
-		int nbvb;
-		int vbsize;
-		int ibsize;
-		int nbvertex;
-		int nbindex;
-		int stride;
-		GLenum index_format;
-		std::vector<Submesh> submeshes;
-	};
-
 	class ParameterBlock
 	{
 		friend class Renderer;
@@ -522,19 +546,94 @@ namespace gl4
 		int size = 0;
 	};
 
-	struct RenderItem
+	struct RenderItem2
 	{
-		uint64_t sort_key;
-		const Mesh *mesh;
-		int submesh_index;
-		const ParameterBlock *param_block;
-		const Shader *shader;
-		int procedural_count;	// == 0 if mesh == nullptr
-		int num_instances;
-		GLenum procedural_mode;
+		static const unsigned kMaxVertexStreams = 8u;
+		static const unsigned kMaxUniformStreams = 8u;
+
+		enum class Type
+		{
+			DrawCommand,
+			FenceSync,
+		} type;
+
+		union U {
+			struct DrawCommand {
+				// Thanks VS2013! (for not supporting unrestricted unions)
+				GLuint vertex_buffers[kMaxVertexStreams];
+				GLintptr vertex_buffers_offsets[kMaxVertexStreams];
+				GLsizei vertex_buffers_strides[kMaxVertexStreams];
+				GLuint uniform_buffers[kMaxUniformStreams];
+				GLintptr uniform_buffers_offsets[kMaxUniformStreams];
+				GLsizeiptr uniform_buffers_sizes[kMaxUniformStreams];
+				GLuint textures[kMaxTextureUnits];
+				GLuint samplers[kMaxTextureUnits];
+				unsigned num_vertex_buffers;
+				unsigned num_uniform_buffers;
+				unsigned num_textures;
+				const Shader *shader;
+				const InputLayout *input_layout;
+				GLuint index_buffer;
+				GLintptr index_buffer_offset;
+				unsigned first_vertex;
+				unsigned first_index;
+				unsigned vertex_count;
+				unsigned index_count;
+				unsigned first_instance;
+				unsigned instance_count;
+				GLenum mode;
+			} drawCommand;
+			struct Fence {
+				GLsync *sync;
+			} fence;
+		} u;
 	};
 
-	class RenderQueue
+
+	// RenderQueue V2
+	class RenderQueue2
+	{
+		friend class Renderer;
+	public:
+		using Ptr = std::unique_ptr<RenderQueue2>;
+
+		void beginCommand();
+
+		void setInputLayout(const InputLayout &layout);
+		void setVertexBuffers(util::array_ref<BufferDesc> vertex_buffers, const InputLayout &layout);
+		void setIndexBuffer(const BufferDesc &index_buffer);
+		void setUniformBuffers(util::array_ref<BufferDesc> uniform_buffers);
+		void setTexture2D(int unit, const Texture2D &tex, const SamplerDesc &samplerDesc);
+		void setTextureCubeMap(int unit, const TextureCubeMap &tex, const SamplerDesc &samplerDesc);
+
+		// TODO rename shader -> pipeline state
+		void setShader(const Shader &shader);
+
+		void draw(
+			PrimitiveType primitiveType,
+			unsigned firstVertex,
+			unsigned vertexCount,
+			unsigned firstInstance,
+			unsigned instanceCount);
+
+		void drawIndexed(
+			PrimitiveType primitiveType,
+			unsigned firstIndex,
+			unsigned indexCount,
+			int vertexOffset,
+			unsigned firstInstance,
+			unsigned instanceCount);
+
+		// clumsy
+		void fenceSync(GLsync &out_sync);
+
+
+	private:
+		RenderItem2 state;
+		std::vector<RenderItem2> render_items;
+	};
+
+	/*class RenderQueue
 	{
 		friend class Renderer;
 	public:
@@ -574,7 +673,7 @@ namespace gl4
 		std::vector<RenderItem> items;
 
 		static Ptr create() { return std::make_unique<RenderQueue>(); }
-	};
+	};*/
 
 	class RenderTarget2
 	{
@@ -618,10 +717,6 @@ namespace gl4
 			util::array_ref<ElementFormat> colorTargetFormats);
 		static RenderTarget2 &getDefaultRenderTarget();
 
-		RenderQueue &getRenderQueue() {
-			return *render_queue;
-		}
-
 		// issue a clear color command
 		void clearColor(
 			float r,
@@ -630,7 +725,9 @@ namespace gl4
 			float a
 			)
 		{
-			clear_color = glm::vec4(r, g, b, a);
+			gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
+			gl::ClearColor(r, g, b, a);
+			gl::Clear(gl::COLOR_BUFFER_BIT);
 		}
 
 		// issue a clear depth command
@@ -638,10 +735,13 @@ namespace gl4
 			float z
 			)
 		{
-			clear_depth = z;
+			gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
+			gl::DepthMask(gl::TRUE_);
+			gl::ClearDepth(z);
+			gl::Clear(gl::DEPTH_BUFFER_BIT);
 		}
 
-		void flush();
+		void commit(RenderQueue2 &renderQueue);
 
 		//private:
 		void init();
@@ -652,7 +752,6 @@ namespace gl4
 		Viewport2 viewport;
 		util::small_vector<Texture2D::Ptr, 8> color_targets;
 		Texture2D::Ptr depth_target;
-		RenderQueue::Ptr render_queue;
 		glm::vec4 clear_color;
 		float clear_depth;
 
@@ -680,7 +779,7 @@ namespace gl4
 			);
 
 		// set the color & depth render targets
-		void setRenderTargets(
+		/*void setRenderTargets(
 			util::array_ref<const RenderTarget*> colorTargets,
 			const RenderTarget *depthStencilTarget
 			);
@@ -691,6 +790,10 @@ namespace gl4
 
 		void submitRenderQueue(
 			RenderQueue &renderQueue
+			);*/
+
+		void commit(
+			RenderQueue2 &renderQueue2
 			);
 
 		// TODO draw instanced
@@ -706,12 +809,13 @@ namespace gl4
 		GLuint getSampler(SamplerDesc desc);
 
 	private:
-		void drawItem(const RenderItem &item);
+		//void drawItem(const RenderItem &item);
+		void drawItem2(const RenderItem2 &item);
 
 		GLuint dummy_vao;
 		GLuint fbo = 0;
-		RenderTarget screen_rt;
-		RenderTarget screen_depth_rt;
+		//RenderTarget screen_rt;
+		//RenderTarget screen_depth_rt;
 
 		//-----------------------------
 		// sampler state cache
@@ -740,9 +844,11 @@ using Parameter = gl4::Parameter;
 using TextureParameter = gl4::TextureParameter;
 using ConstantBuffer = gl4::ConstantBuffer;
 using RenderQueue = gl4::RenderQueue;
-using Mesh = gl4::Mesh;
 using RenderTarget = gl4::RenderTarget;
 using RenderTarget2 = gl4::RenderTarget2;
+using Stream = gl4::Stream;
+using RenderQueue2 = gl4::RenderQueue2;
+using BufferDesc = gl4::BufferDesc;
 
  
 #endif /* end of include guard: RENDERER_HPP */
