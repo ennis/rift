@@ -55,12 +55,12 @@ vec4 sampleEnvmap(vec3 wDn)
 	return texture(envmap, wDn);
 }
 
-float fresnel(float eta, float cosTheta)
+/*float fresnel(float eta, float cosTheta)
 {
     float R0 = (1.0-eta)*(1.0-eta) / ((1.0+eta)*(1.0+eta));
     float m = 1.0 - cosTheta;
     return R0 + (1.0 - R0)*m*m*m*m*m;
-}
+}*/
 
 void main( void )
 {

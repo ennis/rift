@@ -84,7 +84,7 @@ void main()
 	// model space 3D position
 	vec4 disp = vec4(pos.x, sampleHeight(pos), pos.y, 1.f);
     // position in clip space
-    gl_Position = gRenderData.viewProjMatrix * modelMatrix * disp;
+    gl_Position = viewProjMatrix * modelMatrix * disp;
 
     // world-space position
     fPosition = (modelMatrix * disp).xyz;

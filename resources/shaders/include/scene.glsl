@@ -16,7 +16,7 @@ layout(std140, binding = 0) uniform SceneData {
 };
 
 
-/*float fresnel(float eta, float cosTheta)
+float fresnel(float eta, float cosTheta)
 {
     float R0 = (1.0-eta)*(1.0-eta) / ((1.0+eta)*(1.0+eta));
     float m = 1.0 - cosTheta;
@@ -34,9 +34,9 @@ vec4 PhongIllum(
 	float eta, 
 	float shininess)
 {
-	vec4 Ln = normalize(gRenderData.lightDir),
+	vec4 Ln = normalize(lightDir),
          Nn = normalize(vec4(normal, 0.0)),
-         Vn = normalize(gRenderData.eyePos - vec4(position, 1.0f));
+         Vn = normalize(wEye - vec4(position, 1.0f));
     vec4 H = normalize(Ln + Vn);
     // Ambient
     vec4 ambient = ka * lightIntensity * albedo;
@@ -49,4 +49,4 @@ vec4 PhongIllum(
 	return vec4((ambient + diffuse + specular).xyz, 1.0);
 	// TEST
 	//return vec4(position, 1.0f);
-}*/
+}

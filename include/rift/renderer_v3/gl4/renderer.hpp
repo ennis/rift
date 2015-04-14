@@ -170,6 +170,13 @@ namespace gl4
 			return std::make_unique<Stream>(usage_, size_, num_buffers);
 		}
 
+		static Ptr createConstantBuffer(size_t size, size_t array_size, unsigned num_buffers)
+		{
+			// TODO do not hardcode alignment
+			auto aligned_size = (size + 256u - 1) & ~((size_t)256u - 1);
+			return create(BufferUsage::ConstantBuffer, array_size * aligned_size, num_buffers);
+		}
+
 		// max triple-buffering
 		static const unsigned kMaxSyncRingSize = 3;
 

@@ -29,7 +29,7 @@ namespace
 		int lodLevel;
 	};
 
-	constexpr auto max_terrain_patches = 2048;
+	constexpr auto max_terrain_patches = 4*16384u;
 }
 
 //=============================================================================
@@ -71,7 +71,7 @@ void Terrain::initHeightmap()
 	for (int x = 0; x < hm_size.x; ++x) {
 		for (int y = 0; y < hm_size.y; ++y) {
 			// skewed 5-point stencil
-			float h00 = getHeight({ x, y });
+			/*float h00 = getHeight({ x, y });
 			float h01 = getHeight({ x + 1, y });
 			float h10 = getHeight({ x, y + 1 });
 			float h11 = getHeight({ x + 1, y + 1 });
@@ -79,7 +79,7 @@ void Terrain::initHeightmap()
 			float gy = 0.5f * (h00 - h11 + h01 - h10);
 			glm::vec3 n{ -gx, 1.414213f, -gy };	// sqrt(2)/2 ???
 			n = glm::normalize(n);
-			hm_normals_view(x, y) = n;
+			hm_normals_view(x, y) = n;*/
 		}
 	}
 
@@ -147,7 +147,7 @@ void Terrain::initGrid()
 		BufferUsage::VertexBuffer,
 		vertices.data());
 
-	patch_grid_vb = Buffer::create(
+	patch_grid_ib = Buffer::create(
 		indices.size() * sizeof(uint16_t),
 		ResourceUsage::Static,
 		BufferUsage::IndexBuffer,
@@ -156,7 +156,7 @@ void Terrain::initGrid()
 	input_layout = InputLayout::create(1, { { ElementFormat::Float2, 0 } });
 
 	terrain_uniforms = Stream::create(BufferUsage::ConstantBuffer, sizeof(TerrainUniforms), 3);
-	terrain_patch_uniforms = Stream::create(BufferUsage::ConstantBuffer, max_terrain_patches*sizeof(TerrainPatchUniforms), 3);
+	terrain_patch_uniforms = Stream::createConstantBuffer(sizeof(TerrainPatchUniforms), max_terrain_patches, 3);
 
 	TerrainUniforms uniforms;
 	uniforms.modelMatrix = Transform().scale(1.f).toMatrix();
@@ -175,6 +175,8 @@ void Terrain::renderSelection(SceneRenderContext &context)
 		const auto &node = selected_nodes[i];
 		renderNode(context, node);
 	}
+
+	terrain_patch_uniforms->fence(*context.opaqueRenderQueue);
 }
 
 void Terrain::renderNode(SceneRenderContext &context, Node const &node)
