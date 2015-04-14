@@ -137,7 +137,7 @@ private:
 	float mTotalTime = 0.f;
 	float mFPS = 0;
 	float spinAngle = 0.f;
-	unsigned long numFrames;
+	unsigned long numFrames = 0;
 
 	std::unique_ptr<Resources> resources;
 
