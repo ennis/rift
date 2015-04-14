@@ -18,7 +18,7 @@ layout(std140, binding = 1) uniform TerrainUniforms
 	// texture scale
 	float flatTextureScale;
 	float slopeTextureScale;
-}
+};
 
 // per-patch update
 layout(std140, binding = 2) uniform TerrainPatchUniforms
@@ -29,7 +29,7 @@ layout(std140, binding = 2) uniform TerrainPatchUniforms
 	float patchScale;
 	// LOD level
 	int lodLevel;
-}
+};
 
 
 //===================================================================

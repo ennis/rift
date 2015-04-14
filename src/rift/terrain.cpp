@@ -95,6 +95,25 @@ void Terrain::initEffect()
 }
 
 //=============================================================================
+void Terrain::render(SceneRenderContext &context)
+{
+	// TODO
+	Node rootNode;
+	rootNode.lod = log2_hm_size - 1;
+	rootNode.size = hm_size.x;
+	rootNode.x = 0;
+	rootNode.y = 0;
+	clearNodeSelection();
+	nodeLodSelect(
+		rootNode,
+		glm::vec3(
+			context.sceneData.eyePos.x, 
+			context.sceneData.eyePos.y, 
+			context.sceneData.eyePos.z),
+			log2_hm_size - 1);
+	renderSelection(context);
+}
+//=============================================================================
 void Terrain::initGrid()
 {
 	// number of vertices 

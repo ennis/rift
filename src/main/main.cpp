@@ -23,6 +23,7 @@
 #include <skeletonanimation.hpp>
 #include <resources.hpp>
 #include <mesh.hpp>
+#include <terrain.hpp>
 
 // utils
 namespace
@@ -196,6 +197,7 @@ private:
 
 	Font::Ptr font;
 	std::unique_ptr<HUDTextRenderer> hud;
+	std::unique_ptr<Terrain> terrain;
 
 	Sky sky;
 	std::unique_ptr<Skeleton> skel;
@@ -313,6 +315,11 @@ void RiftGame::init()
 	skel_animation = SkeletonAnimation::loadFromBVH(motion_file, *skel, mappings);
 	skel_anim_sampler = std::make_unique<SkeletonAnimationSampler>(*skel, skel_animation, 0.003f);
 	skel_anim_sampler->nextFrame();
+
+	terrain = std::make_unique<Terrain>(
+		Image::loadFromFile("resources/img/terrain/test_heightmap_2.dds"),
+		resources->textures.load("resources/img/grasstile_c.dds"),
+		resources->textures.load("resources/img/mb_rocklface07_d.dds"));
 }
 
 
@@ -376,6 +383,9 @@ void RiftGame::render(float dt)
 		opaqueRenderQueue.setTextureCubeMap(1, *envmap, SamplerDesc{});
 		mokou->draw(opaqueRenderQueue, submesh);
 	}
+
+	// render terrain
+	terrain->render(context);
 
 	// fence all constant buffer streams
 	cbEnvmap->fence(opaqueRenderQueue);

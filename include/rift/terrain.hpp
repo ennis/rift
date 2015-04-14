@@ -15,7 +15,7 @@ public:
 		Texture2D *slopeTexture,
 		Texture2D *flatTexture);
 
-	void render(const SceneData &sceneData);
+	void render(SceneRenderContext &context);
 	float getHeight(const glm::ivec2 &position);
 
 private:
