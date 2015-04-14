@@ -157,7 +157,7 @@ namespace gl4
 		// get descriptor for active storage
 		BufferDesc getDescriptor() const
 		{
-			return BufferDesc{ buffer_object, current_offset, current_size };
+			return BufferDesc{ buffer_object, current_range * buffer_size + current_offset, current_size };
 		}
 
 		// lock the reserved space and insert fence in command stream

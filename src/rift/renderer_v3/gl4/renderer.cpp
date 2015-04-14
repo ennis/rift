@@ -144,7 +144,7 @@ namespace detail
 
 	void setDebugCallback()
 	{
-		gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
+		//gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
 		gl::DebugMessageCallback(debugCallback, nullptr);
 		gl::DebugMessageControl(gl::DONT_CARE, gl::DONT_CARE, gl::DONT_CARE, 0, nullptr, true);
 		gl::DebugMessageInsert(

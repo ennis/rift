@@ -159,8 +159,6 @@ private:
 		glm::mat4 modelMatrix;
 	} envCubeParams;
 
-	SceneData sceneData;
-
 	Entity *cameraEntity;
 	Mesh::Ptr mesh;
 	Mesh *mokou = nullptr;
@@ -335,9 +333,9 @@ void RiftGame::render(float dt)
 	context.sceneData.eyePos = glm::vec4(cameraEntity->getTransform().position, 1.0f);
 	context.sceneData.projMatrix = cam->getProjectionMatrix();
 	context.sceneData.viewMatrix = cam->getViewMatrix();
-	context.sceneData.viewProjMatrix = sceneData.projMatrix * sceneData.viewMatrix;
+	context.sceneData.viewProjMatrix = context.sceneData.projMatrix * context.sceneData.viewMatrix;
 	context.sceneData.viewportSize = win_size;
-	cbSceneData->write(sceneData);
+	cbSceneData->write(context.sceneData);
 	context.sceneDataCB = cbSceneData->getDescriptor();	
 
 	// update per-model buffer
@@ -355,7 +353,7 @@ void RiftGame::render(float dt)
 	envCubeParams.modelMatrix = 
 		glm::translate(
 			glm::scale(
-				glm::translate(glm::vec3(sceneData.eyePos.x, sceneData.eyePos.y, sceneData.eyePos.z)),
+			glm::translate(glm::vec3(context.sceneData.eyePos.x, context.sceneData.eyePos.y, context.sceneData.eyePos.z)),
 				glm::vec3{ 1000.0f, 1000.0f, 1000.0f }),
 			glm::vec3{ -0.5f, -0.5f, -0.5f });
 	cbEnvmap->write(envCubeParams);
@@ -364,7 +362,7 @@ void RiftGame::render(float dt)
 	//skel_debug->drawSkeleton(*skel, *skel_anim_sampler, *screenRT2, sceneData, *cbSceneData);
 	//rq.draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
 
-	for (auto submesh = 0u; submesh < mokou->submeshes.size(); ++submesh)
+	for (auto submesh = 0u; submesh < mesh->submeshes.size(); ++submesh)
 	{
 		opaqueRenderQueue.beginCommand();
 		opaqueRenderQueue.setShader(*shaderPBR);

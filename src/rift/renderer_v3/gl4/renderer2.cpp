@@ -3,12 +3,13 @@
 
 namespace gl4
 {
-	Stream::Stream(BufferUsage usage_, size_t size_, unsigned num_buffers) :
-		buffer_size(size_)
+	Stream::Stream(BufferUsage usage_, size_t size_, unsigned num_buffers) 
 	{
-		auto total_size = size_ * num_buffers;
+		// align size
+		buffer_size = (size_ + 256u - 1) & ~((size_t)256u - 1);
+		auto total_size = buffer_size * num_buffers;
 		ranges.resize(num_buffers);
-		LOG << "Allocating stream of size " << size_ << "x" << num_buffers;
+		LOG << "Allocating stream of size " << buffer_size << "x" << num_buffers;
 		gl::GenBuffers(1, &buffer_object);
 		buffer_target = gl4::detail::bufferUsageToBindingPoint(usage_);
 		gl::BindBuffer(buffer_target, buffer_object);
