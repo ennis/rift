@@ -296,7 +296,7 @@ void RiftGame::init()
 	shadowRT = RenderTarget2::create(win_size, {}, ElementFormat::Depth16);
 
 	font = Font::loadFromFile("resources/img/fonts/arno_pro.fnt");
-	//hud = std::make_unique<HUDTextRenderer>();
+	hud = std::make_unique<HUDTextRenderer>();
 
 	DepthStencilDesc ds_fx;
 	ds_fx.depthTestEnable = false;
@@ -360,7 +360,12 @@ void RiftGame::render(float dt)
 
 	skel_anim_sampler->nextFrame();
 	//skel_debug->drawSkeleton(*skel, *skel_anim_sampler, *screenRT2, sceneData, *cbSceneData);
-	//rq.draw(*mesh, 0, *shaderEnvCube, *paramBlockEnvCube, 0);
+
+	opaqueRenderQueue.beginCommand();
+	opaqueRenderQueue.setShader(*shaderEnvCube);
+	opaqueRenderQueue.setUniformBuffers({ context.sceneDataCB, cbEnvmap->getDescriptor() });
+	opaqueRenderQueue.setTextureCubeMap(0, *envmap, SamplerDesc{});
+	mesh->draw(opaqueRenderQueue, 0);
 
 	for (auto submesh = 0u; submesh < mesh->submeshes.size(); ++submesh)
 	{
@@ -396,10 +401,10 @@ void RiftGame::render(float dt)
 	overlayRenderQueue.setTexture2D(0, screenRT2->getDepthTexture(), SamplerDesc{});
 	overlayRenderQueue.setUniformBuffers({ cbFxParams->getDescriptor() });
 	overlayRenderQueue.draw(PrimitiveType::Triangle, 0, 3, 0, 1);
-	//hud->renderText(context, "Hello world!", *font, { 100.0, 100.0 }, Color::White, Color::Black);
-	//hud->renderText(context, "Frame " + std::to_string(numFrames), *font, { 100.0, 140.0 }, Color::White, Color::Black);
-	//hud->renderText(context, "dt " + std::to_string(dt), *font, { 100.0, 180.0 }, Color::White, Color::Black);
-	//hud->fence(context);
+	hud->renderText(context, "Hello world!", *font, { 10.0, 10.0 }, Color::White, Color::Black);
+	hud->renderText(context, "Frame " + std::to_string(numFrames), *font, { 10.0, 50.0 }, Color::White, Color::Black);
+	hud->renderText(context, "dt " + std::to_string(dt), *font, { 10.0, 90.0 }, Color::White, Color::Black);
+	hud->fence(context);
 	cbFxParams->fence(overlayRenderQueue);
 	screen_rt.clearColor(0.2, 0.7, 0.2, 1.0);
 	screen_rt.clearDepth(1.0);

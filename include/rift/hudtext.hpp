@@ -22,8 +22,8 @@ public:
 	void fence(SceneRenderContext& context);
 
 private:
-	static constexpr auto kMaxGlyphsPerFrame = 1024 * 1024u;
-	static constexpr auto kMaxCallsPerFrame = 1024;
+	static constexpr auto kMaxGlyphsPerFrame = 32768u;
+	static constexpr auto kMaxCallsPerFrame = 1024u;
 
 	Stream::Ptr vb_stream;
 	Stream::Ptr ib_stream;
