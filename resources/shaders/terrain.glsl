@@ -158,6 +158,7 @@ void main()
 				1, 
 				1);
 	//oColor = vec4(slope, slope, slope, 1.0f);
+	oColor = lodColorMap[lodLevel];
 }
 
 #endif

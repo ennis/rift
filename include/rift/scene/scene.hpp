@@ -2,6 +2,8 @@
 #define SCENE_HPP
 
 #include <gl4/renderer.hpp>
+#include <hudtext.hpp>
+#include <font.hpp>
 
 // données partagées entre les shaders
 struct SceneData
@@ -24,6 +26,8 @@ struct SceneRenderContext
 	RenderQueue2 *overlayRenderQueue;
 	// TODO
 	RenderQueue2 *shadowRenderQueue;
+	HUDTextRenderer *textRenderer;
+	Font *defaultFont;
 	SceneData sceneData;
 	BufferDesc sceneDataCB;
 };

@@ -4,6 +4,7 @@
 #include <gl4/effect.hpp>
 #include <transform.hpp>
 #include <boundingbox.hpp>
+#include <colors.hpp>
 
 namespace
 {
@@ -29,7 +30,7 @@ namespace
 		int lodLevel;
 	};
 
-	constexpr auto max_terrain_patches = 4*16384u;
+	constexpr auto max_terrain_patches = 16384u;
 }
 
 //=============================================================================
@@ -91,7 +92,9 @@ void Terrain::initHeightmap()
 void Terrain::initEffect()
 {
 	gl4::Effect::Ptr effect = gl4::Effect::loadFromFile("resources/shaders/terrain.glsl");
-	shader = effect->compileShader();
+	RasterizerDesc rs = {};
+	rs.fillMode = PolygonFillMode::Wireframe;
+	shader = effect->compileShader({}, rs, DepthStencilDesc{});
 }
 
 //=============================================================================
@@ -162,8 +165,8 @@ void Terrain::initGrid()
 	uniforms.modelMatrix = Transform().scale(1.f).toMatrix();
 	uniforms.heightmapSize = glm::vec2(hm_size.x, hm_size.y);
 	uniforms.heightmapScale = hm_vert_scale;
-	uniforms.flatTextureScale = 1.0f;
-	uniforms.slopeTextureScale = 1.0f;
+	uniforms.flatTextureScale = 50.0f;
+	uniforms.slopeTextureScale = 50.0f;
 	terrain_uniforms->write(uniforms);
 }
 
@@ -171,6 +174,14 @@ void Terrain::initGrid()
 //=============================================================================
 void Terrain::renderSelection(SceneRenderContext &context)
 {
+	context.textRenderer->renderText(
+		*context.overlayRenderQueue,
+		std::to_string(selected_nodes.size()),
+		*context.defaultFont,
+		{ 10.f, 300.f },
+		{ 1280.f, 720.f },
+		Color::White, Color::Black
+		);
 	for (int i = 0; i < selected_nodes.size(); ++i) {
 		const auto &node = selected_nodes[i];
 		renderNode(context, node);
@@ -189,8 +200,12 @@ void Terrain::renderNode(SceneRenderContext &context, Node const &node)
 	renderQueue.setShader(*shader);
 	renderQueue.setTexture2D(0, *hm_tex, SamplerDesc{});
 	renderQueue.setTexture2D(1, *hm_normals_tex, SamplerDesc{});
-	renderQueue.setTexture2D(2, *slope_tex, SamplerDesc{});
-	renderQueue.setTexture2D(3, *flat_tex, SamplerDesc{});
+	SamplerDesc sd;
+	sd.addrU = TextureAddressMode::Repeat;
+	sd.addrV = TextureAddressMode::Repeat;
+	sd.addrW = TextureAddressMode::Repeat;
+	renderQueue.setTexture2D(2, *slope_tex, sd);
+	renderQueue.setTexture2D(3, *flat_tex, sd);
 
 	TerrainPatchUniforms patchUniforms;
 	patchUniforms.lodLevel = node.lod;
@@ -292,7 +307,7 @@ void Terrain::calculateLodRanges()
 
 	LOG << "Terrain: " << num_lod_levels << " LOD levels";
 	for (auto i = 0u; i < num_lod_levels; ++i) {
-		lod_ranges[i] = static_cast<float>(patch_grid_size)* powf(lodRange, static_cast<float>(i));
+		lod_ranges.push_back(static_cast<float>(patch_grid_size) * powf(lodRange, static_cast<float>(i)));
 		LOG << "LOD " << i << " up to " << lod_ranges[i];
 	}
 }

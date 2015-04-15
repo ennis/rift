@@ -38,10 +38,11 @@ HUDTextRenderer::HUDTextRenderer()
 }
 
 void HUDTextRenderer::renderText(
-	SceneRenderContext &context,
+	RenderQueue2 &renderQueue,
 	util::string_ref str,
 	const Font &font,
 	glm::vec2 viewPos,
+	glm::vec2 viewportSize,
 	const glm::vec4 &color,
 	const glm::vec4 &outlineColor)
 {
@@ -91,14 +92,13 @@ void HUDTextRenderer::renderText(
 	TextParams p;
 	p.transform = glm::ortho(
 		-viewPos.x, 
-		context.sceneData.viewportSize.x - viewPos.x,
-		context.sceneData.viewportSize.y - viewPos.y,
+		viewportSize.x - viewPos.x,
+		viewportSize.y - viewPos.y,
 		-viewPos.y);
 	p.fillColor = color;
 	p.outlineColor = outlineColor;
 	cb_stream->write(p);
 
-	auto &renderQueue = *context.overlayRenderQueue;
 	renderQueue.beginCommand();
 	renderQueue.setVertexBuffers({ vb_stream->getDescriptor() }, *layout);
 	renderQueue.setIndexBuffer(ib_stream->getDescriptor());
@@ -108,9 +108,9 @@ void HUDTextRenderer::renderText(
 	renderQueue.drawIndexed(PrimitiveType::Triangle, 0, len * 6, 0, 0, 1);
 }
 
-void HUDTextRenderer::fence(SceneRenderContext &context)
+void HUDTextRenderer::fence(RenderQueue2 &renderQueue)
 {
-	cb_stream->fence(*context.overlayRenderQueue);
-	vb_stream->fence(*context.overlayRenderQueue);
-	ib_stream->fence(*context.overlayRenderQueue);
+	cb_stream->fence(renderQueue);
+	vb_stream->fence(renderQueue);
+	ib_stream->fence(renderQueue);
 }

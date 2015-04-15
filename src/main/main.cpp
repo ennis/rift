@@ -293,7 +293,6 @@ void RiftGame::init()
 	cbEnvmap = Stream::create(BufferUsage::ConstantBuffer, sizeof(EnvCubeParams), 3);
 	cbFxParams = Stream::create(BufferUsage::ConstantBuffer, sizeof(FXParams), 3);
 
-
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	shadowRT = RenderTarget2::create(win_size, {}, ElementFormat::Depth16);
 
@@ -318,8 +317,8 @@ void RiftGame::init()
 
 	terrain = std::make_unique<Terrain>(
 		Image::loadFromFile("resources/img/terrain/test_heightmap_2.dds"),
-		resources->textures.load("resources/img/grasstile_c.dds"),
-		resources->textures.load("resources/img/mb_rocklface07_d.dds"));
+		resources->textures.load("resources/img/mb_rocklface07_d.dds"),
+		resources->textures.load("resources/img/grasstile_c.dds"));
 }
 
 
@@ -327,6 +326,7 @@ void RiftGame::render(float dt)
 {
 	// rendu de la scene
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
+	glm::vec2 win_size_f = glm::vec2(win_size.x, win_size.y);
 	auto &R = Renderer::getInstance();
 
 	RenderQueue2 opaqueRenderQueue;
@@ -334,6 +334,8 @@ void RiftGame::render(float dt)
 	SceneRenderContext context;
 	context.opaqueRenderQueue = &opaqueRenderQueue;
 	context.overlayRenderQueue = &overlayRenderQueue;
+	context.textRenderer = hud.get();
+	context.defaultFont = font.get();
 
 	// update scene data buffer
 	auto cam = cameraEntity->getComponent<Camera>();
@@ -342,6 +344,7 @@ void RiftGame::render(float dt)
 	context.sceneData.viewMatrix = cam->getViewMatrix();
 	context.sceneData.viewProjMatrix = context.sceneData.projMatrix * context.sceneData.viewMatrix;
 	context.sceneData.viewportSize = win_size;
+	context.sceneData.lightDir = glm::vec4(0.f, 1.f, 0.f, 0.f);
 	cbSceneData->write(context.sceneData);
 	context.sceneDataCB = cbSceneData->getDescriptor();	
 
@@ -365,14 +368,14 @@ void RiftGame::render(float dt)
 			glm::vec3{ -0.5f, -0.5f, -0.5f });
 	cbEnvmap->write(envCubeParams);
 
-	skel_anim_sampler->nextFrame();
+	//skel_anim_sampler->nextFrame();
 	//skel_debug->drawSkeleton(*skel, *skel_anim_sampler, *screenRT2, sceneData, *cbSceneData);
 
 	opaqueRenderQueue.beginCommand();
 	opaqueRenderQueue.setShader(*shaderEnvCube);
 	opaqueRenderQueue.setUniformBuffers({ context.sceneDataCB, cbEnvmap->getDescriptor() });
 	opaqueRenderQueue.setTextureCubeMap(0, *envmap, SamplerDesc{});
-	mesh->draw(opaqueRenderQueue, 0);
+	//mesh->draw(opaqueRenderQueue, 0);
 
 	for (auto submesh = 0u; submesh < mesh->submeshes.size(); ++submesh)
 	{
@@ -381,7 +384,7 @@ void RiftGame::render(float dt)
 		opaqueRenderQueue.setUniformBuffers({ context.sceneDataCB, cbPerObjPBR->getDescriptor() });
 		opaqueRenderQueue.setTexture2D(0, *tex, SamplerDesc{});
 		opaqueRenderQueue.setTextureCubeMap(1, *envmap, SamplerDesc{});
-		mokou->draw(opaqueRenderQueue, submesh);
+		//mokou->draw(opaqueRenderQueue, submesh);
 	}
 
 	// render terrain
@@ -405,19 +408,21 @@ void RiftGame::render(float dt)
 	fxp.rt_w = 1280;
 	fxp.rt_h = 720;
 	cbFxParams->write(fxp);
-	overlayRenderQueue.beginCommand();
-	overlayRenderQueue.setShader(*passthrough);
-	overlayRenderQueue.setTexture2D(0, screenRT2->getColorTexture(0), SamplerDesc{});
-	overlayRenderQueue.setTexture2D(0, screenRT2->getDepthTexture(), SamplerDesc{});
-	overlayRenderQueue.setUniformBuffers({ cbFxParams->getDescriptor() });
-	overlayRenderQueue.draw(PrimitiveType::Triangle, 0, 3, 0, 1);
-	hud->renderText(context, "Hello world!", *font, { 10.0, 10.0 }, Color::White, Color::Black);
-	hud->renderText(context, "Frame " + std::to_string(numFrames), *font, { 10.0, 50.0 }, Color::White, Color::Black);
-	hud->renderText(context, "dt " + std::to_string(dt), *font, { 10.0, 90.0 }, Color::White, Color::Black);
-	hud->fence(context);
-	cbFxParams->fence(overlayRenderQueue);
+	RenderQueue2 tmp;
+	tmp.beginCommand();
+	tmp.setShader(*passthrough);
+	tmp.setTexture2D(0, screenRT2->getColorTexture(0), SamplerDesc{});
+	tmp.setTexture2D(0, screenRT2->getDepthTexture(), SamplerDesc{});
+	tmp.setUniformBuffers({ cbFxParams->getDescriptor() });
+	tmp.draw(PrimitiveType::Triangle, 0, 3, 0, 1);
 	screen_rt.clearColor(0.2, 0.7, 0.2, 1.0);
 	screen_rt.clearDepth(1.0);
+	screen_rt.commit(tmp);
+	hud->renderText(*context.overlayRenderQueue, "Hello world!", *font, { 10.0, 10.0 }, win_size_f, Color::White, Color::Black);
+	hud->renderText(*context.overlayRenderQueue, "Frame " + std::to_string(numFrames), *font, { 10.0, 50.0 }, win_size_f, Color::White, Color::Black);
+	hud->renderText(*context.overlayRenderQueue, "dt " + std::to_string(dt), *font, { 10.0, 90.0 }, win_size_f, Color::White, Color::Black);
+	hud->fence(*context.overlayRenderQueue);
+	cbFxParams->fence(overlayRenderQueue);
 	screen_rt.commit(overlayRenderQueue);
 }
 

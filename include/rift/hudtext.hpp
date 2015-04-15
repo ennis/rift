@@ -3,7 +3,6 @@
 
 #include <gl4/renderer.hpp>
 #include <font.hpp>
-#include <scene.hpp>
 #include <string_ref.hpp>
 
 class HUDTextRenderer
@@ -12,14 +11,15 @@ public:
 	HUDTextRenderer();
 	
 	void renderText(
-		SceneRenderContext& context,
+		RenderQueue2 &renderQueue,
 		util::string_ref str,
-		const Font& font,
+		const Font &font,
 		glm::vec2 viewPos,
-		const glm::vec4& color,
-		const glm::vec4& outlineColor);
+		glm::vec2 viewportSize,
+		const glm::vec4 &color,
+		const glm::vec4 &outlineColor);
 
-	void fence(SceneRenderContext& context);
+	void fence(RenderQueue2 &renderQueue);
 
 private:
 	static constexpr auto kMaxGlyphsPerFrame = 32768u;
