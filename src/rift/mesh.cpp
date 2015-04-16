@@ -163,7 +163,7 @@ Mesh::Ptr Mesh::loadFromArchive(serialization::IArchive &ar)
 	}
 }
 
-void Mesh::draw(RenderQueue2 &renderQueue, unsigned submesh)
+void Mesh::draw(RenderQueue &renderQueue, unsigned submesh)
 {
 	renderQueue.setVertexBuffers({ vbo->getDescriptor() }, *layout);
 	const auto &sm = submeshes[submesh];

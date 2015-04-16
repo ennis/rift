@@ -11,7 +11,7 @@ public:
 	HUDTextRenderer();
 	
 	void renderText(
-		RenderQueue2 &renderQueue,
+		RenderQueue &renderQueue,
 		util::string_ref str,
 		const Font &font,
 		glm::vec2 viewPos,
@@ -19,7 +19,7 @@ public:
 		const glm::vec4 &color,
 		const glm::vec4 &outlineColor);
 
-	void fence(RenderQueue2 &renderQueue);
+	void fence(RenderQueue &renderQueue);
 
 private:
 	static constexpr auto kMaxGlyphsPerFrame = 32768u;

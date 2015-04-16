@@ -65,7 +65,7 @@ public:
 			submeshes);
 	}
 
-	void draw(RenderQueue2 &renderQueue, unsigned submesh);
+	void draw(RenderQueue &renderQueue, unsigned submesh);
 
 	static Ptr loadFromArchive(serialization::IArchive &ar);
 

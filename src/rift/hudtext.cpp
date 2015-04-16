@@ -38,7 +38,7 @@ HUDTextRenderer::HUDTextRenderer()
 }
 
 void HUDTextRenderer::renderText(
-	RenderQueue2 &renderQueue,
+	RenderQueue &renderQueue,
 	util::string_ref str,
 	const Font &font,
 	glm::vec2 viewPos,
@@ -108,7 +108,7 @@ void HUDTextRenderer::renderText(
 	renderQueue.drawIndexed(PrimitiveType::Triangle, 0, len * 6, 0, 0, 1);
 }
 
-void HUDTextRenderer::fence(RenderQueue2 &renderQueue)
+void HUDTextRenderer::fence(RenderQueue &renderQueue)
 {
 	cb_stream->fence(renderQueue);
 	vb_stream->fence(renderQueue);

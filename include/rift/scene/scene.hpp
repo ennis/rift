@@ -21,11 +21,11 @@ struct SceneRenderContext
 	RenderTarget *renderTarget;
 	RenderTarget *overlayRenderTarget;
 	// drawn before postFX (opaque)
-	RenderQueue2 *opaqueRenderQueue;
+	RenderQueue *opaqueRenderQueue;
 	// drawn after postFX (HUD)
-	RenderQueue2 *overlayRenderQueue;
+	RenderQueue *overlayRenderQueue;
 	// TODO
-	RenderQueue2 *shadowRenderQueue;
+	RenderQueue *shadowRenderQueue;
 	HUDTextRenderer *textRenderer;
 	Font *defaultFont;
 	SceneData sceneData;

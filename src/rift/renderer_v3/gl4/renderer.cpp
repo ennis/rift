@@ -300,6 +300,69 @@ namespace detail
 	}
 
 	int shader_cache_index = 0;
+
+	void checkForUnusualColorFormats(ElementFormat f)
+	{
+		if (f == ElementFormat::Uint8x4 ||
+			f == ElementFormat::Uint8x3 ||
+			f == ElementFormat::Uint8x2 ||
+			f == ElementFormat::Uint8 ||
+			f == ElementFormat::Uint16x2 ||
+			f == ElementFormat::Uint16 ||
+			f == ElementFormat::Uint32)
+		{
+			WARNING << "Unusual integer color format (" << getElementFormatName(f) << ") used for render target.\n";
+			WARNING << "-> Did you mean to use UnormXxY ?";
+		}
+	}
+
+	std::array<GLenum, 37> samplerTypes = {
+		gl::SAMPLER_1D,
+		gl::SAMPLER_2D,
+		gl::SAMPLER_3D,
+		gl::SAMPLER_CUBE,
+		gl::SAMPLER_1D_SHADOW,
+		gl::SAMPLER_2D_SHADOW,
+		gl::SAMPLER_1D_ARRAY,
+		gl::SAMPLER_2D_ARRAY,
+		gl::SAMPLER_1D_ARRAY_SHADOW,
+		gl::SAMPLER_2D_ARRAY_SHADOW,
+		gl::SAMPLER_2D_MULTISAMPLE,
+		gl::SAMPLER_2D_MULTISAMPLE_ARRAY,
+		gl::SAMPLER_CUBE_SHADOW,
+		gl::SAMPLER_BUFFER,
+		gl::SAMPLER_2D_RECT,
+		gl::SAMPLER_2D_RECT_SHADOW,
+		gl::INT_SAMPLER_1D,
+		gl::INT_SAMPLER_2D,
+		gl::INT_SAMPLER_3D,
+		gl::INT_SAMPLER_CUBE,
+		gl::INT_SAMPLER_1D_ARRAY,
+		gl::INT_SAMPLER_2D_ARRAY,
+		gl::INT_SAMPLER_2D_MULTISAMPLE,
+		gl::INT_SAMPLER_2D_MULTISAMPLE_ARRAY,
+		gl::INT_SAMPLER_BUFFER,
+		gl::INT_SAMPLER_2D_RECT,
+		gl::UNSIGNED_INT_SAMPLER_1D,
+		gl::UNSIGNED_INT_SAMPLER_2D,
+		gl::UNSIGNED_INT_SAMPLER_3D,
+		gl::UNSIGNED_INT_SAMPLER_CUBE,
+		gl::UNSIGNED_INT_SAMPLER_1D_ARRAY,
+		gl::UNSIGNED_INT_SAMPLER_2D_ARRAY,
+		gl::UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE,
+		gl::UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY,
+		gl::UNSIGNED_INT_SAMPLER_BUFFER,
+		gl::UNSIGNED_INT_SAMPLER_2D_RECT
+	};
+
+	bool isSamplerType(GLenum type)
+	{
+		for (auto e : samplerTypes) {
+			if (type == e)
+				return true;
+		}
+		return false;
+	}
 }
 
 
@@ -629,72 +692,15 @@ void Texture2D::update(
 	}
 }
 
-RenderTarget::Ptr RenderTarget::createRenderTarget2D(
-	Texture2D &texture2D,
-	int mipLevel
-	)
-{
-	auto r = std::make_unique<RenderTarget>();
-	r->type = RenderTarget::kRenderToTexture2D;
-	r->layer = 0;
-	r->mipLevel = mipLevel;
-	r->u.texture_2d = &texture2D;
-	return r;
-}
 
-RenderTarget::Ptr RenderTarget::createRenderTarget2DFace(
-	TextureCubeMap &cubeMap,
-	int mipLevel,
-	int face
-	)
-{
-	auto r = std::make_unique<RenderTarget>();
-	r->type = RenderTarget::kRenderToCubeMapLayer;
-	r->layer = face;
-	r->mipLevel = mipLevel;
-	r->u.texture_cubemap = &cubeMap;
-	return r;
-}
-
-RenderTarget::Ptr RenderTarget::createRenderTargetCubeMap(
-	TextureCubeMap &cubeMap,
-	int mipLevel
-	)
-{
-	auto r = std::make_unique<RenderTarget>();
-	r->type = RenderTarget::kRenderToCubeMap;
-	r->layer = 0;
-	r->mipLevel = mipLevel;
-	r->u.texture_cubemap = &cubeMap;
-	return r;
-}
-
-RenderTarget2::RenderTarget2() :
+RenderTarget::RenderTarget() :
 fbo(0),
 depth_target(nullptr),
 clear_depth(1.0)
 {
 }
 
-namespace
-{
-	void checkForUnusualColorFormats(ElementFormat f)
-	{
-		if (f == ElementFormat::Uint8x4 ||
-			f == ElementFormat::Uint8x3 ||
-			f == ElementFormat::Uint8x2 ||
-			f == ElementFormat::Uint8 ||
-			f == ElementFormat::Uint16x2 ||
-			f == ElementFormat::Uint16 ||
-			f == ElementFormat::Uint32)
-		{
-			WARNING << "Unusual integer color format (" << getElementFormatName(f) << ") used for render target.\n";
-			WARNING << "-> Did you mean to use UnormXxY ?";
-		}
-	}
-}
-
-RenderTarget2::RenderTarget2(
+RenderTarget::RenderTarget(
 	glm::ivec2 size_,
 	util::array_ref<ElementFormat> colorTargetFormats) :
 	size(size_),
@@ -702,13 +708,13 @@ RenderTarget2::RenderTarget2(
 {
 	assert(colorTargetFormats.size() < 8);
 	for (auto format : colorTargetFormats) {
-		checkForUnusualColorFormats(format);
+		detail::checkForUnusualColorFormats(format);
 		color_targets.push_back(Texture2D::create(size, 1, format, nullptr));
 	}
 	init();
 }
 
-RenderTarget2::RenderTarget2(
+RenderTarget::RenderTarget(
 	glm::ivec2 size_,
 	util::array_ref<ElementFormat> colorTargetFormats,
 	ElementFormat depthTargetFormat) :
@@ -718,38 +724,38 @@ RenderTarget2::RenderTarget2(
 {
 	assert(colorTargetFormats.size() < 8);
 	for (auto format : colorTargetFormats) {
-		checkForUnusualColorFormats(format);
+		detail::checkForUnusualColorFormats(format);
 		color_targets.push_back(Texture2D::create(size, 1, format, nullptr));
 	}
 	depth_target = Texture2D::create(size, 1, depthTargetFormat, nullptr);
 	init();
 }
 
-RenderTarget2::Ptr RenderTarget2::create(
+RenderTarget::Ptr RenderTarget::create(
 	glm::ivec2 size,
 	util::array_ref<ElementFormat> colorTargetFormats, 
 	ElementFormat depthTargetFormat)
 {
-	auto ptr = std::make_unique<RenderTarget2>(size, colorTargetFormats, depthTargetFormat);
+	auto ptr = std::make_unique<RenderTarget>(size, colorTargetFormats, depthTargetFormat);
 	return ptr;
 }
 
-RenderTarget2::Ptr RenderTarget2::createNoDepth(
+RenderTarget::Ptr RenderTarget::createNoDepth(
 	glm::ivec2 size, 
 	util::array_ref<ElementFormat> colorTargetFormats)
 {
-	auto ptr = std::make_unique<RenderTarget2>(size, colorTargetFormats);
+	auto ptr = std::make_unique<RenderTarget>(size, colorTargetFormats);
 	return ptr;
 }
 
-RenderTarget2 &RenderTarget2::getDefaultRenderTarget()
+RenderTarget &RenderTarget::getDefaultRenderTarget()
 {
 	if (!default_rt)
-		default_rt = std::make_unique<RenderTarget2>();
+		default_rt = std::make_unique<RenderTarget>();
 	return *default_rt;
 }
 
-void RenderTarget2::init()
+void RenderTarget::init()
 {
 	gl::GenFramebuffers(1, &fbo);
 	gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
@@ -789,7 +795,7 @@ void RenderTarget2::init()
 	assert(err == gl::FRAMEBUFFER_COMPLETE);
 }
 
-void RenderTarget2::commit(RenderQueue2 &renderQueue)
+void RenderTarget::commit(RenderQueue &renderQueue)
 {
 	gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
 	if (fbo == 0) {
@@ -803,58 +809,7 @@ void RenderTarget2::commit(RenderQueue2 &renderQueue)
 	Renderer::getInstance().commit(renderQueue);
 }
 
-RenderTarget2::Ptr RenderTarget2::default_rt;
-
-namespace
-{
-	std::array<GLenum, 37> samplerTypes = {
-		gl::SAMPLER_1D,
-		gl::SAMPLER_2D,
-		gl::SAMPLER_3D,
-		gl::SAMPLER_CUBE,
-		gl::SAMPLER_1D_SHADOW,
-		gl::SAMPLER_2D_SHADOW,
-		gl::SAMPLER_1D_ARRAY,
-		gl::SAMPLER_2D_ARRAY,
-		gl::SAMPLER_1D_ARRAY_SHADOW,
-		gl::SAMPLER_2D_ARRAY_SHADOW,
-		gl::SAMPLER_2D_MULTISAMPLE,
-		gl::SAMPLER_2D_MULTISAMPLE_ARRAY,
-		gl::SAMPLER_CUBE_SHADOW,
-		gl::SAMPLER_BUFFER,
-		gl::SAMPLER_2D_RECT,
-		gl::SAMPLER_2D_RECT_SHADOW,
-		gl::INT_SAMPLER_1D,
-		gl::INT_SAMPLER_2D,
-		gl::INT_SAMPLER_3D,
-		gl::INT_SAMPLER_CUBE,
-		gl::INT_SAMPLER_1D_ARRAY,
-		gl::INT_SAMPLER_2D_ARRAY,
-		gl::INT_SAMPLER_2D_MULTISAMPLE,
-		gl::INT_SAMPLER_2D_MULTISAMPLE_ARRAY,
-		gl::INT_SAMPLER_BUFFER,
-		gl::INT_SAMPLER_2D_RECT,
-		gl::UNSIGNED_INT_SAMPLER_1D,
-		gl::UNSIGNED_INT_SAMPLER_2D,
-		gl::UNSIGNED_INT_SAMPLER_3D,
-		gl::UNSIGNED_INT_SAMPLER_CUBE,
-		gl::UNSIGNED_INT_SAMPLER_1D_ARRAY,
-		gl::UNSIGNED_INT_SAMPLER_2D_ARRAY,
-		gl::UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE,
-		gl::UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY,
-		gl::UNSIGNED_INT_SAMPLER_BUFFER,
-		gl::UNSIGNED_INT_SAMPLER_2D_RECT
-	};
-
-	bool isSamplerType(GLenum type)
-	{
-		for (auto e : samplerTypes) {
-			if (type == e)
-				return true;
-		}
-		return false;
-	}
-}
+RenderTarget::Ptr RenderTarget::default_rt;
 
 Shader::Shader(
 	const char *vsSource,
@@ -905,37 +860,11 @@ Shader::Shader(
 			&len,
 			val);
 		LOG << "Uniform index #" << uindex << ": type=" << val[0] << ", location=" << val[1];
-		if (isSamplerType(val[0])) {
+		if (detail::isSamplerType(val[0])) {
 			int tex_unit;
 			gl::GetUniformiv(program, val[1], &tex_unit);
 			LOG << " -- Sampler bound to texture unit " << tex_unit;
 		}
-	}
-}
-
-//=============================================================================
-//=============================================================================
-// Renderer::updateConstantBuffer
-//=============================================================================
-//=============================================================================
-void ConstantBuffer::update(
-	int offset,
-	int size_,
-	const void *data
-	)
-{
-	// XXX ghetto check
-	if (size != size_) {
-		WARNING << "Partial buffer update (" << ubo << ")";
-	}
-
-	if (gl::exts::var_EXT_direct_state_access) {
-		gl::NamedBufferSubDataEXT(ubo, offset, size_, data);
-	}
-	else {
-		gl::BindBuffer(gl::UNIFORM_BUFFER, ubo);
-		gl::BufferSubData(gl::UNIFORM_BUFFER, offset, size_, data);
-		gl::BindBuffer(gl::UNIFORM_BUFFER, 0);
 	}
 }
 
@@ -968,299 +897,301 @@ void Renderer::clearDepth(
 	gl::ClearDepth(z);
 	gl::Clear(gl::DEPTH_BUFFER_BIT);
 }
-
-//=============================================================================
-//=============================================================================
-// Renderer::setViewports
-//=============================================================================
-//=============================================================================
-/*void Renderer::setViewports(
-	util::array_ref<Viewport2> viewports
-	)
+Stream::Stream(BufferUsage usage_, size_t size_, unsigned num_buffers)
 {
-	float vp[4] = {
-		viewports[0].topLeftX,
-		viewports[0].topLeftY,
-		viewports[0].width,
-		viewports[0].height
-	};
-	gl::ViewportIndexedfv(1, vp);
-	gl::DepthRangeIndexed(0, viewports[0].minDepth, viewports[0].maxDepth);
-	//gl::DepthRangeIndexed(0, 0.0f, 1.0f);
-
-	// TODO more than 1 viewport
-	for (int i = 0; i < viewports.size(); ++i) {
-	float vp[4] = {
-	viewports[i].topLeftX,
-	viewports[i].topLeftY,
-	viewports[i].width,
-	viewports[i].height
-	};
-	gl::ViewportIndexedfv(i, vp);
-	gl::DepthRangeIndexed(i, viewports[i].minDepth, viewports[i].maxDepth);
-	}
-}*/
-
-//=============================================================================
-//=============================================================================
-// Renderer::setRenderTargets
-//=============================================================================
-//=============================================================================
-/*void Renderer::setRenderTargets(
-	util::array_ref<const RenderTarget*> colorTargets,
-	const RenderTarget *depthStencilTarget
-	)
-{
-	// TODO hardcoded
-	assert(colorTargets.size() <= 8);
-
-	// hmmm...
-	if (((colorTargets.size() == 0) && !depthStencilTarget) || (((colorTargets.size() != 0) && colorTargets[0] == &screen_rt)))
+	// align size
+	buffer_size = (size_ + 256u - 1) & ~((size_t)256u - 1);
+	auto total_size = buffer_size * num_buffers;
+	ranges.resize(num_buffers);
+	LOG << "Allocating stream of size " << buffer_size << "x" << num_buffers;
+	gl::GenBuffers(1, &buffer_object);
+	buffer_target = gl4::detail::bufferUsageToBindingPoint(usage_);
+	gl::BindBuffer(buffer_target, buffer_object);
+	gl::BufferStorage(buffer_target, total_size, nullptr, gl::MAP_WRITE_BIT | gl::MAP_PERSISTENT_BIT | gl::MAP_COHERENT_BIT);
+	gl::BindBuffer(buffer_target, 0);
+	// init ranges
+	for (auto i = 0u; i < num_buffers; ++i)
 	{
-		gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+		ranges[i].sync = nullptr;
 	}
-	else
-	{
-		gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
-		for (int i = 0; i < colorTargets.size(); ++i)
-		{
-			auto rt = colorTargets[i];
-			assert(rt != nullptr);
-			if (rt->layer != -1)
-				// bind all layers
-				gl::FramebufferTexture(
-					gl::FRAMEBUFFER,
-					gl::COLOR_ATTACHMENT0 + i,
-					rt->u.texture_2d->id,
-					rt->mipLevel
-				);
-			else
-				// bind a layer (face) of a cubemap or (TODO) a layer of a texture array
-				gl::FramebufferTextureLayer(
-					gl::FRAMEBUFFER,
-					gl::COLOR_ATTACHMENT0 + i,
-					rt->u.texture_2d->id,
-					rt->mipLevel,
-					rt->layer
-				);
-		}
-		gl::FramebufferTexture(
-			gl::FRAMEBUFFER, 
-			gl::DEPTH_ATTACHMENT, 
-			depthStencilTarget->u.texture_2d->id, 
-			depthStencilTarget->mipLevel
-			);
-		// check fb completeness
-		// enable draw buffers
-		static const GLenum drawBuffers[8] = {
-			gl::COLOR_ATTACHMENT0,
-			gl::COLOR_ATTACHMENT0 + 1,
-			gl::COLOR_ATTACHMENT0 + 2,
-			gl::COLOR_ATTACHMENT0 + 3,
-			gl::COLOR_ATTACHMENT0 + 4,
-			gl::COLOR_ATTACHMENT0 + 5,
-			gl::COLOR_ATTACHMENT0 + 6,
-			gl::COLOR_ATTACHMENT0 + 7
-		};
-
-		const GLenum noDrawBuffers = gl::NONE;
-
-		if (colorTargets.size() == 0) {
-			gl::DrawBuffers(1, &noDrawBuffers);
-		}
-		else {
-			gl::DrawBuffers(colorTargets.size(), drawBuffers);
-		}
-		GLenum err;
-		err = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
-		assert(err == gl::FRAMEBUFFER_COMPLETE);
-	}
-}*/
-
-//=============================================================================
-//=============================================================================
-// Renderer::draw
-//=============================================================================
-//=============================================================================
-/*void RenderQueue::draw(
-	const Mesh &mesh,
-	int submesh_index,
-	const Shader &shader,
-	const ParameterBlock &parameterBlock,
-	uint64_t sortHint
-	)
-{
-	RenderItem item;
-	item.shader = &shader;
-	item.mesh = &mesh;
-	item.submesh_index = submesh_index;
-	item.param_block = &parameterBlock;
-	item.sort_key = sortHint;
-	item.procedural_count = 0;
-	item.num_instances = 1;
-	assert(item.submesh_index < mesh.submeshes.size());
-	items.push_back(item);
-}
-
-void RenderQueue::drawProcedural(
-	PrimitiveType primitiveType,
-	int count,
-	const Shader &shader,
-	const ParameterBlock &parameterBlock,
-	uint64_t sortHint)
-{
-	RenderItem item;
-	item.shader = &shader;
-	item.mesh = nullptr;
-	item.submesh_index = 0;
-	item.param_block = &parameterBlock;
-	item.sort_key = sortHint;
-	item.procedural_count = count;
-	item.procedural_mode = detail::primitiveTypeToGLenum(primitiveType);
-	item.num_instances = 0;
-	items.push_back(item);
-}
-
-void RenderQueue::drawInstanced(
-	const Mesh &mesh,
-	int submesh_index,
-	const Shader &shader,
-	const ParameterBlock &parameterBlock,
-	int num_instances,
-	uint64_t sortHint
-	)
-{
-	RenderItem item;
-	item.shader = &shader;
-	item.mesh = &mesh;
-	item.submesh_index = submesh_index;
-	item.param_block = &parameterBlock;
-	item.sort_key = sortHint;
-	item.procedural_count = 0;
-	item.num_instances = num_instances;
-	assert(item.submesh_index < mesh.submeshes.size());
-	items.push_back(item);
-}*/
-
-/*void Renderer::drawItem(const RenderItem &item)
-{
-	// TODO multi-bind
-	// bind vertex buffers
-	// mesh input
-	if (item.mesh)
-	{
-		gl::BindVertexArray(item.mesh->vao);
-		gl::BindVertexBuffer(0, item.mesh->vb, 0, item.mesh->stride);
-	}
-	else
-	{
-		// fully procedural (no VBO)
-		gl::BindVertexArray(dummy_vao);
-	}
-
-	gl::BindBuffersRange(
-		gl::UNIFORM_BUFFER,
-		0,
-		item.param_block->num_ubo,
-		&item.param_block->ubo[0],
-		&item.param_block->ubo_offsets[0],
-		&item.param_block->ubo_sizes[0]
+	current_offset = 0;
+	current_size = 0;
+	current_range = 0;
+	mapped_ptr = gl::MapNamedBufferRangeEXT(buffer_object, 0, buffer_size,
+		gl::MAP_INVALIDATE_BUFFER_BIT | // discard old contents
+		gl::MAP_PERSISTENT_BIT | // persistent mapping
+		gl::MAP_COHERENT_BIT | // coherent
+		gl::MAP_WRITE_BIT | // write-only (no readback)
+		gl::MAP_UNSYNCHRONIZED_BIT // no driver sync (we handle this)
 		);
-	gl::BindTextures(0, kMaxTextureUnits, &item.param_block->textures[0]);
-	gl::BindSamplers(0, kMaxTextureUnits, &item.param_block->samplers[0]);
+}
 
-	// shaders
-	gl::UseProgram(item.shader->program);
-	// Rasterizer
-	if (item.shader->rs_state.cullMode == CullMode::None) {
-		gl::Disable(gl::CULL_FACE);
-	}
-	else {
-		gl::Enable(gl::CULL_FACE);
-		gl::CullFace(detail::cullModeToGLenum(item.shader->rs_state.cullMode));
-	}
-	gl::PolygonMode(gl::FRONT_AND_BACK, detail::fillModeToGLenum(item.shader->rs_state.fillMode));
-	gl::Enable(gl::DEPTH_TEST);
-	if (!item.shader->ds_state.depthTestEnable)
-		gl::DepthFunc(gl::ALWAYS);
-	else
-		gl::DepthFunc(gl::LEQUAL);
-	if (item.shader->ds_state.depthWriteEnable)
-		gl::DepthMask(gl::TRUE_);
-	else
-		gl::DepthMask(gl::FALSE_);
-
-	// OM / blend state
-	// XXX this ain't cheap
-	// TODO blend state per color buffer
-	gl::Enable(gl::BLEND);
-	gl::BlendEquationSeparatei(
-		0,
-		detail::blendOpToGL(item.shader->om_state.rgbOp),
-		detail::blendOpToGL(item.shader->om_state.alphaOp));
-	gl::BlendFuncSeparatei(
-		0,
-		detail::blendFactorToGL(item.shader->om_state.rgbSrcFactor),
-		detail::blendFactorToGL(item.shader->om_state.rgbDestFactor),
-		detail::blendFactorToGL(item.shader->om_state.alphaSrcFactor),
-		detail::blendFactorToGL(item.shader->om_state.alphaDestFactor));
-
-	if (item.mesh)
-	{
-		const auto &sm = item.mesh->submeshes[item.submesh_index];
-
-		if (item.mesh->ibsize != 0) {
-			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, item.mesh->ib);
-			if (item.num_instances == 1)
-			{
-				gl::DrawElementsBaseVertex(
-					detail::primitiveTypeToGLenum(sm.primitiveType),
-					sm.numIndices,
-					gl::UNSIGNED_SHORT,
-					reinterpret_cast<void*>(sm.startIndex * 2),
-					sm.startVertex
-					);
-			}
-			else {
-				gl::DrawElementsInstancedBaseVertex(
-					detail::primitiveTypeToGLenum(sm.primitiveType),
-					sm.numIndices, 
-					gl::UNSIGNED_SHORT,
-					reinterpret_cast<void*>(sm.startIndex * 2), 
-					item.num_instances, 
-					sm.startVertex);
-			}
-		}
-		else {
-			gl::DrawArrays(
-				detail::primitiveTypeToGLenum(sm.primitiveType),
-				sm.startVertex,
-				sm.numVertices
-				);
-		}
-	}
-	else
-	{
-		gl::DrawArrays(item.procedural_mode, 0, item.procedural_count);
-	}
+/*void Stream::remap()
+{
+mapped_ptr = gl::MapNamedBufferRangeEXT(buffer_object, 0, buffer_size,
+gl::MAP_INVALIDATE_BUFFER_BIT | // discard old contents
+gl::MAP_PERSISTENT_BIT | // persistent mapping
+gl::MAP_COHERENT_BIT | // coherent
+gl::MAP_WRITE_BIT | // write-only (no readback)
+gl::MAP_UNSYNCHRONIZED_BIT // no driver sync (we handle this)
+);
 }*/
-//=============================================================================
-//=============================================================================
-// Renderer::submitRenderQueue
-//=============================================================================
-//=============================================================================
-/*void Renderer::submitRenderQueue(
-	RenderQueue &renderQueue
+
+void *Stream::reserve(size_t size)
+{
+	assert(size <= buffer_size);
+
+	if (size == 0) {
+		return nullptr;
+	}
+
+	// still have a fence?
+	if (ranges[current_range].sync != nullptr) {
+		// yes, synchronize
+		auto result = gl::ClientWaitSync(ranges[current_range].sync, gl::SYNC_FLUSH_COMMANDS_BIT, 0);
+		if (result == gl::TIMEOUT_EXPIRED) {
+			// We want absolutely no stalls
+			// TODO handle this?
+			assert(!"Buffer stall");
+		}
+		// Ok, the buffer is unused
+		ranges[current_range].sync = nullptr;
+	}
+
+	// ewww
+	auto ptr = reinterpret_cast<void*>(current_offset + current_size + 256);
+	auto space = buffer_size - (current_offset + current_size);
+	if (!std::align(256, size, ptr, space)) {
+		ERROR << "Out of space in current buffer range";
+		assert(false);
+	}
+	// buffer is unlocked and has enough space: reserve
+	current_offset = buffer_size - space;
+	// TODO align allocated space!!
+	current_size = size;
+	return reinterpret_cast<char*>(mapped_ptr)+current_range * buffer_size + current_offset;
+}
+
+void Stream::fence(RenderQueue &renderQueue)
+{
+	// go to the next buffer
+	renderQueue.fenceSync(ranges[current_range].sync);
+	current_range = (current_range + 1) % ranges.size();
+	current_offset = 0;
+	current_size = 0;
+}
+
+void RenderQueue::beginCommand()
+{
+	std::memset(&state, 0, sizeof(state));
+}
+
+void RenderQueue::setVertexBuffers(
+	util::array_ref<BufferDesc> vertex_buffers,
+	const InputLayout &layout)
+{
+	for (auto i = 0u; i < vertex_buffers.size(); ++i)
+	{
+		auto index = state.u.drawCommand.num_vertex_buffers++;
+		auto &dc = state.u.drawCommand;
+		dc.vertex_buffers[index] = vertex_buffers[i].buffer;
+		dc.vertex_buffers_offsets[index] = vertex_buffers[i].offset;
+		dc.vertex_buffers_strides[index] = layout.strides[i];
+	}
+	setInputLayout(layout);
+}
+
+void RenderQueue::setIndexBuffer(const BufferDesc &index_buffer)
+{
+	state.u.drawCommand.index_buffer = index_buffer.buffer;
+	state.u.drawCommand.index_buffer_offset = index_buffer.offset;
+}
+
+void RenderQueue::setUniformBuffers(util::array_ref<BufferDesc> uniform_buffers)
+{
+	for (auto i = 0u; i < uniform_buffers.size(); ++i)
+	{
+		auto index = state.u.drawCommand.num_uniform_buffers++;
+		state.u.drawCommand.uniform_buffers[index] = uniform_buffers[i].buffer;
+		state.u.drawCommand.uniform_buffers_offsets[index] = uniform_buffers[i].offset;
+		state.u.drawCommand.uniform_buffers_sizes[index] = uniform_buffers[i].size;
+	}
+}
+
+void RenderQueue::setTexture2D(int unit, const Texture2D &tex, const SamplerDesc &samplerDesc)
+{
+	auto index = state.u.drawCommand.num_textures++;
+	state.u.drawCommand.textures[index] = tex.id;
+	state.u.drawCommand.samplers[index] = Renderer::getInstance().getSampler(samplerDesc);
+}
+
+void RenderQueue::setTextureCubeMap(int unit, const TextureCubeMap &tex, const SamplerDesc &samplerDesc)
+{
+	auto index = state.u.drawCommand.num_textures++;
+	state.u.drawCommand.textures[index] = tex.id;
+	state.u.drawCommand.samplers[index] = Renderer::getInstance().getSampler(samplerDesc);
+}
+
+void RenderQueue::setShader(const Shader &shader)
+{
+	// TODO rename to pipeline state
+	state.u.drawCommand.shader = &shader;
+}
+
+void RenderQueue::draw(
+	PrimitiveType primitiveType,
+	unsigned firstVertex,
+	unsigned vertexCount,
+	unsigned firstInstance,
+	unsigned instanceCount)
+{
+	// TODO clean this (be type-safe)
+	// => flexible command buffer
+	state.u.drawCommand.first_vertex = firstVertex;
+	state.u.drawCommand.vertex_count = vertexCount;
+	state.u.drawCommand.index_count = 0;
+	state.u.drawCommand.first_instance = firstInstance;
+	state.u.drawCommand.instance_count = instanceCount;
+	state.u.drawCommand.mode = detail::primitiveTypeToGLenum(primitiveType);
+	state.type = RenderItem2::Type::DrawCommand;
+	// end command
+	// TODO no-copy
+	render_items.push_back(state);
+}
+
+void RenderQueue::drawIndexed(
+	PrimitiveType primitiveType,
+	unsigned firstIndex,
+	unsigned indexCount,
+	int vertexOffset,
+	unsigned firstInstance,
+	unsigned instanceCount)
+{
+	state.u.drawCommand.first_index = firstIndex;
+	state.u.drawCommand.first_vertex = vertexOffset;
+	state.u.drawCommand.index_count = indexCount;
+	state.u.drawCommand.vertex_count = 0;
+	state.u.drawCommand.first_instance = firstInstance;
+	state.u.drawCommand.instance_count = instanceCount;
+	state.u.drawCommand.mode = detail::primitiveTypeToGLenum(primitiveType);
+	state.type = RenderItem2::Type::DrawCommand;
+	render_items.push_back(state);
+}
+
+void RenderQueue::fenceSync(GLsync &out_sync)
+{
+	state.u.fence.sync = &out_sync;
+	state.type = RenderItem2::Type::FenceSync;
+	render_items.push_back(state);
+}
+
+void RenderQueue::setInputLayout(const InputLayout &layout)
+{
+	state.u.drawCommand.input_layout = &layout;
+}
+
+void Renderer::commit(
+	RenderQueue &renderQueue2
 	)
 {
-	std::sort(renderQueue.items.begin(), renderQueue.items.end(), [](const RenderItem &i1, const RenderItem &i2) {
-		return i1.sort_key < i2.sort_key;
-	});
-
-	for (const auto &ri : renderQueue.items) {
-		drawItem(ri);
+	for (const auto &ri : renderQueue2.render_items) {
+		drawItem2(ri);
 	}
-}*/
+}
+
+void Renderer::drawItem2(const RenderItem2 &item)
+{
+
+	if (item.type == RenderItem2::Type::DrawCommand)
+	{
+		auto &dc = item.u.drawCommand;
+		if (item.u.drawCommand.input_layout != nullptr)
+		{
+			gl::BindVertexArray(dc.input_layout->vao);
+			gl::BindVertexBuffers(0,
+				dc.num_vertex_buffers,
+				dc.vertex_buffers,
+				dc.vertex_buffers_offsets,
+				dc.vertex_buffers_strides);
+		}
+		else {
+			// fully procedural (no VBO)
+			gl::BindVertexArray(dummy_vao);
+		}
+
+		gl::BindBuffersRange(
+			gl::UNIFORM_BUFFER,
+			0,
+			dc.num_uniform_buffers,
+			dc.uniform_buffers,
+			dc.uniform_buffers_offsets,
+			dc.uniform_buffers_sizes
+			);
+
+		if (dc.num_textures)
+		{
+			gl::BindTextures(0, dc.num_textures, dc.textures);
+			gl::BindSamplers(0, dc.num_textures, dc.samplers);
+		}
+
+		// shaders
+		gl::UseProgram(dc.shader->program);
+		// Rasterizer
+		if (dc.shader->rs_state.cullMode == CullMode::None) {
+			gl::Disable(gl::CULL_FACE);
+		}
+		else {
+			gl::Enable(gl::CULL_FACE);
+			gl::CullFace(detail::cullModeToGLenum(dc.shader->rs_state.cullMode));
+		}
+		gl::PolygonMode(gl::FRONT_AND_BACK, detail::fillModeToGLenum(dc.shader->rs_state.fillMode));
+		gl::Enable(gl::DEPTH_TEST);
+		if (!dc.shader->ds_state.depthTestEnable)
+			gl::DepthFunc(gl::ALWAYS);
+		else
+			gl::DepthFunc(gl::LEQUAL);
+		if (dc.shader->ds_state.depthWriteEnable)
+			gl::DepthMask(gl::TRUE_);
+		else
+			gl::DepthMask(gl::FALSE_);
+
+		// OM / blend state
+		// XXX this ain't cheap
+		// TODO blend state per color buffer
+		gl::Enable(gl::BLEND);
+		gl::BlendEquationSeparatei(
+			0,
+			detail::blendOpToGL(dc.shader->om_state.rgbOp),
+			detail::blendOpToGL(dc.shader->om_state.alphaOp));
+		gl::BlendFuncSeparatei(
+			0,
+			detail::blendFactorToGL(dc.shader->om_state.rgbSrcFactor),
+			detail::blendFactorToGL(dc.shader->om_state.rgbDestFactor),
+			detail::blendFactorToGL(dc.shader->om_state.alphaSrcFactor),
+			detail::blendFactorToGL(dc.shader->om_state.alphaDestFactor));
+
+		if (dc.index_count) {
+			gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, dc.index_buffer);
+			gl::DrawElementsInstancedBaseVertexBaseInstance(
+				dc.mode,
+				dc.index_count,
+				gl::UNSIGNED_SHORT,
+				reinterpret_cast<void*>(dc.index_buffer_offset + dc.first_index * 2),
+				dc.instance_count,
+				dc.first_vertex,
+				dc.first_instance);
+		}
+		else {
+			gl::DrawArraysInstancedBaseInstance(
+				dc.mode,
+				dc.first_vertex,
+				dc.vertex_count,
+				dc.instance_count,
+				dc.first_instance);
+		}
+	}
+}
+
 
 GLuint Renderer::getSampler(SamplerDesc desc)
 {

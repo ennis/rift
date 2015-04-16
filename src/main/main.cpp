@@ -82,7 +82,7 @@ public:
 	void drawSkeleton(
 		const Skeleton &skeleton,
 		const SkeletonAnimationSampler &animSampler,
-		RenderTarget2 &renderTarget,
+		RenderTarget &renderTarget,
 		const SceneData &sceneData)
 	{
 		assert(skeleton.joints.size() < kMaxJoints);
@@ -113,7 +113,6 @@ public:
 private:
 	Shader::Ptr shader;
 	Mesh::Ptr cylinder;
-	ConstantBuffer::Ptr cb_bone_transforms;
 };
 
 //============================================================================
@@ -182,8 +181,8 @@ private:
 	Texture2D *tex;
 	TextureCubeMap *envmap;
 	
-	RenderTarget2::Ptr shadowRT;
-	RenderTarget2::Ptr screenRT2;
+	RenderTarget::Ptr shadowRT;
+	RenderTarget::Ptr screenRT2;
 
 	Shader::Ptr passthrough;
 
@@ -294,7 +293,7 @@ void RiftGame::init()
 	cbFxParams = Stream::create(BufferUsage::ConstantBuffer, sizeof(FXParams), 3);
 
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
-	shadowRT = RenderTarget2::create(win_size, {}, ElementFormat::Depth16);
+	shadowRT = RenderTarget::create(win_size, {}, ElementFormat::Depth16);
 
 	font = Font::loadFromFile("resources/img/fonts/arno_pro.fnt");
 	hud = std::make_unique<HUDTextRenderer>();
@@ -303,7 +302,7 @@ void RiftGame::init()
 	ds_fx.depthTestEnable = false;
 	ds_fx.depthWriteEnable = false;
 	passthrough = gl4::Effect::loadFromFile("resources/shaders/fxaa.glsl")->compileShader({}, RasterizerDesc{}, ds_fx, BlendDesc{});
-	screenRT2 = RenderTarget2::create({ 1280, 720 }, { ElementFormat::Unorm8x4 }, ElementFormat::Depth24);
+	screenRT2 = RenderTarget::create({ 1280, 720 }, { ElementFormat::Unorm8x4 }, ElementFormat::Depth24);
 
 	std::vector<BVHMapping> mappings;
 	std::ifstream bvh("resources/models/bvh/man_skeleton.bvh");
@@ -329,8 +328,8 @@ void RiftGame::render(float dt)
 	glm::vec2 win_size_f = glm::vec2(win_size.x, win_size.y);
 	auto &R = Renderer::getInstance();
 
-	RenderQueue2 opaqueRenderQueue;
-	RenderQueue2 overlayRenderQueue;
+	RenderQueue opaqueRenderQueue;
+	RenderQueue overlayRenderQueue;
 	SceneRenderContext context;
 	context.opaqueRenderQueue = &opaqueRenderQueue;
 	context.overlayRenderQueue = &overlayRenderQueue;
@@ -368,6 +367,9 @@ void RiftGame::render(float dt)
 			glm::vec3{ -0.5f, -0.5f, -0.5f });
 	cbEnvmap->write(envCubeParams);
 
+	//auto envCubeParams = resources.getGPUBuffer<EnvCubeParams>();
+	//envCubeParams->modelMatrix = ...;
+
 	//skel_anim_sampler->nextFrame();
 	//skel_debug->drawSkeleton(*skel, *skel_anim_sampler, *screenRT2, sceneData, *cbSceneData);
 
@@ -401,14 +403,14 @@ void RiftGame::render(float dt)
 	screenRT2->commit(opaqueRenderQueue);
 
 	// PostFX pass
-	auto &screen_rt = RenderTarget2::getDefaultRenderTarget();
+	auto &screen_rt = RenderTarget::getDefaultRenderTarget();
 	FXParams fxp;
 	fxp.thing = 2.0;
 	fxp.vx_offset = 1.0;
 	fxp.rt_w = 1280;
 	fxp.rt_h = 720;
 	cbFxParams->write(fxp);
-	RenderQueue2 tmp;
+	RenderQueue tmp;
 	tmp.beginCommand();
 	tmp.setShader(*passthrough);
 	tmp.setTexture2D(0, screenRT2->getColorTexture(0), SamplerDesc{});

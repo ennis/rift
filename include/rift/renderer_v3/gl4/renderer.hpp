@@ -73,7 +73,7 @@ namespace gl4
 	class ConstantBuffer;
 	class Renderer;
 	class InputLayout;
-	class RenderQueue2;
+	class RenderQueue;
 
 	// WORKAROUND for vs2013
 	// VS2013 does not support implicit generation of move constructors and move assignment operators
@@ -163,7 +163,7 @@ namespace gl4
 		// lock the reserved space and insert fence in command stream
 		// all pointers returned by reserve() are invalidated
 		// (buffer descriptors are still valid)
-		void fence(RenderQueue2 &queue);
+		void fence(RenderQueue &queue);
 
 		static Ptr create(BufferUsage usage_, size_t size_, unsigned num_buffers)
 		{
@@ -341,102 +341,6 @@ namespace gl4
 		GLenum glformat;
 	};
 
-	class RenderTarget
-	{
-		friend class Renderer;
-	public:
-		using Ptr = std::unique_ptr < RenderTarget > ;
-		RenderTarget() = default;
-
-		// VS2013
-		/*RenderTarget(RenderTarget &&rhs) : format(rhs.format), u(rhs.u), type(rhs.type), mipLevel(rhs.mipLevel), layer(rhs.layer) {}
-		RenderTarget &operator=(RenderTarget &&rhs) {
-			format = rhs.format;
-			u = rhs.u;
-			type = rhs.type;
-			mipLevel = rhs.mipLevel;
-			layer = rhs.layer;
-			return *this;
-		}*/
-		// -VS2013
-
-		enum Type
-		{
-			kRenderToTexture2D,
-			kRenderToCubeMap,
-			kRenderToCubeMapLayer
-		};
-
-		static RenderTarget::Ptr createRenderTarget2D(
-			Texture2D &texture2D,
-			int mipLevel
-			);
-
-		static RenderTarget::Ptr createRenderTarget2DFace(
-			TextureCubeMap &cubeMap,
-			int mipLevel,
-			int face
-			);
-
-		static RenderTarget::Ptr createRenderTargetCubeMap(
-			TextureCubeMap &cubeMap,
-			int mipLevel
-			);
-
-
-	//protected:
-		ElementFormat format;
-		union {
-			Texture2D *texture_2d;
-			TextureCubeMap *texture_cubemap;
-		} u;
-		Type type;
-		int mipLevel;
-		int layer;	// -1 if no face or texture is a cube map and is bound as a layered image
-	};
-
-	class ParameterBlock
-	{
-		friend class Renderer;
-	public:
-
-		using Ptr = std::unique_ptr < ParameterBlock > ;
-
-		ParameterBlock(Shader &shader);
-		
-		void setConstantBuffer(
-			int binding,
-			const ConstantBuffer &constantBuffer
-			);
-
-		void setTextureParameter(
-			int texunit,
-			const Texture2D *texture,
-			const SamplerDesc &samplerDesc
-			);
-
-		void setTextureParameter(
-			int texunit,
-			const TextureCubeMap *texture,
-			const SamplerDesc &samplerDesc
-			);
-
-		static Ptr create(Shader &shader) {
-			return std::make_unique<ParameterBlock>(shader);
-		}
-
-	//protected:
-		ParameterBlock() = default;
-
-		Shader * shader;
-		int num_ubo;
-		GLuint ubo[kMaxUniformBufferBindings];
-		GLintptr ubo_offsets[kMaxUniformBufferBindings];
-		GLintptr ubo_sizes[kMaxUniformBufferBindings];
-		GLuint textures[kMaxTextureUnits];
-		GLuint samplers[kMaxTextureUnits];
-	};
-
 	class Shader
 	{
 		friend class Renderer;
@@ -506,53 +410,6 @@ namespace gl4
 		// TODO list of parameters / uniforms?
 	};
 
-	// 
-	class ConstantBuffer
-	{
-		friend class Renderer;
-
-	public:
-
-		using Ptr = std::unique_ptr < ConstantBuffer > ;
-
-		void update(
-			int offset,
-			int size,
-			const void *data
-			);
-
-		ConstantBuffer() = default;
-		ConstantBuffer(
-			int size,
-			const void *initialData = nullptr);
-
-		~ConstantBuffer()
-		{
-			gl::DeleteBuffers(1, &ubo);
-		}
-
-		// VS2013
-		/*ConstantBuffer(ConstantBuffer &&rhs) : ubo(std::move(rhs.ubo)), size(rhs.size) {}
-		ConstantBuffer &operator=(ConstantBuffer &&rhs) {
-			ubo = std::move(rhs.ubo);
-			size = rhs.size;
-			return *this;
-		}*/
-		// -VS2013
-
-		static Ptr create(
-			int size,
-			const void *initialData) 
-		{
-			return std::make_unique<ConstantBuffer>(size, initialData);
-		}
-
-	// protected:
-
-		GLuint ubo;
-		int size = 0;
-	};
-
 	struct RenderItem2
 	{
 		static const unsigned kMaxVertexStreams = 8u;
@@ -598,11 +455,11 @@ namespace gl4
 
 
 	// RenderQueue V2
-	class RenderQueue2
+	class RenderQueue
 	{
 		friend class Renderer;
 	public:
-		using Ptr = std::unique_ptr<RenderQueue2>;
+		using Ptr = std::unique_ptr<RenderQueue>;
 
 		void beginCommand();
 
@@ -640,63 +497,21 @@ namespace gl4
 		std::vector<RenderItem2> render_items;
 	};
 
-	/*class RenderQueue
-	{
-		friend class Renderer;
-	public:
-		using Ptr = std::unique_ptr < RenderQueue > ;
-
-		void draw(
-			const Mesh &mesh,
-			int submesh_index,
-			const Shader &shader,
-			const ParameterBlock &parameterBlock,
-			uint64_t sortHint
-			);
-
-		void drawInstanced(
-			const Mesh &mesh,
-			int submesh_index,
-			const Shader &shader,
-			const ParameterBlock &parameterBlock,
-			int num_instances, 
-			uint64_t sortHint
-			);
-
-		void drawProcedural(
-			PrimitiveType primitiveType,
-			int count,
-			const Shader &shader,
-			const ParameterBlock &parameterBlock,
-			uint64_t sortHint);
-
-
-		void clear();
-
-	//protected:
-		RenderQueue() = default;
-
-		std::vector<int> sort_list;
-		std::vector<RenderItem> items;
-
-		static Ptr create() { return std::make_unique<RenderQueue>(); }
-	};*/
-
-	class RenderTarget2
+	class RenderTarget
 	{
 	public:
-		using Ptr = std::unique_ptr<RenderTarget2>;
+		using Ptr = std::unique_ptr<RenderTarget>;
 
-		RenderTarget2();
-		RenderTarget2(
+		RenderTarget();
+		RenderTarget(
 			glm::ivec2 size,
 			util::array_ref<ElementFormat> colorTargetFormats);
-		RenderTarget2(
+		RenderTarget(
 			glm::ivec2 size,
 			util::array_ref<ElementFormat> colorTargetFormats,
 			ElementFormat depthTargetFormat);
 
-		~RenderTarget2()
+		~RenderTarget()
 		{
 			if (fbo)
 				gl::DeleteFramebuffers(1, &fbo);
@@ -715,14 +530,14 @@ namespace gl4
 			return *depth_target;
 		}
 
-		static RenderTarget2::Ptr create(
+		static RenderTarget::Ptr create(
 			glm::ivec2 size,
 			util::array_ref<ElementFormat> colorTargetFormats,
 			ElementFormat depthTargetFormat);
-		static RenderTarget2::Ptr createNoDepth(
+		static RenderTarget::Ptr createNoDepth(
 			glm::ivec2 size,
 			util::array_ref<ElementFormat> colorTargetFormats);
-		static RenderTarget2 &getDefaultRenderTarget();
+		static RenderTarget &getDefaultRenderTarget();
 
 		// issue a clear color command
 		void clearColor(
@@ -748,7 +563,7 @@ namespace gl4
 			gl::Clear(gl::DEPTH_BUFFER_BIT);
 		}
 
-		void commit(RenderQueue2 &renderQueue);
+		void commit(RenderQueue &renderQueue);
 
 		//private:
 		void init();
@@ -762,7 +577,7 @@ namespace gl4
 		glm::vec4 clear_color;
 		float clear_depth;
 
-		static RenderTarget2::Ptr default_rt;
+		static RenderTarget::Ptr default_rt;
 	};
 
 	class Renderer
@@ -800,7 +615,7 @@ namespace gl4
 			);*/
 
 		void commit(
-			RenderQueue2 &renderQueue2
+			RenderQueue &renderQueue2
 			);
 
 		// TODO draw instanced
@@ -852,9 +667,9 @@ using TextureParameter = gl4::TextureParameter;
 using ConstantBuffer = gl4::ConstantBuffer;
 using RenderQueue = gl4::RenderQueue;
 using RenderTarget = gl4::RenderTarget;
-using RenderTarget2 = gl4::RenderTarget2;
+using RenderTarget = gl4::RenderTarget;
 using Stream = gl4::Stream;
-using RenderQueue2 = gl4::RenderQueue2;
+using RenderQueue = gl4::RenderQueue;
 using BufferDesc = gl4::BufferDesc;
 
  
