@@ -165,6 +165,11 @@ Mesh::Ptr Mesh::loadFromArchive(serialization::IArchive &ar)
 
 void Mesh::draw(RenderQueue &renderQueue, unsigned submesh)
 {
+	drawInstanced(renderQueue, submesh, 0, 1);
+}
+
+void Mesh::drawInstanced(RenderQueue &renderQueue, unsigned submesh, unsigned baseInstance, unsigned numInstances)
+{
 	renderQueue.setVertexBuffers({ vbo->getDescriptor() }, *layout);
 	const auto &sm = submeshes[submesh];
 	if (nbindex)
@@ -175,7 +180,7 @@ void Mesh::draw(RenderQueue &renderQueue, unsigned submesh)
 			sm.startIndex,
 			sm.numIndices,
 			sm.startVertex,
-			0, 1);
+			baseInstance, numInstances);
 	}
 	else
 	{
@@ -183,7 +188,7 @@ void Mesh::draw(RenderQueue &renderQueue, unsigned submesh)
 			sm.primitiveType,
 			sm.startVertex,
 			sm.numVertices,
-			0, 1);
+			baseInstance, numInstances);
 	}
-	
+
 }

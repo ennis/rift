@@ -131,10 +131,10 @@ struct DepthStencilDesc
 struct SamplerDesc
 {
 	SamplerDesc() = default;
-    TextureAddressMode addrU = TextureAddressMode::Clamp;
+	TextureAddressMode addrU = TextureAddressMode::Clamp;
 	TextureAddressMode addrV = TextureAddressMode::Clamp;
 	TextureAddressMode addrW = TextureAddressMode::Clamp;
-    TextureFilter minFilter = TextureFilter::Linear;
+	TextureFilter minFilter = TextureFilter::Linear;
 	TextureFilter magFilter = TextureFilter::Linear;
 };
 

@@ -174,17 +174,22 @@ void Terrain::initGrid()
 //=============================================================================
 void Terrain::renderSelection(SceneRenderContext &context)
 {
-	context.textRenderer->renderText(
-		*context.overlayRenderQueue,
-		std::to_string(selected_nodes.size()),
-		*context.defaultFont,
-		{ 10.f, 300.f },
-		{ 1280.f, 720.f },
-		Color::White, Color::Black
-		);
 	for (int i = 0; i < selected_nodes.size(); ++i) {
 		const auto &node = selected_nodes[i];
 		renderNode(context, node);
+
+		// create a transient buffer: will be freed at end of frame
+		/*auto &patch = CreateTransientBuffer<TerrainPatchUniforms>();
+		patchUniforms.lodLevel = node.lod;
+		patchUniforms.patchOffset = glm::vec2(node.x, node.y);
+		patchUniforms.patchScale = static_cast<float>(node.size);
+
+		renderQueue.encodeDraw(context.defaultRenderState)
+			.setMesh(*input_layout, { patch_grid_vb })
+			.setShader(*shader)
+			.setBuffers({context.sceneData, terrain_uniforms, patch})
+			.setTextures({ *hm_tex, *hm_normals_tex, *slope_tex, *flat_tex })
+			.drawIndexed(PrimitiveType::Triangle, patch_grid_ib, 0, patch_num_indices, 0, 0, 1);*/
 	}
 
 	terrain_patch_uniforms->fence(*context.opaqueRenderQueue);

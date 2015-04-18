@@ -412,8 +412,6 @@ namespace gl4
 
 	struct RenderItem2
 	{
-		static const unsigned kMaxVertexStreams = 8u;
-		static const unsigned kMaxUniformStreams = 8u;
 
 		enum class Type
 		{
@@ -424,12 +422,12 @@ namespace gl4
 		union U {
 			struct DrawCommand {
 				// Thanks VS2013! (for not supporting unrestricted unions)
-				GLuint vertex_buffers[kMaxVertexStreams];
-				GLintptr vertex_buffers_offsets[kMaxVertexStreams];
-				GLsizei vertex_buffers_strides[kMaxVertexStreams];
-				GLuint uniform_buffers[kMaxUniformStreams];
-				GLintptr uniform_buffers_offsets[kMaxUniformStreams];
-				GLsizeiptr uniform_buffers_sizes[kMaxUniformStreams];
+				GLuint vertex_buffers[kMaxVertexBufferBindings];
+				GLintptr vertex_buffers_offsets[kMaxVertexBufferBindings];
+				GLsizei vertex_buffers_strides[kMaxVertexBufferBindings];
+				GLuint uniform_buffers[kMaxUniformBufferBindings];
+				GLintptr uniform_buffers_offsets[kMaxUniformBufferBindings];
+				GLsizeiptr uniform_buffers_sizes[kMaxUniformBufferBindings];
 				GLuint textures[kMaxTextureUnits];
 				GLuint samplers[kMaxTextureUnits];
 				unsigned num_vertex_buffers;
@@ -454,15 +452,19 @@ namespace gl4
 	};
 
 
-	// RenderQueue V2
 	class RenderQueue
 	{
 		friend class Renderer;
 	public:
 		using Ptr = std::unique_ptr<RenderQueue>;
 
-		void beginCommand();
+		RenderQueue() = default;
+		RenderQueue(const RenderQueue &) = delete;
+		RenderQueue &operator=(const RenderQueue &) = delete;
 
+		void beginCommand();
+		
+		//void setRenderTarget(RenderTarget &render_target);
 		void setInputLayout(const InputLayout &layout);
 		void setVertexBuffers(util::array_ref<BufferDesc> vertex_buffers, const InputLayout &layout);
 		void setIndexBuffer(const BufferDesc &index_buffer);
@@ -583,37 +585,6 @@ namespace gl4
 	class Renderer
 	{
 	public:
-
-		//================================
-		// Submission
-
-		// issue a clear color command
-		void clearColor(
-			float r,
-			float g,
-			float b,
-			float a
-			);
-
-		// issue a clear depth command
-		void clearDepth(
-			float z
-			);
-
-		// set the color & depth render targets
-		/*void setRenderTargets(
-			util::array_ref<const RenderTarget*> colorTargets,
-			const RenderTarget *depthStencilTarget
-			);
-
-		void setViewports(
-			util::array_ref<Viewport2> viewports
-			);
-
-		void submitRenderQueue(
-			RenderQueue &renderQueue
-			);*/
-
 		void commit(
 			RenderQueue &renderQueue2
 			);

@@ -25,26 +25,6 @@
 #include <mesh.hpp>
 #include <terrain.hpp>
 
-// utils
-namespace
-{
-	Mesh::Ptr generateCylinderMesh()
-	{
-		// HA!
-		std::ifstream fileIn("resources/models/sphere.mesh", std::ios::binary);
-		serialization::IArchive arc(fileIn);
-		return Mesh::loadFromArchive(arc);
-	}
-
-	/*glm::mat4 match2points(glm::vec3 s0, glm::vec3 s1, glm::vec3 t0, glm::vec3 t1)
-	{
-		// estimate scale
-		auto ds = s1 - s0;
-		auto dt = t1 - t0;
-		float scaling = dt.length() / ds.length();
-	}*/
-}
-
 class SkinnedMesh
 {
 public:
@@ -71,19 +51,17 @@ class SkeletonDebug
 public:
 	static const unsigned kMaxJoints = 60;
 
-	SkeletonDebug()
+	SkeletonDebug(Resources &resources)
 	{
 		shader = gl4::Effect::loadFromFile("resources/shaders/skeleton_debug.glsl")->compileShader();
-		cylinder = generateCylinderMesh();
-		// Max 60 bones
-		//cb_bone_transforms = ConstantBuffer::create(kMaxJoints * sizeof(glm::mat4), nullptr);
+		cylinder = resources.meshes.load("resources/models/sphere.mesh");
+		cb_bone_transforms = Stream::create(BufferUsage::ConstantBuffer, sizeof(glm::mat4) * kMaxJoints, 3);
 	}
 
 	void drawSkeleton(
 		const Skeleton &skeleton,
 		const SkeletonAnimationSampler &animSampler,
-		RenderTarget &renderTarget,
-		const SceneData &sceneData)
+		SceneRenderContext &context)
 	{
 		assert(skeleton.joints.size() < kMaxJoints);
 		// compute pose
@@ -94,25 +72,21 @@ public:
 		}
 
 		// upload list of transforms
-		//cb_bone_transforms->update(0, pose.size() * sizeof(glm::mat4), pose.data());
-		// draw instanced (num joints)
-		//paramBlock->setConstantBuffer(0, sceneDataCB);
-		//paramBlock->setConstantBuffer(1, *cb_bone_transforms);
-		//renderTarget.getRenderQueue().drawInstanced(*cylinder, 0, *shader, *paramBlock, pose.size(), 0);
+		auto ptr = cb_bone_transforms->reserve_many<glm::mat4>(kMaxJoints);
+		memcpy(ptr, pose.data(), sizeof(glm::mat4)*pose.size());
 
-		// VS
-		/*for (...)
-		{
-			cmdBuf.initRenderCommand();
-			params[i] = pose[i];
-			cmdBuf.setBuffers({BufferDesc(params, ptr, size)})
-			mesh.draw(cmdBuf);
-		}*/
+		auto &renderQueue = *context.opaqueRenderQueue;
+		renderQueue.beginCommand();
+		renderQueue.setShader(*shader);
+		renderQueue.setUniformBuffers({ context.sceneDataCB, cb_bone_transforms->getDescriptor() });
+		cylinder->drawInstanced(renderQueue, 0, 0, pose.size());
+		cb_bone_transforms->fence(renderQueue);
 	}
 
 private:
 	Shader::Ptr shader;
-	Mesh::Ptr cylinder;
+	Mesh* cylinder;
+	Stream::Ptr cb_bone_transforms;
 };
 
 //============================================================================
@@ -208,13 +182,8 @@ private:
 //============================================================================
 void RiftGame::init()
 {
-	boost::filesystem::path path(".");
-
 	resources = std::make_unique<Resources>();
-
-	// create the camera object
-	
-	// create the camera entity (maybe not necessary...)
+	// create the camera entity 
 	cameraEntity = Entity::create();
 	// create a camera object
 	auto camera = cameraEntity->addComponent<Camera>();
@@ -278,10 +247,7 @@ void RiftGame::init()
 		cubeIndices,
 		{ sm });
 
-	/*std::ifstream mokou_file("resources/models/animated/mokou.mesh", std::ios::binary);
-	serialization::IArchive arc(mokou_file);
-	mokou = Mesh::loadFromArchive(arc);*/
-	mokou = resources->meshes.load("resources/models/rock/crystal.mesh");
+	mokou = resources->meshes.load("resources/models/animated/mokou.mesh");
 	tex = resources->textures.load("resources/img/brick_wall.jpg");
 	envmap = resources->cubeMaps.load("resources/img/env/uffizi/env.dds");
 	envmap = resources->cubeMaps.load("resources/img/env/uffizi/env.dds");	// TEST
@@ -309,7 +275,7 @@ void RiftGame::init()
 	skel = Skeleton::loadFromBVH(bvh, mappings);
 
 	std::ifstream motion_file("resources/models/bvh/man_walk.bvh");
-	skel_debug = std::make_unique<SkeletonDebug>();
+	skel_debug = std::make_unique<SkeletonDebug>(*resources);
 	skel_animation = SkeletonAnimation::loadFromBVH(motion_file, *skel, mappings);
 	skel_anim_sampler = std::make_unique<SkeletonAnimationSampler>(*skel, skel_animation, 0.003f);
 	skel_anim_sampler->nextFrame();
@@ -367,30 +333,27 @@ void RiftGame::render(float dt)
 			glm::vec3{ -0.5f, -0.5f, -0.5f });
 	cbEnvmap->write(envCubeParams);
 
-	//auto envCubeParams = resources.getGPUBuffer<EnvCubeParams>();
-	//envCubeParams->modelMatrix = ...;
-
-	//skel_anim_sampler->nextFrame();
-	//skel_debug->drawSkeleton(*skel, *skel_anim_sampler, *screenRT2, sceneData, *cbSceneData);
-
 	opaqueRenderQueue.beginCommand();
 	opaqueRenderQueue.setShader(*shaderEnvCube);
 	opaqueRenderQueue.setUniformBuffers({ context.sceneDataCB, cbEnvmap->getDescriptor() });
 	opaqueRenderQueue.setTextureCubeMap(0, *envmap, SamplerDesc{});
-	//mesh->draw(opaqueRenderQueue, 0);
+	mesh->draw(opaqueRenderQueue, 0);
 
-	for (auto submesh = 0u; submesh < mesh->submeshes.size(); ++submesh)
+	skel_anim_sampler->nextFrame();
+	skel_debug->drawSkeleton(*skel, *skel_anim_sampler, context);
+
+	for (auto submesh = 0u; submesh < mokou->submeshes.size(); ++submesh)
 	{
 		opaqueRenderQueue.beginCommand();
 		opaqueRenderQueue.setShader(*shaderPBR);
 		opaqueRenderQueue.setUniformBuffers({ context.sceneDataCB, cbPerObjPBR->getDescriptor() });
 		opaqueRenderQueue.setTexture2D(0, *tex, SamplerDesc{});
 		opaqueRenderQueue.setTextureCubeMap(1, *envmap, SamplerDesc{});
-		//mokou->draw(opaqueRenderQueue, submesh);
+		mokou->draw(opaqueRenderQueue, submesh);
 	}
 
 	// render terrain
-	terrain->render(context);
+	//terrain->render(context);
 
 	// fence all constant buffer streams
 	cbEnvmap->fence(opaqueRenderQueue);

@@ -2,9 +2,13 @@
 
 #pragma include <scene.glsl>
 
+//#pragma sampler 0 AddrU:Repeat AddrV:Repeat MinFilter:...
 layout(binding = 0) uniform sampler2D heightmap;
+//#pragma sampler 1 AddrU:Repeat AddrV:Repeat MinFilter:...
 layout(binding = 1) uniform sampler2D normalMap;
+//#pragma sampler 2 AddrU:Repeat AddrV:Repeat MinFilter:...
 layout(binding = 2) uniform sampler2D slopeTex;
+//#pragma sampler 3 AddrU:Repeat AddrV:Repeat MinFilter:...
 layout(binding = 3) uniform sampler2D flatTex;
 
 // constant
