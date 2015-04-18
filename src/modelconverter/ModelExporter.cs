@@ -209,6 +209,7 @@ namespace modelconverter
             if (isSkinned)
             {
                 vertexbase = 0;
+                List<int> numWeightsForVertex = Enumerable.Repeat(0, nbvertex).ToList();
                 for (int i = 0; i < nbvertex; ++i)
                 {
                     boneIds.Add(new sbyte[4]);
@@ -243,14 +244,11 @@ namespace modelconverter
 
                         foreach (var weight in assbone.VertexWeights)
                         {
-                            for (int iw = 0; iw < 4; ++iw)
-                            {
-                                if (boneIds[vertexbase + weight.VertexID][iw] == -1)
-                                {
-                                    boneWeights[vertexbase + weight.VertexID][iw] = weight.Weight;
-                                    break;
-                                }
-                            }
+                            var iw = numWeightsForVertex[vertexbase + weight.VertexID];
+                            if (iw >= 4)
+                                continue;
+                            boneWeights[vertexbase + weight.VertexID][iw] = weight.Weight;
+                            numWeightsForVertex[vertexbase + weight.VertexID]++;
                         }
                     }
                     vertexbase += mesh.VertexCount;

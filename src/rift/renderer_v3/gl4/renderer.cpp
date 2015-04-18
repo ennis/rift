@@ -423,11 +423,12 @@ Buffer::Buffer(
 	const void *initialData_) :
 	target(detail::bufferUsageToBindingPoint(usage_)), size(size_), flags(0)
 {
-	gl::GenBuffers(1, &id);
-	gl::BindBuffer(target, id);
+	gl::GenBuffers(1, &buffer_object);
+	gl::BindBuffer(target, buffer_object);
 	// allocate immutable storage
+	flags = gl::MAP_WRITE_BIT | gl::MAP_PERSISTENT_BIT | gl::MAP_COHERENT_BIT;
 	if (resourceUsage_ == ResourceUsage::Dynamic)
-		flags = gl::DYNAMIC_STORAGE_BIT;
+		flags |= gl::DYNAMIC_STORAGE_BIT;
 	gl::BufferStorage(target, size, initialData_, flags);
 	/*if (usage_ == ResourceUsage::Dynamic)
 	gl::BufferData(bindingPoint, size, data, gl::STREAM_DRAW);
@@ -442,10 +443,10 @@ void Buffer::update(
 	const void *data)
 {
 	if (gl::exts::var_EXT_direct_state_access) {
-		gl::NamedBufferSubDataEXT(id, offset, size, data);
+		gl::NamedBufferSubDataEXT(buffer_object, offset, size, data);
 	}
 	else {
-		gl::BindBuffer(target, id);
+		gl::BindBuffer(target, buffer_object);
 		gl::BufferSubData(target, offset, size, data);
 	}
 }

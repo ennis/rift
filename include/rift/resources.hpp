@@ -4,6 +4,7 @@
 #include <resourcemanager.hpp>
 #include <gl4/renderer.hpp>
 #include <image.hpp>
+#include <mesh.hpp>
 
 struct Texture2DLoader
 {
@@ -43,13 +44,29 @@ struct MeshLoader
 		serialization::IArchive arc(fileIn);
 		return Mesh::loadFromArchive(arc);
 	}
+}; 
+
+struct SkinnedMeshLoader
+{
+	using pointer = SkinnedMesh::Ptr;
+	using key_type = std::string;
+	using resource_type = SkinnedMesh;
+
+	SkinnedMesh::Ptr load(const std::string &path)
+	{
+		std::ifstream fileIn(path.data(), std::ios::binary);
+		serialization::IArchive arc(fileIn);
+		return SkinnedMesh::loadFromArchive(arc);
+	}
 };
+
 
 struct Resources
 {
 	util::resource_manager<Texture2DLoader> textures;
 	util::resource_manager<TextureCubeMapLoader> cubeMaps;
 	util::resource_manager<MeshLoader> meshes;
+	util::resource_manager<SkinnedMeshLoader> skinnedMeshes;
 };
 
  

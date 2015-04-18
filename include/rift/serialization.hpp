@@ -100,6 +100,7 @@ public:
 	}
 
 	IArchive &operator>>(char &v) { read_i8(stream_in, v); return *this; }
+	IArchive &operator>>(unsigned char &v) { read_u8(stream_in, v); return *this; }
 	IArchive &operator>>(short &v) { read_i16le(stream_in, v); return *this; }
 	IArchive &operator>>(unsigned short &v) { read_u16le(stream_in, v); return *this; }
 	IArchive &operator>>(int &v) { read_i32le(stream_in, v); return *this; }

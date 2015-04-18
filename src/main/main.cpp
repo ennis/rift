@@ -25,27 +25,6 @@
 #include <mesh.hpp>
 #include <terrain.hpp>
 
-class SkinnedMesh
-{
-public:
-	SkinnedMesh(Resources &resources, const char *path, const char *invBindPosesPath, const Skeleton &skel) :
-		mesh(resources.meshes.load(path)),
-		skeleton(skel)
-	{
-		std::ifstream fileIn(invBindPosesPath);
-		serialization::IArchive arc(fileIn);
-		// load inverse bind poses
-		for (auto i = 0u; i < skeleton.joints.size(); ++i) {
-
-		}
-	}
-
-private:
-	const Skeleton &skeleton;
-	Mesh *mesh;
-	std::vector<glm::mat4> invBindPoses;
-};
-
 class SkeletonDebug
 {
 public:
@@ -136,6 +115,7 @@ private:
 	Entity *cameraEntity;
 	Mesh::Ptr mesh;
 	Mesh *mokou = nullptr;
+	SkinnedMesh *mokou_skin = nullptr;
 
 	gl4::Effect::Ptr effect;
 	gl4::Effect::Ptr effectEnvCube;
@@ -284,6 +264,9 @@ void RiftGame::init()
 		Image::loadFromFile("resources/img/terrain/test_heightmap_2.dds"),
 		resources->textures.load("resources/img/mb_rocklface07_d.dds"),
 		resources->textures.load("resources/img/grasstile_c.dds"));
+
+	// TEST 
+	mokou_skin = resources->skinnedMeshes.load("resources/models/animated/mokou.mesh");
 }
 
 
@@ -320,7 +303,8 @@ void RiftGame::render(float dt)
 
 	// update per-model buffer
 	spinAngle = fmodf(spinAngle + 0.1f*3.14159f*dt, 2 * 3.14159);
-	perObjPBR.modelMatrix = glm::rotate(glm::mat4(1.0f), spinAngle, glm::vec3{ 0, 1, 0 });
+	//perObjPBR.modelMatrix = glm::rotate(glm::mat4(1.0f), spinAngle, glm::vec3{ 0, 1, 0 });
+	perObjPBR.modelMatrix = glm::mat4();
 	perObjPBR.objectColor = glm::vec4(1.0f);
 	perObjPBR.eta = 1.40f;
 	cbPerObjPBR->write(perObjPBR);
@@ -340,7 +324,9 @@ void RiftGame::render(float dt)
 	mesh->draw(opaqueRenderQueue, 0);
 
 	skel_anim_sampler->nextFrame();
+	auto pose = skel_anim_sampler->getPose(*skel, glm::mat4(1.0));
 	skel_debug->drawSkeleton(*skel, *skel_anim_sampler, context);
+	mokou_skin->update(pose);
 
 	for (auto submesh = 0u; submesh < mokou->submeshes.size(); ++submesh)
 	{
@@ -349,7 +335,7 @@ void RiftGame::render(float dt)
 		opaqueRenderQueue.setUniformBuffers({ context.sceneDataCB, cbPerObjPBR->getDescriptor() });
 		opaqueRenderQueue.setTexture2D(0, *tex, SamplerDesc{});
 		opaqueRenderQueue.setTextureCubeMap(1, *envmap, SamplerDesc{});
-		mokou->draw(opaqueRenderQueue, submesh);
+		mokou_skin->draw(opaqueRenderQueue, submesh);
 	}
 
 	// render terrain

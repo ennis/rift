@@ -2,6 +2,7 @@
 #define MESH_HPP
 
 #include <gl4/renderer.hpp>
+#include <serialization.hpp>
 
 class Mesh
 {
@@ -15,37 +16,6 @@ public:
 		const void *indexData,
 		util::array_ref<Submesh> submeshes);
 
-	// VS2013
-	/*Mesh(Mesh &&rhs) :
-		mode(rhs.mode),
-		vb(std::move(rhs.vb)),
-		ib(std::move(rhs.ib)),
-		vao(std::move(rhs.vao)),
-		vbsize(rhs.vbsize),
-		ibsize(rhs.ibsize),
-		nbvertex(rhs.nbvertex),
-		nbindex(rhs.nbindex),
-		stride(rhs.stride),
-		index_format(rhs.index_format),
-		submeshes(std::move(rhs.submeshes))
-	{}
-	Mesh &operator=(Mesh &&rhs) {
-		mode = rhs.mode;
-		vb = std::move(rhs.vb);
-		ib = std::move(rhs.ib);
-		vao = std::move(rhs.vao);
-		vbsize = rhs.vbsize;
-		ibsize = rhs.ibsize;
-		nbvertex = rhs.nbvertex;
-		nbindex = rhs.nbindex;
-		stride = rhs.stride;
-		index_format = rhs.index_format;
-		submeshes = std::move(rhs.submeshes);
-		return *this;
-	}*/
-	// -VS2013
-
-//protected:
 	Mesh() = default;
 
 	static Ptr create(
@@ -73,11 +43,61 @@ public:
 	InputLayout::Ptr layout;
 	Buffer::Ptr vbo;
 	Buffer::Ptr ibo;
-	int nbvertex;
-	int nbindex;
-	int stride;
+	unsigned nbvertex;
+	unsigned nbindex;
+	unsigned stride;
 	GLenum index_format;
 	std::vector<Submesh> submeshes;
 };
+
+
+class SkinnedMesh
+{
+public:
+	using Ptr = std::unique_ptr < SkinnedMesh >;
+
+	SkinnedMesh() = default;
+	void update(util::array_ref<glm::mat4> pose);
+	void draw(RenderQueue &renderQueue, unsigned submesh);
+	void drawInstanced(RenderQueue &renderQueue, unsigned submesh, unsigned baseInstance, unsigned numInstances);
+	static Ptr loadFromArchive(serialization::IArchive &ar);
+
+private:
+	// part of the vertex that does not change
+	struct StaticVertex
+	{
+		glm::vec2 tex;
+	};
+
+	// vertex data updated on each frame
+	struct DynamicVertex
+	{
+		glm::vec3 pos;
+		glm::vec3 norm;
+		glm::vec3 tg;
+		glm::vec3 bitg;
+	};
+
+	// positions (updated each frame)
+	// TODO update normals...
+	std::vector<glm::vec3> base_pos;
+	std::vector<glm::vec3> base_norm;
+	std::vector<glm::vec3> base_tg;
+	std::vector<glm::vec3> base_bitg;
+	std::vector<glm::u8vec4> bone_ids;
+	std::vector<glm::vec4> bone_weights;
+	InputLayout::Ptr layout;
+	Stream::Ptr dynamic_attribs;
+	// other attributes (static)
+	Buffer::Ptr static_attribs;	
+	Buffer::Ptr ibo;
+	unsigned nbvertex;
+	unsigned nbindex;
+	unsigned stride;
+	GLenum index_format;
+	std::vector<Submesh> submeshes;
+
+};
+
  
 #endif /* end of include guard: MESH_HPP */

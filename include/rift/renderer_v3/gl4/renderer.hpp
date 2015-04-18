@@ -212,7 +212,25 @@ namespace gl4
 
 		~Buffer()
 		{
-			gl::DeleteBuffers(1, &id);
+			gl::DeleteBuffers(1, &buffer_object);
+		}
+
+		void *map()
+		{
+			auto mapped_ptr = gl::MapNamedBufferRangeEXT(buffer_object, 0, size,
+				gl::MAP_INVALIDATE_BUFFER_BIT | // discard old contents
+				gl::MAP_PERSISTENT_BIT | // persistent mapping
+				gl::MAP_COHERENT_BIT | // coherent
+				gl::MAP_WRITE_BIT | // write-only (no readback)
+				gl::MAP_UNSYNCHRONIZED_BIT // no driver sync (we handle this)
+				);
+			return mapped_ptr;
+		}
+
+		template <typename T>
+		T *map_as()
+		{
+			return static_cast<T*>(map());
 		}
 
 		void update(
@@ -229,14 +247,14 @@ namespace gl4
 
 		BufferDesc getDescriptor() const
 		{
-			return BufferDesc{ id, 0, size };
+			return BufferDesc{ buffer_object, 0, size };
 		}
 
 	//protected:
 		size_t size;
 		GLbitfield flags;
 		GLenum target;
-		GLuint id;
+		GLuint buffer_object;
 	};
 
 	class Texture2D
