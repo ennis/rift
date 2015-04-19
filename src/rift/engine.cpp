@@ -3,7 +3,6 @@
 #include <engine.hpp>
 #include <log.hpp>
 #include <clock.hpp>
-#include <entity.hpp>
 #include <game.hpp>
 #include <gl4/renderer.hpp>
 
@@ -110,10 +109,6 @@ void Engine::mainLoop()
 			tb = tf;
 			float dt = frame.count();
 			mGame->render(dt);
-			// update all entities
-			for (auto &&ent : Entity::getList()) {
-				ent.update(dt);
-			}
 			mGame->update(dt);
 			mWindow.swapBuffers();
 			mWindow.pollEvents();
