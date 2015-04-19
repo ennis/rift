@@ -36,6 +36,43 @@ namespace
 		glm::uint32 bitg;	// packSnorm3x10_1x2
 		glm::uint32 tex;	// packUnorm2x16
 	};
+
+	struct MeshDataHeader
+	{
+		uint8_t version;
+		uint8_t layout;
+		unsigned num_vertices;
+		unsigned num_indices;
+		std::vector<Submesh> submeshes;
+	};
+
+	void readMeshDataHeader(
+		serialization::IArchive &ar, 
+		MeshDataHeader &out)
+	{
+		using namespace serialization;
+		unsigned num_submeshes;
+		ar >> read8(out.version)
+			>> read8(out.layout)
+			>> read16(num_submeshes)
+			>> out.num_vertices
+			>> out.num_indices;
+
+		assert(out.version == 3);
+		assert((out.layout == 1) || (out.layout == 2));
+		assert(num_submeshes < 65536);
+		assert(out.num_vertices < 40 * 1024 * 1024);
+		assert(out.num_indices < 40 * 1024 * 1024);
+
+		out.submeshes.resize(num_submeshes);
+		for (auto i = 0u; i < num_submeshes; ++i) {
+			ar >> out.submeshes[i].startVertex
+				>> out.submeshes[i].startIndex
+				>> out.submeshes[i].numVertices
+				>> read16(out.submeshes[i].numIndices);
+			out.submeshes[i].primitiveType = PrimitiveType::Triangle;
+		}
+	}
 }
 
 Mesh::Mesh(
@@ -63,104 +100,40 @@ Mesh::Mesh(
 Mesh::Ptr Mesh::loadFromArchive(serialization::IArchive &ar)
 {
 	using namespace serialization;
+	MeshDataHeader mdh;
+	readMeshDataHeader(ar, mdh);
+	assert(mdh.layout == 1);
 
-	std::vector<Submesh> submeshes;
-	unsigned int num_submeshes, num_vertices, num_indices, layout, version;
-
-	ar >> read8(version)
-		>> read8(layout)
-		>> read16(num_submeshes)
-		>> num_vertices
-		>> num_indices;
-
-	assert(version == 3);
-	assert((layout == 1) || (layout == 2));
-	assert(num_submeshes < 65536);
-	assert(num_vertices < 40 * 1024 * 1024);
-	assert(num_indices < 40 * 1024 * 1024);
-
-	submeshes.resize(num_submeshes);
-	for (auto i = 0u; i < num_submeshes; ++i) {
-		ar >> submeshes[i].startVertex
-			>> submeshes[i].startIndex
-			>> submeshes[i].numVertices
-			>> read16(submeshes[i].numIndices);
-		submeshes[i].primitiveType = PrimitiveType::Triangle;
+	// Layout type 1: not skinned
+	std::vector<VertexType1> vs(mdh.num_vertices);
+	std::vector<uint16_t> is(mdh.num_indices);
+	for (auto i = 0u; i < mdh.num_vertices; ++i) {
+		auto &v = vs[i];
+		ar >> v.pos.x >> v.pos.y >> v.pos.z
+			>> v.norm.x >> v.norm.y >> v.norm.z
+			>> v.tg.x >> v.tg.y >> v.tg.z
+			>> v.bitg.x >> v.bitg.y >> v.bitg.z
+			>> v.tex.x >> v.tex.y;
+	}
+	for (auto i = 0u; i < mdh.num_indices; ++i) {
+		ar >> read16(is[i]);
 	}
 
-	if (layout == 1)
-	{
-		// Layout type 1: not skinned
-		std::vector<VertexType1> vs(num_vertices);
-		std::vector<uint16_t> is(num_indices);
-		for (auto i = 0u; i < num_vertices; ++i) {
-			auto &v = vs[i];
-			ar >> v.pos.x >> v.pos.y >> v.pos.z
-				>> v.norm.x >> v.norm.y >> v.norm.z
-				>> v.tg.x >> v.tg.y >> v.tg.z
-				>> v.bitg.x >> v.bitg.y >> v.bitg.z
-				>> v.tex.x >> v.tex.y;
-		}
-		for (auto i = 0u; i < num_indices; ++i) {
-			ar >> read16(is[i]);
-		}
+	auto ptr = Mesh::create(
+		{
+			Attribute{ ElementFormat::Float3 },
+			Attribute{ ElementFormat::Float3 },
+			Attribute{ ElementFormat::Float3 },
+			Attribute{ ElementFormat::Float3 },
+			Attribute{ ElementFormat::Float2 }
+		},
+		mdh.num_vertices,
+		vs.data(),
+		mdh.num_indices,
+		is.data(),
+		mdh.submeshes);
 
-		// create mesh
-		auto ptr = Mesh::create(
-			{
-				Attribute{ ElementFormat::Float3 },
-				Attribute{ ElementFormat::Float3 },
-				Attribute{ ElementFormat::Float3 },
-				Attribute{ ElementFormat::Float3 },
-				Attribute{ ElementFormat::Float2 }
-			},
-			num_vertices,
-			vs.data(),
-			num_indices,
-			is.data(),
-			submeshes);
-		return ptr;
-	}
-	else
-	{
-		// Layout type 2: skinned mesh
-		std::vector<VertexType2> vs(num_vertices);
-		std::vector<uint16_t> is(num_indices);
-		for (auto i = 0u; i < num_vertices; ++i) {
-			auto &v = vs[i];
-			ar >> v.pos.x >> v.pos.y >> v.pos.z
-				>> v.norm.x >> v.norm.y >> v.norm.z
-				>> v.tg.x >> v.tg.y >> v.tg.z
-				>> v.bitg.x >> v.bitg.y >> v.bitg.z
-				>> v.tex.x >> v.tex.y
-				>> v.bone_ids
-				>> v.bone_weights.x
-				>> v.bone_weights.y
-				>> v.bone_weights.z
-				>> v.bone_weights.w;
-		}
-		for (auto i = 0u; i < num_indices; ++i) {
-			ar >> read16(is[i]);
-		}
-
-		// create mesh
-		auto ptr = Mesh::create(
-			{
-				Attribute{ ElementFormat::Float3 },
-				Attribute{ ElementFormat::Float3 },
-				Attribute{ ElementFormat::Float3 },
-				Attribute{ ElementFormat::Float3 },
-				Attribute{ ElementFormat::Float2 },
-				Attribute{ ElementFormat::Uint8x4 },
-				Attribute{ ElementFormat::Float4 }
-			},
-			num_vertices,
-			vs.data(),
-			num_indices,
-			is.data(),
-			submeshes);
-		return ptr;
-	}
+	return ptr;
 }
 
 void Mesh::draw(RenderQueue &renderQueue, unsigned submesh)
@@ -220,104 +193,78 @@ void SkinnedMesh::update(util::array_ref<glm::mat4> pose)
 
 SkinnedMesh::Ptr SkinnedMesh::loadFromArchive(serialization::IArchive &ar)
 {
-	// TODO factor out common loading code
 	using namespace serialization;
 	auto pmesh = std::make_unique<SkinnedMesh>();
 	auto &mesh = *pmesh;
+	MeshDataHeader mdh;
+	readMeshDataHeader(ar, mdh);
 
-	unsigned int num_submeshes, layout, version;
+	assert(mdh.layout == 2);
+	mesh.nbvertex = mdh.num_vertices;
+	mesh.nbindex = mdh.num_indices;
 
-	ar >> read8(version)
-		>> read8(layout)
-		>> read16(num_submeshes)
-		>> mesh.nbvertex
-		>> mesh.nbindex;
+	mesh.static_attribs = Buffer::create(
+		sizeof(StaticVertex)*mdh.num_vertices,
+		ResourceUsage::Static, 
+		BufferUsage::VertexBuffer, 
+		nullptr);
 
-	assert(version == 3);
-	assert((layout == 1) || (layout == 2));
-	assert(num_submeshes < 65536);
-	assert(mesh.nbvertex < 40 * 1024 * 1024);
-	assert(mesh.nbindex < 40 * 1024 * 1024);
+	mesh.ibo = Buffer::create(
+		2 * mdh.num_indices,
+		ResourceUsage::Static,
+		BufferUsage::IndexBuffer, 
+		nullptr);
 
-	mesh.submeshes.resize(num_submeshes);
-	for (auto i = 0u; i < num_submeshes; ++i) {
-		ar >> mesh.submeshes[i].startVertex
-			>> mesh.submeshes[i].startIndex
-			>> mesh.submeshes[i].numVertices
-			>> read16(mesh.submeshes[i].numIndices);
-		mesh.submeshes[i].primitiveType = PrimitiveType::Triangle;
+	mesh.dynamic_attribs = Stream::create(
+		BufferUsage::VertexBuffer, 
+		sizeof(DynamicVertex)*mdh.num_vertices,
+		3);
+
+	auto ptr = mesh.static_attribs->map_as<StaticVertex>();
+	mesh.base_pos.resize(mdh.num_vertices);
+	mesh.base_norm.resize(mdh.num_vertices);
+	mesh.base_tg.resize(mdh.num_vertices);
+	mesh.base_bitg.resize(mdh.num_vertices);
+	mesh.bone_ids.resize(mdh.num_vertices);
+	mesh.bone_weights.resize(mdh.num_vertices);
+	auto iptr = mesh.ibo->map_as<uint16_t>();
+
+	for (auto i = 0u; i < mdh.num_vertices; ++i)
+	{
+		auto &pp = mesh.base_pos[i];
+		auto &pn = mesh.base_norm[i];
+		auto &ptg = mesh.base_tg[i];
+		auto &pbitg = mesh.base_bitg[i];
+		ar >> pp.x >> pp.y >> pp.z
+			>> pn.x >> pn.y >> pn.z
+			>> ptg.x >> ptg.y >> ptg.z
+			>> pbitg.x >> pbitg.y >> pbitg.z
+			>> ptr[i].tex.x >> ptr[i].tex.y
+			>> mesh.bone_ids[i].x 
+			>> mesh.bone_ids[i].y
+			>> mesh.bone_ids[i].z
+			>> mesh.bone_ids[i].w
+			>> mesh.bone_weights[i].x
+			>> mesh.bone_weights[i].y
+			>> mesh.bone_weights[i].z
+			>> mesh.bone_weights[i].w;
+	}
+	for (auto i = 0u; i < mdh.num_indices; ++i) {
+		ar >> read16(iptr[i]);
 	}
 
-	if (layout == 1)
-	{
-		// OOPS
-		return nullptr;
-	}
-	else
-	{
-		mesh.static_attribs = Buffer::create(
-			sizeof(StaticVertex)*mesh.nbvertex, 
-			ResourceUsage::Static, 
-			BufferUsage::VertexBuffer, 
-			nullptr);
-
-		mesh.ibo = Buffer::create(
-			2 * mesh.nbindex, 
-			ResourceUsage::Static,
-			BufferUsage::IndexBuffer, 
-			nullptr);
-
-		mesh.dynamic_attribs = Stream::create(
-			BufferUsage::VertexBuffer, 
-			sizeof(DynamicVertex)*mesh.nbvertex, 
-			3);
-
-		auto ptr = mesh.static_attribs->map_as<StaticVertex>();
-		mesh.base_pos.resize(mesh.nbvertex);
-		mesh.base_norm.resize(mesh.nbvertex);
-		mesh.base_tg.resize(mesh.nbvertex);
-		mesh.base_bitg.resize(mesh.nbvertex);
-		mesh.bone_ids.resize(mesh.nbvertex);
-		mesh.bone_weights.resize(mesh.nbvertex);
-		auto iptr = mesh.ibo->map_as<uint16_t>();
-
-		for (auto i = 0u; i < mesh.nbvertex; ++i)
+	mesh.layout = InputLayout::create(2, 
 		{
-			auto &pp = mesh.base_pos[i];
-			auto &pn = mesh.base_norm[i];
-			auto &ptg = mesh.base_tg[i];
-			auto &pbitg = mesh.base_bitg[i];
-			ar >> pp.x >> pp.y >> pp.z
-				>> pn.x >> pn.y >> pn.z
-				>> ptg.x >> ptg.y >> ptg.z
-				>> pbitg.x >> pbitg.y >> pbitg.z
-				>> ptr[i].tex.x >> ptr[i].tex.y
-				>> mesh.bone_ids[i].x 
-				>> mesh.bone_ids[i].y
-				>> mesh.bone_ids[i].z
-				>> mesh.bone_ids[i].w
-				>> mesh.bone_weights[i].x
-				>> mesh.bone_weights[i].y
-				>> mesh.bone_weights[i].z
-				>> mesh.bone_weights[i].w;
-		}
-		for (auto i = 0u; i < mesh.nbindex; ++i) {
-			ar >> read16(iptr[i]);
-		}
+			Attribute{ ElementFormat::Float3, 0 },
+			Attribute{ ElementFormat::Float3, 0 },
+			Attribute{ ElementFormat::Float3, 0 },
+			Attribute{ ElementFormat::Float3, 0 },
+			Attribute{ ElementFormat::Float2, 1 },
+			Attribute{ ElementFormat::Uint8x4, 1 },
+			Attribute{ ElementFormat::Float4, 1 }
+		});
 
-		mesh.layout = InputLayout::create(2, 
-			{
-				Attribute{ ElementFormat::Float3, 0 },
-				Attribute{ ElementFormat::Float3, 0 },
-				Attribute{ ElementFormat::Float3, 0 },
-				Attribute{ ElementFormat::Float3, 0 },
-				Attribute{ ElementFormat::Float2, 1 },
-				Attribute{ ElementFormat::Uint8x4, 1 },
-				Attribute{ ElementFormat::Float4, 1 }
-			});
-
-		return pmesh;
-	}
+	return pmesh;
 }
 
 void SkinnedMesh::draw(

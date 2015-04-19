@@ -2,11 +2,9 @@
 #include <string>
 #include <transform.hpp>
 #include <log.hpp>
-#include <freecameracontrol.hpp>
 #include <entity.hpp>
 #include <AntTweakBar.h>
 #include <serialization.hpp>
-#include <animationclip.hpp>
 #include <scene.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
@@ -24,6 +22,7 @@
 #include <resources.hpp>
 #include <mesh.hpp>
 #include <terrain.hpp>
+#include <camera.hpp>
 
 class SkeletonDebug
 {
@@ -112,7 +111,7 @@ private:
 		glm::mat4 modelMatrix;
 	} envCubeParams;
 
-	Entity *cameraEntity;
+	std::unique_ptr<TrackballCameraControl> trackball;
 	Mesh::Ptr mesh;
 	Mesh *mokou = nullptr;
 	SkinnedMesh *mokou_skin = nullptr;
@@ -163,14 +162,13 @@ private:
 void RiftGame::init()
 {
 	resources = std::make_unique<Resources>();
-	// create the camera entity 
-	cameraEntity = Entity::create();
-	// create a camera object
-	auto camera = cameraEntity->addComponent<Camera>();
-	// center camera position
-	cameraEntity->getTransform().move(glm::vec3(0, 0, -1));
-	// add camera controller script
-	cameraEntity->addComponent<FreeCameraController>();
+	trackball = std::make_unique<TrackballCameraControl>(
+		Engine::instance().getWindow(),
+		glm::vec3{ 0.0f, 0.0f, -5.0f },
+		45.0f,
+		0.1,
+		1000.0,
+		0.01);
 
 	// Effect 
 	effect = gl4::Effect::loadFromFile("resources/shaders/default.glsl");
@@ -227,7 +225,7 @@ void RiftGame::init()
 		cubeIndices,
 		{ sm });
 
-	mokou = resources->meshes.load("resources/models/animated/mokou.mesh");
+	mokou = resources->meshes.load("resources/models/rock/crystal.mesh");
 	tex = resources->textures.load("resources/img/brick_wall.jpg");
 	envmap = resources->cubeMaps.load("resources/img/env/uffizi/env.dds");
 	envmap = resources->cubeMaps.load("resources/img/env/uffizi/env.dds");	// TEST
@@ -242,7 +240,7 @@ void RiftGame::init()
 	shadowRT = RenderTarget::create(win_size, {}, ElementFormat::Depth16);
 
 	font = Font::loadFromFile("resources/img/fonts/arno_pro.fnt");
-	hud = std::make_unique<HUDTextRenderer>();
+	//hud = std::make_unique<HUDTextRenderer>();
 
 	DepthStencilDesc ds_fx;
 	ds_fx.depthTestEnable = false;
@@ -251,19 +249,19 @@ void RiftGame::init()
 	screenRT2 = RenderTarget::create({ 1280, 720 }, { ElementFormat::Unorm8x4 }, ElementFormat::Depth24);
 
 	std::vector<BVHMapping> mappings;
-	std::ifstream bvh("resources/models/bvh/man_skeleton.bvh");
+	std::ifstream bvh("resources/models/animated/mokou_skeleton.bvh");
 	skel = Skeleton::loadFromBVH(bvh, mappings);
 
-	std::ifstream motion_file("resources/models/bvh/man_walk.bvh");
+	std::ifstream motion_file("resources/models/animated/mokou_run.bvh");
 	skel_debug = std::make_unique<SkeletonDebug>(*resources);
 	skel_animation = SkeletonAnimation::loadFromBVH(motion_file, *skel, mappings);
 	skel_anim_sampler = std::make_unique<SkeletonAnimationSampler>(*skel, skel_animation, 0.003f);
 	skel_anim_sampler->nextFrame();
 
-	terrain = std::make_unique<Terrain>(
+	/*terrain = std::make_unique<Terrain>(
 		Image::loadFromFile("resources/img/terrain/test_heightmap_2.dds"),
 		resources->textures.load("resources/img/mb_rocklface07_d.dds"),
-		resources->textures.load("resources/img/grasstile_c.dds"));
+		resources->textures.load("resources/img/grasstile_c.dds"));*/
 
 	// TEST 
 	mokou_skin = resources->skinnedMeshes.load("resources/models/animated/mokou.mesh");
@@ -276,6 +274,7 @@ void RiftGame::render(float dt)
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	glm::vec2 win_size_f = glm::vec2(win_size.x, win_size.y);
 	auto &R = Renderer::getInstance();
+	auto cam = trackball->updateCamera();
 
 	RenderQueue opaqueRenderQueue;
 	RenderQueue overlayRenderQueue;
@@ -286,11 +285,10 @@ void RiftGame::render(float dt)
 	context.defaultFont = font.get();
 
 	// update scene data buffer
-	auto cam = cameraEntity->getComponent<Camera>();
-	context.sceneData.eyePos = glm::vec4(cameraEntity->getTransform().position, 1.0f);
-	context.sceneData.projMatrix = cam->getProjectionMatrix();
-	context.sceneData.viewMatrix = cam->getViewMatrix();
-	context.sceneData.viewProjMatrix = context.sceneData.projMatrix * context.sceneData.viewMatrix;
+	context.sceneData.eyePos = glm::vec4(cam.wEye, 1.0f);
+	context.sceneData.projMatrix = cam.projMat;
+	context.sceneData.viewMatrix = cam.viewMat;
+	context.sceneData.viewProjMatrix = cam.projMat * cam.viewMat;
 	context.sceneData.viewportSize = win_size;
 	context.sceneData.lightDir = glm::vec4(0.f, 1.f, 0.f, 0.f);
 	cbSceneData->write(context.sceneData);
@@ -303,8 +301,8 @@ void RiftGame::render(float dt)
 
 	// update per-model buffer
 	spinAngle = fmodf(spinAngle + 0.1f*3.14159f*dt, 2 * 3.14159);
-	//perObjPBR.modelMatrix = glm::rotate(glm::mat4(1.0f), spinAngle, glm::vec3{ 0, 1, 0 });
-	perObjPBR.modelMatrix = glm::mat4();
+	perObjPBR.modelMatrix = glm::scale(glm::rotate(glm::mat4(1.0f), spinAngle, glm::vec3{ 0, 1, 0 }), glm::vec3(0.01f));
+	//perObjPBR.modelMatrix = glm::mat4();
 	perObjPBR.objectColor = glm::vec4(1.0f);
 	perObjPBR.eta = 1.40f;
 	cbPerObjPBR->write(perObjPBR);
@@ -326,7 +324,7 @@ void RiftGame::render(float dt)
 	skel_anim_sampler->nextFrame();
 	auto pose = skel_anim_sampler->getPose(*skel, glm::mat4(1.0));
 	skel_debug->drawSkeleton(*skel, *skel_anim_sampler, context);
-	mokou_skin->update(pose);
+	//mokou_skin->update(pose);
 
 	for (auto submesh = 0u; submesh < mokou->submeshes.size(); ++submesh)
 	{
@@ -335,7 +333,7 @@ void RiftGame::render(float dt)
 		opaqueRenderQueue.setUniformBuffers({ context.sceneDataCB, cbPerObjPBR->getDescriptor() });
 		opaqueRenderQueue.setTexture2D(0, *tex, SamplerDesc{});
 		opaqueRenderQueue.setTextureCubeMap(1, *envmap, SamplerDesc{});
-		mokou_skin->draw(opaqueRenderQueue, submesh);
+		mokou->draw(opaqueRenderQueue, submesh);
 	}
 
 	// render terrain
@@ -369,10 +367,10 @@ void RiftGame::render(float dt)
 	screen_rt.clearColor(0.2, 0.7, 0.2, 1.0);
 	screen_rt.clearDepth(1.0);
 	screen_rt.commit(tmp);
-	hud->renderText(*context.overlayRenderQueue, "Hello world!", *font, { 10.0, 10.0 }, win_size_f, Color::White, Color::Black);
+	/*hud->renderText(*context.overlayRenderQueue, "Hello world!", *font, { 10.0, 10.0 }, win_size_f, Color::White, Color::Black);
 	hud->renderText(*context.overlayRenderQueue, "Frame " + std::to_string(numFrames), *font, { 10.0, 50.0 }, win_size_f, Color::White, Color::Black);
-	hud->renderText(*context.overlayRenderQueue, "dt " + std::to_string(dt), *font, { 10.0, 90.0 }, win_size_f, Color::White, Color::Black);
-	hud->fence(*context.overlayRenderQueue);
+	hud->renderText(*context.overlayRenderQueue, "dt " + std::to_string(dt), *font, { 10.0, 90.0 }, win_size_f, Color::White, Color::Black);*/
+	//hud->fence(*context.overlayRenderQueue);
 	cbFxParams->fence(overlayRenderQueue);
 	screen_rt.commit(overlayRenderQueue);
 }
@@ -395,7 +393,6 @@ void RiftGame::update(float dt)
 void RiftGame::tearDown()
 {
 	TwDeleteAllBars();
-	Entity::destroy(cameraEntity);
 }
 
 int main()

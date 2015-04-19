@@ -36,6 +36,7 @@ namespace
 		if (!TwEventMouseWheelGLFW((int)xoffset)) {
 			// ...
 		}
+		Engine::instance().getWindow().setLastScrollOffset(xoffset, yoffset);
 	}
 
 	void GLFWKeyHandler(GLFWwindow *window, int key, int scancode, int action, int mods)

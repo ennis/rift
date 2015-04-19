@@ -154,13 +154,6 @@ enum class ResourceUsage
     Dynamic
 };
 
-struct VertexElement2
-{
-    unsigned int inputSlot;
-    unsigned int offset;
-    ElementFormat format;
-};
-
 struct Attribute
 {
 	ElementFormat format;

@@ -9,10 +9,10 @@ struct ContextOptions
 {
 	ContextOptions() = default;
 	
-	// OpenGL 4.3 core profile
+	// OpenGL 4.4 core profile
 	// Supported by GeForce 400 and later, Radeon HD 5000 and later (around 2010)
 	int glMajor = 4;
-	int glMinor = 3;
+	int glMinor = 4;
 	int numSamples = 0;
 	bool fullscreen = false;
 };
@@ -33,6 +33,17 @@ public:
 	void close();
 	void swapBuffers();
 	void setTitle(const char *title);
+	
+	// HACK
+	// TODO input manager
+	void setLastScrollOffset(double xoffset, double yoffset) 
+	{
+		scrollOffsetX += xoffset;
+		scrollOffsetY += yoffset;
+	}
+
+	double scrollOffsetX;
+	double scrollOffsetY;
 
 	glm::ivec2 size() {
 		int width, height;
