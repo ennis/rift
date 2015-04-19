@@ -2,7 +2,6 @@
 #include <string>
 #include <transform.hpp>
 #include <log.hpp>
-#include <entity.hpp>
 #include <AntTweakBar.h>
 #include <serialization.hpp>
 #include <scene.hpp>
