@@ -4,6 +4,10 @@
 #include <gl4/renderer.hpp>
 #include <hudtext.hpp>
 #include <font.hpp>
+#include <material.hpp>
+#include <mesh.hpp>
+#include <transform.hpp>
+
 
 // données partagées entre les shaders
 struct SceneData
@@ -12,6 +16,7 @@ struct SceneData
 	glm::mat4 projMatrix;
 	glm::mat4 viewProjMatrix;
 	glm::vec4 eyePos;	// in world space
+	// directional light
 	glm::vec4 lightDir;
 	glm::vec2 viewportSize;
 };
@@ -32,17 +37,12 @@ struct SceneRenderContext
 	BufferDesc sceneDataCB;
 };
 
-class SceneRenderer
+// un objet de la scène
+struct SceneObject
 {
-public:
-	// render: Mesh (VB/IB/layout/draw command) + Effect + EffectParameters 
-	// SceneRenderer::doRender()
-	//		iterate over all Renderables (component SceneRenderCache)
-	//		call renderable->render(RenderQueue)
-	//		
-private:
-
+	Mesh *mesh;
+	Material material;
+	Transform modelToWorld;
 };
 
- 
 #endif /* end of include guard: SCENE_HPP */

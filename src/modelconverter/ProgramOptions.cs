@@ -13,6 +13,9 @@ namespace modelconverter
         [ValueList(typeof(List<string>))]
         public List<string> InputFiles { get; set; }
 
+        [Option('s', "scene-file", Required=false, HelpText = "Convert scene file.")]
+        public bool ConvertSceneFile {get; set;}
+
         [Option('o', "output-dir", Required = false, HelpText = "Output directory.")]
         public string OutputDirectory { get; set; }
 
