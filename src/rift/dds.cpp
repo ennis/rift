@@ -592,28 +592,28 @@ void Image::loadDDS(std::istream &streamIn)
 		streamIn.read((char*)&header10, sizeof(header10));
 		hasDX10Header = true;
 	}
-	mFormat = ElementFormat::Max;
+	format = ElementFormat::Max;
 	if (header.format.fourCC == D3DFMT_DX10) {
 		// pixel format from DXGI format
 		LOG << "DDS: DX10";
-		mFormat = DXGIToPixelFormat(header10.format);
+		format = DXGIToPixelFormat(header10.format);
 	}
 	else if(header.format.flags & DDPF_FOURCC) {
 		// pixel format from fourCC
 		LOG << "DDS: FOURCC";
-		mFormat = FourCCToPixelFormat(header.flags, header.format.fourCC);
+		format = FourCCToPixelFormat(header.flags, header.format.fourCC);
 	}
 	else if(header.format.flags & DDPF_RGB) {
 		LOG << "DDS: RGB desc";
 		// TODO pixel format from RGB descriptor
 	}
 	// verify that the format is supported
-	assert(mFormat != ElementFormat::Max);
-	LOG << "DDS: format = " << getElementFormatName(mFormat);
+	assert(format != ElementFormat::Max);
+	LOG << "DDS: format = " << getElementFormatName(format);
 	glm::ivec2 mainSize;
 	mainSize.x = header.width;
 	mainSize.y = header.height;
-	mNumMipLevels = (header.mipMapLevels == 0) ? 1 : header.mipMapLevels;
+	numMipLevels = (header.mipMapLevels == 0) ? 1 : header.mipMapLevels;
 	if (hasDX10Header) {
 		if (header10.arraySize > 1) {
 			LOG << "DDS: DX10 texture array";
@@ -624,25 +624,27 @@ void Image::loadDDS(std::istream &streamIn)
 		isCubemap = true;
 		LOG << "DDS: texture is cube map";
 		// TODO
-		mNumFaces = 1;
+		numFaces = 6;
 	} else {
-		mNumFaces = 1;
+		numFaces = 1;
 	}
 	// TODO cube maps
 	// calculate total data size
 	std::size_t dataSize = 0;
-	int cw = mainSize.x;
-	int ch = mainSize.y;
-	int iFace = 0;
-	for (unsigned int iMip = 0; iMip < mNumMipLevels; iMip++) {
-		int nBytes = DDSMipSize(mFormat, cw, ch);
-		LOG << "DDS: mip " << iMip << " " << cw << 'x' << ch << " nBytes = " << nBytes;
-		mSubimages.push_back(Subimage{ dataSize, nBytes, glm::ivec2(cw, ch) });
-		dataSize += nBytes;
-		cw /= 2;
-		ch /= 2;
+	subimages.resize(numMipLevels);
+	for (auto iface = 0u; iface < numFaces; ++iface) {
+		int cw = mainSize.x;
+		int ch = mainSize.y;
+		for (auto imip = 0u; imip < numMipLevels; imip++) {
+			int nBytes = DDSMipSize(format, cw, ch);
+			LOG << "DDS: face " << iface << " mip " << imip << " " << cw << 'x' << ch << " nBytes = " << nBytes;
+			subimages[imip].push_back(Subimage{ dataSize, nBytes, glm::ivec2(cw, ch) });
+			dataSize += nBytes;
+			cw /= 2;
+			ch /= 2;
+		}
 	}
 	// load data
-	mData.resize(dataSize);
-	streamIn.read(reinterpret_cast<char*>(mData.data()), dataSize);
+	data.resize(dataSize);
+	streamIn.read(reinterpret_cast<char*>(data.data()), dataSize);
 }

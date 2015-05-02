@@ -25,7 +25,7 @@
 #include <vector>
 #include <initializer_list>
 
-namespace std {
+namespace util {
 
 /// An \c array_ref<T> represents an immutable array of \c size()
 /// elements of type T.  The storage for the array is *not* owned by
@@ -107,7 +107,7 @@ class array_ref {
 
   /// \todo Arguably, this conversion should be a std::vector
   /// conversion operator.
-  array_ref(const vector<T>& v)
+  array_ref(const std::vector<T>& v)
       : ptr_(v.data()), length_(v.size()) { }
 
   template<size_t N>
@@ -190,21 +190,21 @@ class array_ref {
 
   /// \todo Arguably, this conversion should be a std::vector
   /// constructor.
-  explicit operator vector<T>() const {
-    return vector<T>(begin(), end());
+  explicit operator std::vector<T>() const {
+	  return std::vector<T>(begin(), end());
   }
-  vector<T> vec() const {
-    return vector<T>(*this);
+  std::vector<T> vec() const {
+	  return std::vector<T>(*this);
   }
 
   /// \todo Arguably, this conversion should be a std::basic_string
   /// constructor.
   template<typename traits, typename Allocator>
-  explicit operator basic_string<T, traits, Allocator>() const {
-    return basic_string<T, traits, Allocator>(begin(), end());
+  explicit operator std::basic_string<T, traits, Allocator>() const {
+	  return std::basic_string<T, traits, Allocator>(begin(), end());
   }
-  basic_string<T> str() const {
-    return basic_string<T>(*this);
+  std::basic_string<T> str() const {
+	  return std::basic_string<T>(*this);
   }
 
   /// @}
@@ -246,7 +246,7 @@ class array_ref {
 };
 
 /// \name deducing constructor wrappers
-/// \relates std::array_ref
+/// \relates util::array_ref
 /// \xmlonly <nonmember/> \endxmlonly
 ///
 /// These functions do the same thing as the constructor with the same
@@ -265,7 +265,7 @@ template<typename T, size_t N>
 }
 
 template<typename T>
-array_ref<T> make_array_ref(const vector<T>& v) {
+array_ref<T> make_array_ref(const std::vector<T>& v) {
 	return array_ref<T>(v);
 }
 

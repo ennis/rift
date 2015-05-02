@@ -4,72 +4,48 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <vector>
 
-enum LogCategory
+namespace Logging
 {
-	LC_Game,
-	LC_Renderer,
-	LC_Unspecified
-};
-
-enum LogSeverity
-{
-	LS_Error,
-	LS_Warning,
-	LS_Info,
-	LS_Debug,
-	LS_Trace,
-	LS_Unspecified
-};
-
-class LogMessage;
-
-void logSendMessage(LogMessage const &message);
-void logInit(const char *logFile);
-
-class Logger
-{
-public:
-	~Logger();
-	void init(const char *logFile);
-	void sendMessage(LogMessage const &message);
-
-private:
-	static const char *getSeverityString(LogSeverity severity);
-
-#ifdef CONFIG_LOG_TO_FILE
-	std::ofstream outFileStream;
-#endif
-};
-
-class LogMessage
-{
-public:
-	friend class Logger;
-
-	LogMessage(LogSeverity severity_, const char *function_, const char *file_, int line_) : category(LC_Unspecified), function(function_), severity(severity_), file(file_), line(line_)
-	{}
-
-	~LogMessage() 
+	enum class Severity
 	{
-		logSendMessage(*this);
-	}
+		Error,
+		Warning,
+		Info
+	};
 
-	template <typename T>
-	LogMessage &operator<<(T const& t) 
+	struct Message;
+
+	void outputMessage(Message const &message);
+	void screenMessage(std::string message);
+	std::vector<std::string> clearScreenMessages();
+
+	struct Message
 	{
-		message << t;
-		return *this;
-	}
+	public:
+		Message(Severity severity_, const char *function_, const char *file_, int line_) : function(function_), severity(severity_), file(file_), line(line_)
+		{}
 
-private:
-	std::stringstream message;
-	const char *function;
-	const char *file;
-	int line;
-	LogCategory category;
-	LogSeverity severity;
-};
+		~Message()
+		{
+			outputMessage(*this);
+		}
+
+		template <typename T>
+		Message &operator<<(T const& t)
+		{
+			message << t;
+			return *this;
+		}
+
+		std::stringstream message;
+		const char *function;
+		const char *file;
+		int line;
+		Severity severity;
+	};
+}
 
 #ifdef _MSC_VER 
 // MSVC isn't YET fully c++11 compliant.
@@ -78,8 +54,8 @@ private:
 
 #undef ERROR
 #undef WARNING
-#define LOG LogMessage(LS_Debug, __func__, __FILE__, __LINE__)
-#define ERROR LogMessage(LS_Error, __func__, __FILE__, __LINE__)
-#define WARNING LogMessage(LS_Warning, __func__, __FILE__, __LINE__)
+#define LOG Logging::Message(Logging::Severity::Info, __func__, __FILE__, __LINE__)
+#define ERROR Logging::Message(Logging::Severity::Error, __func__, __FILE__, __LINE__)
+#define WARNING Logging::Message(Logging::Severity::Warning, __func__, __FILE__, __LINE__)
 
 #endif

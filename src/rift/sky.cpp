@@ -1,6 +1,16 @@
 #include <sky.hpp>
+#include <gl4/effect.hpp>
 
-Sky::Sky(Renderer &renderer, Buffer *cbSceneData) 
+namespace
+{
+	struct SkyParams
+	{
+		glm::vec3 sunDirection;
+		glm::vec3 sunColor;
+	};
+}
+
+Sky::Sky()
 {
 	static const float skycubeVertices[] = {
 		-10.0f, 10.0f, -10.0f,
@@ -46,26 +56,19 @@ Sky::Sky(Renderer &renderer, Buffer *cbSceneData)
 		10.0f, -10.0f, 10.0f
 	};
 
-	skyEffect = Effect("resources/shaders/sky.glsl");
-	skyShader = skyEffect.compileShader(renderer, {});
-	params = ConstantValue<SkyParams>(*skyShader, "CBSkyParams");
-	sceneParams = ConstantBuffer(*skyShader, "SceneData", cbSceneData);
+	auto effect = gl4::Effect::loadFromFile("resources/shaders/sky.glsl");
+	skyShader = effect->compileShader();
 
-	Mesh::Attribute attribs[] = { { 0, ElementFormat::Float3 } };
-	Mesh::BufferDesc buffers[] = { { ResourceUsage::Static } };
-	const void *init[] = { skycubeVertices };
-	skybox = Mesh(PrimitiveType::Triangle, attribs, buffers, 36, init, 0, ElementFormat::Max, ResourceUsage::Static, nullptr);
-
-	renderer.setShader(skyShader);
-	params.bind(renderer);
-	sceneParams.bind(renderer);
-	skybox.draw(renderer);
-	submission = renderer.createSubmission();
+	skybox = Mesh::create(
+		{ Attribute{ ElementFormat::Float3 } },
+		36, 
+		skycubeVertices, 
+		0, 
+		nullptr,
+		{ Submesh{PrimitiveType::Triangle, 0, 0, 36, 0} }
+	);
 }
 
-Sky::~Sky()
-{
-}
 
 void Sky::setTimeOfDay(float hour)
 {
@@ -73,16 +76,19 @@ void Sky::setTimeOfDay(float hour)
 }
 
 void Sky::render(
-	RenderQueue &rq, 
-	const SceneData &sceneData
+	SceneRenderContext &context
 	)
 {
 	using namespace glm;
 	float sunAngle = timeOfDay / 24.0f * 2 * 3.14159f;
-	vec3 sunDirection = vec3(cosf(sunAngle), sinf(sunAngle), 0);
-	vec3 sunColor = vec3(1.0f, 1.0f, 1.0f);
+	auto &paramsCB = Renderer::allocTransientBuffer(BufferUsage::ConstantBuffer, sizeof(SkyParams));
+	auto params = paramsCB.map_as<SkyParams>();
+	params->sunDirection = vec3(cosf(sunAngle), sinf(sunAngle), 0);
+	params->sunColor = vec3(1.0f, 1.0f, 1.0f);
 
-	params.update({ sunDirection, sunColor });
-	rq.submit(submission, 0);
+	auto cmdBuf = *context.opaqueList;
+	cmdBuf.setConstantBuffers({ context.sceneDataCB, &paramsCB });
+	cmdBuf.setShader(skyShader.get());
+	skybox->draw(cmdBuf, 0);
 }
 

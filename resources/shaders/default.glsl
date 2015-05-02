@@ -5,10 +5,13 @@
 #pragma include <scene.glsl>
 
 // tous les paramètres doivent être placés dans des uniform buffers
-layout(std140) uniform PerObject {
+layout(std140, binding = 1) uniform PerObject {
 	mat4 modelMatrix;
 	vec4 color;
-} perObj;
+};
+
+// sauf les paramètres de texture
+layout (binding = 0) uniform sampler2D diffuse;
 
 //=============================================================
 // La macro _VERTEX_ est définie par le code qui va charger le shader (classe Effect)
@@ -31,8 +34,8 @@ out vec2 fTexcoord;
 //--- CODE ---------------------------
 void main() 
 {
-	vec4 modelPos = perObj.modelMatrix * vec4(position, 1.f);
-	gl_Position = gRenderData.viewProjMatrix * modelPos;
+	vec4 modelPos = modelMatrix * vec4(position, 1.f);
+	gl_Position = viewProjMatrix * modelPos;
 	fPosition = modelPos.xyz;
 	fNormal = normal;
 	fTexcoord = texcoord;
@@ -57,7 +60,7 @@ const vec4 vertColor = vec4(0.9f, 0.9f, 0.1f, 1.0f);
 
 void main()
 {
-	oColor = perObj.color;
+	oColor = texture(diffuse, fPosition.xy);
 }
 
 #endif

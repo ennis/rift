@@ -1,38 +1,36 @@
 #ifndef SKY_HPP
 #define SKY_HPP
 
-#include <renderer2.hpp>
+#include <gl4/renderer.hpp>
 #include <scene.hpp>
-#include <effect.hpp>
 #include <mesh.hpp>
-#include <uniform.hpp>
-#include <renderqueue.hpp>
 
 class Sky
 {
 public:
-	Sky(Renderer &renderer, Buffer *cbSceneData);
-	~Sky();
+	Sky();
+
+	// VS2013
+	Sky(Sky &&rhs) : 
+		timeOfDay(rhs.timeOfDay), 
+		skyShader(std::move(rhs.skyShader)),
+		skybox(std::move(rhs.skybox))
+	{}
+	Sky &operator=(Sky &&rhs) {
+		timeOfDay = rhs.timeOfDay;
+		skyShader = std::move(rhs.skyShader);
+		skybox = std::move(rhs.skybox);
+		return *this;
+	}
+	// -VS2013
 
 	void setTimeOfDay(float hour);
-	void render(RenderQueue &rq, const SceneData &sceneData);
+	void render(SceneRenderContext &context);
 
 private:
-	struct SkyParams
-	{
-		glm::vec3 sunDirection;
-		glm::vec3 color;
-	};
-
-	int submission;
 	float timeOfDay;
-	Effect skyEffect;
-	Shader *skyShader;
-	
-	ConstantValue<SkyParams> params;
-	ConstantBuffer sceneParams;
-	
-	Mesh skybox;
+	Shader::Ptr skyShader;
+	Mesh::Ptr skybox;
 };
 
 #endif

@@ -2,24 +2,39 @@
 
 #pragma include <scene.glsl>
 
+//#pragma sampler 0 AddrU:Repeat AddrV:Repeat MinFilter:...
 layout(binding = 0) uniform sampler2D heightmap;
+//#pragma sampler 1 AddrU:Repeat AddrV:Repeat MinFilter:...
 layout(binding = 1) uniform sampler2D normalMap;
+//#pragma sampler 2 AddrU:Repeat AddrV:Repeat MinFilter:...
 layout(binding = 2) uniform sampler2D slopeTex;
+//#pragma sampler 3 AddrU:Repeat AddrV:Repeat MinFilter:...
 layout(binding = 3) uniform sampler2D flatTex;
-uniform mat4 modelMatrix;
-// position of the grid in world space (in meters)
-uniform vec2 patchOffset;
-// size of the grid (in meters, scale)
-uniform float patchScale;
-// size of the heightmap in pixels
-uniform vec2 heightmapSize;
-// heightmap vertical scale in meters/unit
-uniform float heightmapScale;
-// LOD level
-uniform int lodLevel;
-// texture scale
-uniform float flatTextureScale;
-uniform float slopeTextureScale;
+
+// constant
+layout(std140, binding = 1) uniform TerrainUniforms
+{
+	mat4 modelMatrix;
+	// size of the heightmap in pixels
+	vec2 heightmapSize;
+	// heightmap vertical scale in meters/unit
+	float heightmapScale;
+	// texture scale
+	float flatTextureScale;
+	float slopeTextureScale;
+};
+
+// per-patch update
+layout(std140, binding = 2) uniform TerrainPatchUniforms
+{
+	// position of the grid in world space (in meters)
+	vec2 patchOffset;
+	// size of the grid (in meters, scale)
+	float patchScale;
+	// LOD level
+	int lodLevel;
+};
+
 
 //===================================================================
 #ifdef _VERTEX_
@@ -73,7 +88,7 @@ void main()
 	// model space 3D position
 	vec4 disp = vec4(pos.x, sampleHeight(pos), pos.y, 1.f);
     // position in clip space
-    gl_Position = gRenderData.viewProjMatrix * modelMatrix * disp;
+    gl_Position = viewProjMatrix * modelMatrix * disp;
 
     // world-space position
     fPosition = (modelMatrix * disp).xyz;
@@ -147,6 +162,7 @@ void main()
 				1, 
 				1);
 	//oColor = vec4(slope, slope, slope, 1.0f);
+	oColor = lodColorMap[lodLevel];
 }
 
 #endif

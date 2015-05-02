@@ -1,10 +1,10 @@
+#include <map>
+
 #include <engine.hpp>
 #include <log.hpp>
 #include <clock.hpp>
-#include <entity.hpp>
-#include <gl_common.hpp>
 #include <game.hpp>
-#include <map>
+#include <gl4/renderer.hpp>
 
 Engine *Engine::gEngine = nullptr;
 
@@ -35,6 +35,7 @@ namespace
 		if (!TwEventMouseWheelGLFW((int)xoffset)) {
 			// ...
 		}
+		Engine::instance().getWindow().setLastScrollOffset(xoffset, yoffset);
 	}
 
 	void GLFWKeyHandler(GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -61,6 +62,7 @@ mWindow(window)
 
 void Engine::init()
 {
+	// TODO obviously, this should be in the backend
 	// init glLoadGen
 	if (!gl::sys::LoadFunctions()) {
 		// TODO better error message
@@ -70,7 +72,7 @@ void Engine::init()
 	LOG << "OpenGL version: " << gl::GetString(gl::VERSION);
 	LOG << "GLSL version: " << gl::GetString(gl::SHADING_LANGUAGE_VERSION);
 
-	mRenderer = std::make_unique<Renderer>(mWindow);
+	Renderer::initialize();
 	
 	// init anttweakbar
 	TwInit(TW_OPENGL_CORE, NULL);
@@ -106,12 +108,10 @@ void Engine::mainLoop()
 			duration<float> frame = duration_cast<nanoseconds>(tf - tb);
 			tb = tf;
 			float dt = frame.count();
+			Renderer::beginFrame();
 			mGame->render(dt);
-			// update all entities
-			for (auto &&ent : Entity::getList()) {
-				ent.update(dt);
-			}
 			mGame->update(dt);
+			Renderer::endFrame();
 			mWindow.swapBuffers();
 			mWindow.pollEvents();
 		}

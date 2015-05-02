@@ -1,112 +1,103 @@
-#ifndef Mesh_HPP
-#define Mesh_HPP
+#ifndef MESH_HPP
+#define MESH_HPP
 
-#include <renderer2.hpp>
-#include <array>
-#include <array_ref.hpp>
+#include <gl4/renderer.hpp>
+#include <serialization.hpp>
 
 class Mesh
 {
 public:
-	struct Attribute {
-		unsigned int inputSlot;
-		ElementFormat elementFormat;
-	};
+	using Ptr = std::unique_ptr < Mesh > ;
 
-	struct BufferDesc {
-		ResourceUsage usage;
-	};
+	Mesh(util::array_ref<Attribute> layout,
+		int numVertices,
+		const void *vertexData,
+		int numIndices,
+		const void *indexData,
+		util::array_ref<Submesh> submeshes);
 
 	Mesh() = default;
-	Mesh(
-		PrimitiveType primitiveType,
-		std::array_ref<Mesh::Attribute> attributes,
-		std::array_ref<Mesh::BufferDesc> buffers,
-		unsigned int numVertices,
-		const void *initialVertices[],
-		unsigned int numIndices,
-		ElementFormat indexFormat,
-		ResourceUsage indexUsage,
-		const void *initialIndices);
 
-	Mesh(Mesh const &rhs) = delete;
-	Mesh(Mesh &&rhs);
-	~Mesh();
-	Mesh &operator=(Mesh &&rhs);
-
-	void allocate(
-		PrimitiveType primitiveType,
-		std::array_ref<Mesh::Attribute> attributes,
-		std::array_ref<Mesh::BufferDesc> buffers,
-		unsigned int numVertices,
-		const void *initialVertices[],
-		unsigned int numIndices,
-		ElementFormat indexFormat,
-		ResourceUsage indexUsage,
-		const void *initialIndices);
-
-	void update(
-		unsigned int buffer,
-		unsigned int startVertex,
-		unsigned int numVertices, 
-		const void *data);
-
-	void updateIndices(
-		unsigned int indexOffset, 
-		unsigned int numVertices,
-		const void *data);
-
-	std::array_ref<Buffer> getVertexBuffers() const {
-		return mVertexBuffers;
-	}
-	const Buffer &getIndexBuffer() const {
-		return mIndexBuffer;
-	}
-	const VertexLayout &getVertexLayout() const {
-		return mVertexLayout;
-	}
-	PrimitiveType getPrimitiveType() const {
-		return mPrimitiveType;
+	static Ptr create(
+		util::array_ref<Attribute> layout,
+		int numVertices,
+		const void *vertexData,
+		int numIndices,
+		const void *indexData,
+		util::array_ref<Submesh> submeshes)
+	{
+		return std::make_unique<Mesh>(
+			layout, 
+			numVertices, 
+			vertexData, 
+			numIndices, 
+			indexData, 
+			submeshes);
 	}
 
-	void draw(
-		Renderer &renderer
-		) const;
+	void draw(CommandBuffer &commandBuffer, unsigned submesh);
+	void drawInstanced(CommandBuffer &commandBuffer, unsigned submesh, unsigned baseInstance, unsigned numInstances);
 
-	void drawPart(
-		Renderer &renderer,
-		unsigned int baseVertex,
-		unsigned int numVertices
-		) const;
+	static Ptr loadFromArchive(serialization::IArchive &ar);
 
-	void drawPart(
-		Renderer &renderer,
-		unsigned int baseVertex,
-		unsigned int indexOffset,
-		unsigned int numIndices
-		) const;
-
-	unsigned int getNumVertices() const {
-		return mNumVertices;
-	}
-
-	unsigned int getNumIndices() const {
-		return mNumIndices;
-	}
-
-private:
-	void prepareDraw(Renderer &renderer) const;
-
-	std::vector<Buffer> mVertexBuffers;	
-	Buffer mIndexBuffer;	
-	VertexLayout mVertexLayout;	
-	PrimitiveType mPrimitiveType;
-	std::array<unsigned int, 16> mStrides;
-	unsigned int mIndexStride = 0;
-	unsigned int mNumBuffers = 0;
-	unsigned int mNumVertices = 0;
-	unsigned int mNumIndices = 0;
+	InputLayout::Ptr layout;
+	Buffer::Ptr vbo;
+	Buffer::Ptr ibo;
+	unsigned nbvertex;
+	unsigned nbindex;
+	unsigned stride;
+	GLenum index_format;
+	std::vector<Submesh> submeshes;
 };
 
+
+/*class SkinnedMesh
+{
+public:
+	using Ptr = std::unique_ptr < SkinnedMesh >;
+
+	SkinnedMesh() = default;
+	void update(util::array_ref<glm::mat4> pose);
+	void draw(RenderQueue &renderQueue, unsigned submesh);
+	void drawInstanced(RenderQueue &renderQueue, unsigned submesh, unsigned baseInstance, unsigned numInstances);
+	static Ptr loadFromArchive(serialization::IArchive &ar);
+
+private:
+	// part of the vertex that does not change
+	struct StaticVertex
+	{
+		glm::vec2 tex;
+	};
+
+	// vertex data updated on each frame
+	struct DynamicVertex
+	{
+		glm::vec3 pos;
+		glm::vec3 norm;
+		glm::vec3 tg;
+		glm::vec3 bitg;
+	};
+
+	// positions (updated each frame)
+	// TODO update normals...
+	std::vector<glm::vec3> base_pos;
+	std::vector<glm::vec3> base_norm;
+	std::vector<glm::vec3> base_tg;
+	std::vector<glm::vec3> base_bitg;
+	std::vector<glm::u8vec4> bone_ids;
+	std::vector<glm::vec4> bone_weights;
+	InputLayout::Ptr layout;
+	Stream::Ptr dynamic_attribs;
+	// other attributes (static)
+	Buffer::Ptr static_attribs;	
+	Buffer::Ptr ibo;
+	unsigned nbvertex;
+	unsigned nbindex;
+	unsigned stride;
+	GLenum index_format;
+	std::vector<Submesh> submeshes;
+
+};*/
+
  
-#endif /* end of include guard: Mesh_HPP */
+#endif /* end of include guard: MESH_HPP */

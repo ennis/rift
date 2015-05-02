@@ -15,7 +15,9 @@ Window::Window(
 	unsigned int width, 
 	unsigned int height, 
 	ContextOptions const &options) : 
-	mOptions(options)
+	mOptions(options),
+	scrollOffsetX(0.0),
+    scrollOffsetY(0.0)
 {
 	glfwSetErrorCallback(errorCallback);
 	if (!glfwInit()) {
@@ -39,7 +41,7 @@ Window::Window(
 
 bool Window::shouldClose()
 {
-	return glfwWindowShouldClose(mHandle);
+	return !!glfwWindowShouldClose(mHandle);
 }
 
 void Window::pollEvents()

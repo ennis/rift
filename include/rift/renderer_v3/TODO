@@ -1,0 +1,1170 @@
+
+
+=============================================================
+What renderer abstraction?
+
+- Exemple: deferred shading
+	. Requires:
+		- multiple render targets
+		- render textures
+		- deferred shaders
+	Where to split?
+
+- Exemple: The terrain rendering code should not be backend-specific
+	However, it needs:
+		- a specific vertex/pixel shader
+		- specific shader parameters 
+		???
+	Bind pipeline state (shaders, renderstate) into opaque 'effects'
+	Effects are stored in material files
+
+**For now** put everything in the backend
+	- refactor to only one interface
+	- terrain
+	- billboards, 2D sprites
+	- immediate drawing
+	- mesh creation/loading
+	- animation (try to extract skinning code, however)
+	- material loading
+	- resource management (maybe put it in the base class as non-virtual methods)
+
+
+ID -> Transform
+ID -> CRenderResource* (base class)
+
+
+// Two-step creation
+
+// Create mesh resource (or model)
+mesh = renderer.createMesh(...)
+// Bind resource to entity (create render node in scene graph)
+renderer.addNode(id, mesh)
+OR
+id.addComponent<RenderNode>(new RenderNode(mesh))
+
+when an entity is deleted:
+	- hasComponent->bitmask
+	- for each table (bitfield??):
+		- remove component
+			call component destructor callback (if any)
+
+Exemple: bullet deleted:
+	for each set bit in entity bitfield
+		remove component in corresponding table (where is the table?)
+			call destructor callback
+				visual node destructor callback
+					resource->release()
+
+Where are the tables?
+	Registered by the systems
+	world.setDestructorCallback(componentId, callback)
+
+componentids.h
+
+
+ComponentTable<T>:
+	- removeCallback(...)
+
+// in main loop
+renderer.render()
+
+Render node (component): 
+	- pointer to transform
+	- pointer to resource
+	** no ID -> resource table?
+
+
+class Bullet
+{
+public:
+
+	void start()
+	{
+		mesh = renderer.loadMesh(...);
+		texture = renderer.loadTexture(...);
+		material = renderer.createMaterial(texture);
+		addT
+	}
+
+private:
+	Transform *transform;
+	CMesh *bulletMesh;
+	CTexture2D *bulletTexture;
+	CMaterial *bulletMaterial;
+	CRenderNode *renderNode;
+	GameObject id;
+};
+
+mesh = renderer.createMesh
+node = renderer.addNode(ID, mesh)
+
+Component coupling (examples: render system needs transform, script needs transform, render node, physics, etc.)
+	- each component has a reference to its requirements
+		+ fast access when iterating through a component table
+		- a lot of reference data in components (pointers...)
+		- poor locality of reference, depending on the access patterns
+		-? strong coupling?
+	- each component has a copy of its required data 
+		(example: render system has a copy of the transform matrix)
+		- needs synchronisation through messaging
+		- data duplication
+		+ good locality of reference
+
+
+	Design 1 
+	*** references to other components are recalculated on every access (every time step)
+		- cost of table lookup
+		? no code in components, only systems
+		+ minimal data 
+		+ flexibility
+		+ can dynamically add new components (in an editor, for example)
+
+	Design 2
+	*** no central component database: 'archetype' class that store all required data (ex: Bullet, Player)
+		- updates initiated by the class (Bullet.update)
+		- components can be stored by value
+		- pass pointers to coupled components when updating a component (explicit dependencies)
+		 	(ex: Physics.update(&transform))
+		- class must manage deletion of components (if they need to be deleted)
+		- minimal data
+		- SoA pattern: can be optimized to AoS by allocating components in a pool, depending on what's best for the archetype
+		- less flexibility: no concept of entity ID (not necessarily true), **cannot** dynamically add new components, no genericity when handling entities (tight coupling in archetype class)
+			=> less data driven
+			=> components **cannot** be moved in memory
+		- archetype = coordinator between components: logic
+
+	Design 3
+		- Entity 'god' class with integrated: 
+			- transformation
+			- pointer to render node
+			- physics data
+			- list of behavior nodes
+			- flags
+		- strong coupling
+
+		- Entity
+			+setVisual(Renderable*)
+				-set visual and register entity in the scene graph
+			+getVisual(): Renderable*
+			+getTransform(): Transform&
+			+setRotation()
+			+setPosition()
+			+setScale()
+			+setPhysics(Physics*)
+			+addChild()
+			+setName()
+			+getName()
+			+getFlags()
+			+setFlags()
+
+			Entity::getEntitiesWithTag
+
+		Entity = Transform + flags + tags + (Optional: visual) + (Optional: physics)
+		All other functionality is external
+		Example:
+
+		struct Bullet
+		{
+			Entity *mEntity;
+
+			float bulletSpeed;
+			float power;
+			int onFire;
+
+			void update(float dt) {
+				...
+			}
+		}
+
+Example: FollowBehavior
+	Design 2
+	- target(Transform* targetTransformComponent, float followDist)
+	- update(Transform* transformComponent)
+
+	Design 1
+	followBehavior.target = gameobject;
+
+	for each gameobject, followbehavior
+		transform = gameobject.getComponent(CID_TRANSFORM)
+		targetTransform = followBehavior.target.getComponent(CID_TRANSFORM)
+		(update target transform)
+
+Design 2 OK at first
+Design 1 necessary for a larger project => data-oriented design (logic in scripts, etc.)
+
+Exemple: trees
+- generated by the terrain manager???
+- custom effect
+- custom script to manage LOD transitions
+- physics collider (only when close)
+
+
+CTerrain
+	- create a terrain entity (collider)
+	- create trees (mesh + collider + LOD script)
+	-> CTerrainRenderer
+		renders the terrain surface (geoclipmapping)
+	-> CTreeRenderer
+		render trees with LOD on the terrain
+
+CImageEffect
+	CBlurImageEffect
+
+// Resources
+CMesh
+CAnimatedMesh
+CMaterial
+CTexture2D
+CTexture3D
+CTextureCubeMap
+
+// Render components
+CSky
+CSkybox
+CParticleSystem
+CLODGroup
+CCamera
+CBillboard
+CTerrain
+	- grass & trees (with LOD)
+	- wind settings
+CRenderNode (or CMeshRenderer, formerly CModel)
+	- mesh ref
+	- materials (array - refs)
+CAnimatedRenderNode
+	- mesh 
+	- anim state
+CGrassLOD
+CTreeLOD
+
+
+CPhysicsMaterial
+CCapsuleCollider
+	- bShow
+CSphereCollider
+
+Raycast module
+Terrain generator module
+
+
+Issue: collider component
+- needs to be aware of other colliders
+- collider.collide(&transform, ???)	// must pass a list of all colliders AND their transform, but they are contained in different types
+=> Design 1?
+- solution: pointer to transform in collider, list of colliders in collision system
+
+How to check if an object is of a certain type?
+- entity flags?
+
+Prefabs cannot be extended dynamically
+- exemple: trees generated by the terrain system?
+
+Exemple: special behavior if a player collides with a tree
+
+onCollide(GameObject with)
+{
+	if (with.hasComponent(CID_TREE)) {
+		// do something
+	}
+}
+
+GameObject queries:
+	children
+	all GOs with a specific tag (TAG_TREE, TAG_ENEMY, ...)
+
+Where to store the tables?
+=> centralized database (pure data), with 'triggers'
+=> in systems
+
+
+Who creates the components?
+- systems: a specific interface for each system
+	+ systems store their components as they like
+	- must have a system for all components (transform, etc.)
+	- consistency
+	- manual component deletion required
+
+- systems: one common interface (template base class?)
+
+- centralized tables (world): separate systems
+	+ IMO, cleanest solution (separation between code and data)
+	+ less duplicated code for managing tables
+	* systems are not in control of the data
+	* behaviors should be different
+	- optimized allocation impossible (custom pool parameters?)
+	- how many tables to allocate?
+	- how to compute component ID? 
+
+Entity-component or attribute-behavior?
+
+attribute-behavior for everything:
+- MeshRenderer: Behavior
+	responds to OnRender events
+	has a reference to a mesh and a list of materials
+- Transform: Attribute
+- Physics: Behavior
+	responds to OnUpdate events
+	updates transform
+** Not universal: see collision system
+	can be optimized (move logic at a higher level)
+
+- centralized tables (world): registered systems 
+
+world.addSystem()
+
+CRendererBase
+	- loadTexture2D(key)
+	- loadTextureCubeMap(key)
+	- loadMesh(key)
+	- loadModel(key)
+	- loadMaterial(key)
+	- initialize()
+	
+	- createTexture2DFromFile(key)
+	- createTextureCubeMapFromFile(key)
+	- createMeshFromFile(key)
+	
+	- createTexture2D(desc, init)
+	- createTextureCubeMap(desc, init)
+	- createMaterial(desc)
+	- createMesh(init)
+
+	- submit(mesh, subMesh, transform, material)
+	- render(renderData)
+
+	- drawText(str, position)
+
+	- getInstance()
+	- setInstance(ptr)
+
+
+Design 4:
+Entity base class:
+	- Transform
+		it seems that the only true 'shared' data is the position component
+	- children
+
+Independent controller objects:
+	- FollowController(controlled entity, target entity)
+	- MeshRenderer(attached entity, mesh, material)
+	- BulletRenderer(attached entity, mesh, physics)
+	- PhysicsController(attached entity, physics parameter, collider)
+	- HealthController(attached entity)
+	- PlayerController(attached entity, HealthController)
+
+
+Player: Transform, SensorTrigger
+
+Case study: proximity sensors
+	for each entity in sensor radius:
+		if the entity can trigger the sensor
+			trigger
+
+Component base class:
+- component name (class name)
+- update method
+
+'if the entity can trigger the sensor':
+	- entity tags?
+	- SensorTrigger component
+
+
+Tree: Transform, MeshRenderable, TreeWindPhysics, TreeLODController
+
+===========================================
+Case study: render elements:
+
+	Terrain, Water, Clouds, Sky, Various atmo. effects (SnowFallEffect, RainFallEffect, SandStormEffect)
+	Particle effects, Foliage, Trees, Fire, Meshes, AnimatedMeshes
+	
+	-> need to add some easily (avoid touching the renderer interface too much)
+	-> common interface?
+	-> submission of render nodes with transform
+		=> submit(RenderNode)
+
+
+===========================================
+Case study: terrain
+only one terrain renderer: no terrain element?
+	enableTerrain()
+
+===========================================
+Case study: procedural sky
+only one sky: no render element?
+	Sky.enableSky()
+	Sky.disableSky()
+	Sky.setSkyTimeOfDay(float)
+	
+===========================================
+Render system v2:
+- submission based
+	- (LL) command list (on GPU?) (caching?)
+		+ Buckets ()
+		+ sorting
+		+ occlusion culling?
+		- setRenderTarget
+		- bindVertexBuffer(...)
+		- bindIndexBuffer(...)
+		- setShader(...)
+		- setShaderUniformData(index, data)
+		- drawMesh(...)
+		- beginCamera(CameraData)
+		- endCamera()
+		- multiple passes?
+
+	- (LL) resources:
+		- vertex buffers (predefined formats)
+		- index buffers
+
+		+ There is no reason to separate vertex and index buffers?
+			- is there a reason?
+			- YAGNI: use the existing opengl mesh class
+		+ Shaders?
+			- use existing
+			- add 'type' member: mesh shader, post process FX
+			- passing data to shaders: an interesting problem
+				why? different techniques: named uniforms (avoid), uniform buffers
+				different requirements for the data in the buffers (ignore differences between platforms for now)
+				passing textures?
+				* proposition
+				- Mesh: one uniform block for frame data
+				- Mesh: one uniform block for instance data
+				- Mesh & PostFX: one uniform block for texture samplers
+				- Mesh & PostFX: one (or more) uniform block for other data (custom material properties)
+			- vertex texturing? should be feasible
+			- example: terrain
+				-> need to submit many tiles with varying shader parameters
+				-> assume we have to render a lot of elements with the same shader, the same parameters, 
+					except ONE parameter, varying for each element.
+					-> allocating a separate buffer for each element is overkill
+						-> maybe?
+					-> maybe a callback (prepareShader?)
+					-> maybe the terrain issues the draw calls?
+						-> yes, but still in the form of submission (special commands such as SetShaderUniform(buffer, offset))
+			- shader parameters?
+				-> uniform buffer binding state (0-15)
+
+		+ Vertex layouts?
+			- is there a reason to separate mesh buffers & vertex layout?
+			=> NO.
+			Mesh = VB + IB + Vertex layout
+			- the renderer creates the vertex layout and the client binds it to a mesh
+				Renderer.createVertexLayout
+				Mesh.setVertexLayout
+			- do it anyway, since it seems that most engines do it this way
+
+		+ Tessellation?
+			- later.
+
+
+		+ Post-process effects?
+			- post-process shaders + parameters, encap. in a class
+			WaterBlurPostProcess, DepthOfFieldPostProcess
+		
+		??? Golden rule: only the renderer makes draw calls
+			-> maybe??
+
+		+ States?
+
+	- (LL) resource loading:
+		- load mesh from file
+
+- (HL) render elements:
+	Terrain, Water, Clouds, Sky, Various atmo. effects (SnowFallEffect, RainFallEffect, SandStormEffect)
+	Particle effects, Foliage, Trees, Fire, Meshes, AnimatedMeshes
+
+	Interface:
+		ctor(RendererImpl*)
+		draw(RenderContext)
+
+	RenderContext:
+		- current pass ID
+		- reference to scenemanager
+		- reference to renderer
+		- default resources?
+		- mesh shadow shader
+		- view, proj matrices
+		- pointer to camera
+		- pointer to camera entity
+		- current render target
+		- shared parameters UBO
+	
+	+ Terrain:
+		create clipmap meshes
+		load clipmap shaders
+		bind shader data (setShader: shader, block1, block2...)
+
+	+ Water shader:
+
+SceneManager.render:
+	- init renderContext:
+		- calculate view, proj matrices, update viewport
+		- build shared UBO
+	- iterate over all entities
+		- if entity has a render component
+			call Renderable.render(RenderContext)
+		(TODO: first pass -> sort renderables in a list (render buckets? layers?))
+		(SHADOWS: call Renderable.render() with pass ID set to Shadow)
+
+Component
+	+ RenderComponent (one attached per component)
+		+ MeshRenderer
+		+ AnimatedMeshRenderer
+		+ TreeRenderer
+		+ FoliageRenderer
+		+ FireRenderer
+
+PostProcessEffect
+	+ SnowFallEffect
+	+ RainFallEffect
+	+ SandStormEffect
+
+===================================
+Golden rule: get something on the screen ASAP
+RenderComponent:
+- draw(Renderer, RenderContext)
+	-> called by the scene manager
+	-> the scene manager handles the order of draw calls
+
+Minimal abstraction layer over openGL?
+
+
+===================================
+Case study: mesh class
+- is a resource (can be loaded from a file)
+- can also be dynamically created
+- contains submeshes
+- has a number of material slots
+
+- internal vertex format?
+	-> a certain number of predefined vertex formats/layouts?
+		- V3F, full
+	-> OR: customizable layout
+
+- contains vertex buffers
+- contains index buffers
+
+- method: drawSubMesh(renderer, id)
+- static: Mesh::loadFromFile
+- static: Mesh::create(vertexData, indexData, format, numSubMeshes, subMeshes)
+
+===================================
+Case study: materials
+
+-> base class for materials: easy tweaking 
+-> otherwise: material system with parameter dictionary: too cumbersome
+
+Material::prepare(RenderContext const &context)
+
+===================================
+Issue: Renderables need the renderer during initialization
+-> Where to get it?
+	-> parameter to constructor?
+	OR
+	-> static pointer (Game::renderer)
+
+*** Renderables depend on the renderer:
+	-> need a context 
+	-> global context for creating resources
+	-> during rendering: specific context
+
+** the scene manager renders the renderables?
+	-> maintains lists of renderables:
+		Current sky (one)
+		Terrain
+		Static meshes
+		Animated meshes
+		List of post-proc effects
+	-> manages the rendering order
+	-> creates the renderables?
+	PROBLEM: entity deletion -> orphaned render node
+		- delete render nodes manually
+		- sceneManager->removeNode(...)
+		
+
+Renderable:
+	- a set of resources
+	- code for initializing the pipeline
+	- code for submitting the draw commands
+
+	- multiple passes
+	- different draw commands on different passes
+	- draw bucket?
+
+Render function:
+	- draw ...
+
+
+===================================
+Case study: bounding boxes
+-> in Renderable interface
+
+
+===================================
+Case study: scene manager
+
+Things to consider
+ - addition of a node to the list
+ - removal of a node (special nodes? camera, sky, terrain, etc.)
+		-> removal done by the node itself (depending on the type?)
+ - traversal
+ - ownership (who creates the node and who deletes it)
+ - dependencies between nodes (e.g. recompute sky color before rendering)
+ - where to place the rendering code 
+ - possible to create custom render nodes?
+ - lights?
+ 	-> special handling
+ - submeshes:
+ 	-> the renderable may issue rendering commands that should be executed at different steps 
+ 		(multiple buckets)
+ 		- solution: use submissions/rendercommands instead of render nodes in buckets
+ 		OR
+ 		- solution: a render node can only draw into one render bucket
+ 			-> multiple render nodes per model instances
+ 		OR
+ 		- a renderable can belong to multiple buckets
+ 		- render method called multiple times with a different pass ID
+ 
+ Submission/Rendercommand:
+ 	- target viewport ID
+ 	- bucket ID
+ 	- shader state:
+ 		- bound VS/GS/PS
+ 		- constant buffer state
+ 		- texture state
+ 		- render states
+ 		=> Material state
+ 			- Material shared:
+ 				- VS/GS/PS
+ 				- shared parameters
+ 				- buffer for instance parameters
+ 			- Material parameters:
+ 				- ref to material
+ 				- constant buffer offset/slot
+ 			- texture+sampler state
+
+ 	- vertex buffer state
+ 	- vertex layout
+ 	- shader parameter map (OR: drop uniforms, use one UBO per object)
+ 	OR: a fixed number of UBOs?
+ 		=> decide which technique to use
+ 		=> One CB per shader/material type
+ 			-> size of the CB?
+ 		CBs:
+ 			- per-frame data
+ 			- per-instance data (array)
+ 			- per-material? => with per-instance
+ 		batch updates (CPU memory)
+ 	- (optional: callback)
+
+Solution 1:
+Nodes tightly coupled to sceneManager: maintains a list of render nodes (one for each specific type)
+	-> e.g. a list for static meshes, a list for dynamic meshes, 
+			the current sky, the current terrain, etc.
+	- tightly coupled, difficult to extend
+	+ free draw order optimization/batching?
+
+Solution 2:
+Loose coupling between nodes and sceneManager:
+-> user creates the nodes (OR managers?)
+-> draw order: determined by layers/flags (ShadowCaster, Sky, ShadowReceiver, Opaque, Static, Transparent)
+* 1: scan the tree, perform culling, put nodes into buckets
+* (1.5) sort each bucket (by depth, or something else)
+* 2: draw each bucket
+* 3: Postproc
+
++ loosely coupled
+- two passes
+
+****
+=> The nodes should be as declarative as possible (i.e. no code, only data + resources)
+	- allows different renderers to process the nodes (with different materials, etc)
+
+=> A node should be able to be reduced to:
+	- geometry (VB, IB, offsets, layout)
+	- material parameters (shader, shader parameters)
+	Frustrum culling? -> done before
+
+=> virtual renderGeometry(GeometryBatch)
+	
+=> getFlags()
+
+****
+
+1. Update shader resources
+	1.1. Compute view and projection matrices
+	1.2. Get viewport size
+	1.3. Send data to HW buffer
+	1.4. Bind render target
+2. Compute view frustrum
+	
+3. Traverse the tree from the root node
+	3.1. Perform frustrum test
+	3.2. Get node bucket for rendering
+	3.3. Add node to corresponding bucket(s)
+
+4. Sort each bucket?
+
+5. Shadow pre-pass
+	5.1. Get shadow-casting light
+	5.2. Update shadow shader resources
+	5.3. For each object in the ShadowCaster bucket: call object.render(Pass=ShadowPrePass)
+
+6. Sky pass
+update cubemap?
+
+6. Opaque pass
+...
+
+===================================
+Case study: shared data
+
+Example: All 'Text' components require the same shader (SDF text shader),
+the same texture, etc.
+
+- Put shared data in static variables
+	- boolean test for initialization
+	- need for explicit deallocation (while there is no explicit allocation)
++ Put shared data in the resource manager
+	- need to retrieve it each time
++ Put shared data into a 'manager' object
+	-> holds all the required resources
+	+ explicit allocation/release
+	+ manages the creation/destruction of the objects (maybe?)
+		=> since they are pure data, the user can manage them
+	+ can specify default behavior 
+	-> objects only contain data; friend with the manager class; defer to manager for operations
+		=> like an ECS?
+=> reference to the renderer object?
+	=> SDFTextManager.setInstance(...)
+=> reference in each object? passed to the constructor?
+
+
+===================================
+Case study: shaders
+
+One class per material shader?
+-> where to store the shader instance (shared)?
+	- static variables: deletion?
+
+Consider surface shaders:
+- vertex & surface shaders
+- surface shaders adaptable to different rendering techniques?
+-> can be shared
+
+Shader systems:
+We use shader for a variety of things unrelated to surface shading or lighting:
+	- vertex displacement (Terrain heightmaps)
+	- HW skinning
+	- procedural animation & geometry (trees, water)
+for shading surfaces 
+	- different lighting models
+	- procedural textures
+for compute kernels
+	- ???
+
+and for postproc effects
+
+And they have to work with several render techniques/passes:
+- shadow mapping
+- SSAO
+- bloom
+	- bump mapping
+- lights:
+	- Envmaps
+	- Point lights
+- etc.
+
+**** Goal: Make these orthogonal ****
+
++ vertex shader
+	- Terrain
+	- Water
+	- HWSkinning
++ surface shader
+	- Default
+	- Procedural
++ lighting shader
+	- Phong
+	- Physical
++ postFX shader
+	- SSAO
+	- bloom
++ compute shader
+
+*** Techniques: different node configurations ***
+can be changed at runtime
+example: add glow effect on weapon powerup
+
+** Stages: **
+Each of the stages can be represented with a graph (eventually)
+
++ VS:
+	- Terrain
+	- Water
+	- HW skinning
+	- Displacement
+	- Wobble
++ Texture:
+	INPUTS:
+		- UV coords
+		- WS fragment position
+	OUTPUTS:
+		- Diffuse texture
+		- Specular texture
+		- etc.
++ Lighting:
+	INPUTS:
+		- Diffuse
+		- Specular
+		- Light position
+		- Light type
+	OUTPUTS:
+		- Frag color (without atmospheric processing)
+		- Emission value
+
+Effect class
+	- reference to VS, SS, LS and pipeline states
+	- can be cloned
+	- file resource
+
+EffectManager class
+	- manages creation of ShaderNodes
+	- manages compilation (get pipeline state from effect + atmosphere shader + forced render states + renderer configuration (light states, shadow states))
+
+PipelineState class:
+	- ref to effectManager
+	- setup() method: bind states
+	- array of constant buffers (only one?)
+		-> two: sceneConfigCS, materialConfigCS
+
+ShaderNode class:
+	- source code + parsed input-output and constants
+	- has an ID
+	- created/managed by the EffectManager
+
+ShaderGraph class:
+	- Graph of ShaderNodes
+
+Material:
+	- effect + parameter dictionary
+
+
+Issue: Pipeline dependencies in submission
+example: render to texture A , copy A to tex B, render using tex B
+dependency between A and B
+-> insert copy operation in submission list
+-> insert dependency in submission list
+
+Issue:
+in submissions, how to pass the material parameters?
+	(1) key-value dictionary
+		- expensive binding
+
+	(2) buffer with correct layout (CPU-side)
+		+ cheap binding
+		- layout must match the one expected by the pipeline state
+			-> need two buffers
+				- one with a fixed layout for all effects, does not vary between lighting configurations
+					=> effect.createParameterDictionary()
+				- one that stores the light & shadow parameters (independent of the material)
+					++ this buffer can be reused
+
+
+I/O matching: the output of one stage must match with the input of the other stage
+i.e. For lighting nodes that require specular maps: specular input must be connected (or use a default value)
+
+GLSL: Build final shader source from skeleton 
+	-> depends on the type of light source, the atmosphere shader node, the shadow mapping mode, etc.
+
+Globally available parameters?
+
+Vertex Shader
+_____________________
+
+input: mesh attributes
+output: 
+	- position
+	- normal
+	- texcoords
+	- others? => to surface shader
+
+
+===================================
+Case study: shadows
+
+Shadows should not be handled separately in each Renderable node
+i.e. NO switch(RenderPass) case Shadow: ... case Opaque: ...
+
+ShadowMapper: iterate over the submitted geometry
+
+
+===================================
+Case study: singletons
+
+List of all potential singletons:
+	- Renderer
+	- Window
+	- Game
+	- SceneManager
+
+also: shared renderer data
+
+sharedresources.hpp
+	initSharedResources(Renderer& renderer);
+	
+	GSharedResources
+		.layout_V3F: VertexLayout*
+		.layout_V2F: VertexLayout*
+		.quadMesh: VertexBuffer*
+
+	deleteSharedResources();
+
+
+===================================
+Case study: Image and ImageViews
+
+Used in software (sampling an heightmap, etc.)
+Can be created from TextureData
+
+ImageView (Base)
+	-sample<T>()
+	-size()
+	-format()
+	-viewAs<T>()
+	-void *data
+
+TypedImageView<T> : public ImageView
+	-sample<T>
+
+
+===================================
+Case study: window resize
+
+Each frame:
+	check if window size changed (flag? event?)
+		- flag at first (Game::windowResized())
+
+
+===================================
+Case study: deferred rendering
+
+Two passes:
+	- geometry pass
+		=> render all geometry
+	- image pass
+		=> apply lighting
+
+Separate geometry (meshes) from materials
+=> keep a list of submitted geometry
+=> One buffer per shader
+
+Mesh submission: in MeshRenderer class (single instance)
+
+===================================
+Case study: shadows
+
+Must have access to all geometry
+
+===================================
+Case study: simple objects (static)
+- mesh + set of textures + material parameters
+
+===================================
+Idea: pools/resource pools
+
+Issue: resource objects can be created using 'new', allocated on the stack
+=> these objects are typically reference counted
+
+=> we want to allow temporary resource objects to be created on the stack
+	- do we?
+=> store custom deleter in base refcounted class
+	- really?
+
+=> only use factories / constructor methods
+
+3 types of allocation:
+	- on the stack: temporary objects, managed by the user
+	- on the heap: objects with managers, objects that need to be shared
+	- on a pool/custom allocator: same
+
+TextureData: can be shared (allocate with new) or can be temporary
+
+issue with refcounting & automatic deletion: how to delete an object?
+	=> 3 ways 
+
+===================================
+Base refcounted object
+=> refcounting without resource overhead
+
+===================================
+Idea: RAII
+=> avoid shared ownership
+=> make ownership explicit
+=> make required lifetime of objects explicit 
+
+Example: RenderElements
+=> owned by SceneManager: takes unique_ptrs as input
+=> caller can hold a reference to the object if needed
+Scene.add(new Object): Object
+
+Example: Texture
+=> owned by whom?
+=> the renderer can hold a reference to the texture (in a render target, for instance)
+
+Example: Texture (loaded from file, shared)
+=> Hold an array of textures, release them all at the same time
+
+Types of pointers:
+- shared_ptr: many owners?
+	-> may be used when sharing resources
+	(however: might be useful to simply make only one object the owner of resources)
+- unique_ptr: ownership
+	-> returned by object managers (renderer objects, etc.)
+		-> possibly with a custom deleter
+		-> usually: one single interface
+- raw pointer or reference: unchecked borrowed reference
+	- access data without claiming ownership
+	- MUST ensure that the lifetime of the referenced object exceeds that of the borrowing scope
+	(rust is cool for that)
+- ref_ptr: checked borrowed reference
+	- (weak_ptr)
+	- opt-in: typedef to unchecked pointer on Release builds
+	- store ref-count and reference locations/ debugging support
+- resource_ptr: resource handle (safe borrowed reference)
+	- support for reloading / delayed loading / fallback resources
+
+Who owns the effects/pipelinestates/shadernodes?
+=> ShaderNodes: can use a resource manager to avoid loading them twice
+	-> user owns them
+	-> user creates them
+	-> they have no dependencies
+=> Pipeline states: created by the effectmanager, during rendering
+	-> created from an effect and some shader nodes
+	-> cached (even if there are no active refs, they are still kept in a map)
+	-> owned by the effectmanager (they need to be cached)
+	-> remove from cache with ps.release()
+=> Effects:
+	-> are used in render elements
+	-> can (and should) be shared: owned by something with a longer lifetime than the render elements
+	-> should be able to exist without any effectmanager instance
+	-> have an ID (unique among all instances)
+		- used as a key into the shader cache DB
+		- lookup should be fast
+		- who assigns the ID?
+			- IDEA: assign ID on first encounter by the effectcompiler
+				-> Effects have no dependencies
+				-> setID method
+
+===================================
+Scene-level effects vs material-level effects
+
+Material-level:
+- Vertex
+- Texture
+- Lighting
+
+Scene-level:
+- shadowing (sampling and application of shadows)
+	doSceneShadow
+- atmosphere
+	doSceneFog
+- deferred shading
+	finalColor(...)
+
+=> combine the two to get the final pipeline state
+	- material-level effects call functions declared by an interface
+	- interface matched at runtime: implementation in a scene shader
+
+- interfaces/ interface blocks/classes (statically matched):
+	- think SM5 dynamic linking for GLSL
+	- can be types or functions
+	- examples:
+		- IN/OUT structures
+		- lighting model
+	- same functionality as GLSL objects plus the ability 
+	  to abstract types
+
+	+ no preprocessor required
+	- complex to implement
+	- more parsing required
+	+ can add new implementations dynamically
+
+- OR ubershaders
+	#include + #defines
+	LIGHT_POINT
+	LIGHT_SPOT
+	LIGHT_DIRECTIONAL
+	SHADOWS_PCF
+	NO_SHADOWS
+	FORWARD
+	DEFERRED
+
+	- cannot add new implementations dynamically
+
+interface Light {
+	vec4 eval(vec3 worldPos);
+};
+
+interface SceneEffect {
+	float doShadow(...);
+	float doAtmosphere(...);
+	vec3 doSceneEffects(...);
+};
+
+interface Output {
+	vec3 finalColor(...);
+};
+
+class PointLighting<int numLights> {
+	...	
+};
+
+=> the interfaces can be put in header files
+
+===================================
+Issue: shadows and LOD
+example: terrain
+The LOD is determined before submission of the mesh
+However, it might not be optimal when rendering a shadow map
+
+Solution: 
+A different queue for each light
+
+
+===================================
+Case study: Fonts
+
+Font class
+- loadFromFile(Renderer& renderer, ...)
+- TextureData + HW texture
+- glyph map (unicode CP => coords + size) 
+
+TextRenderer instance
+- shaders
+
+Text
+=> can be rendered in 3D space or in 2D space (HUD)
+- transform
+- ref to textRenderer
+- borrowed ref to font
+- std::string text
+- void render(TextRenderer)
+	
+
+
+implement named ctor
+	-> create all members
+	-> move-initialize (special private constructor)
+	-> implement special constructor
+	-> implement move constructor for each member
+
+
+===================================
+Rule: (unsigned) integer file types
+
+- use the smallest integer type
+VS
+=> always use int or unsigned int ****
+
+Agartha

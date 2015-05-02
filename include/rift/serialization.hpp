@@ -2,14 +2,13 @@
 #define SERIALIZATION_HPP
 
 #include <istream>
+#include <ostream>
 #include <cstdint>
-#include <memory>
-#include <sstream>
 #include <vector>
 #include <cstring>
 #include <cassert>
+#include <type_traits>
 
-namespace rift {
 namespace serialization {
 
 template <typename T>
@@ -72,216 +71,94 @@ void write_i8(std::ostream &streamOut, int8_t v);
 void write_i16le(std::ostream &streamOut, int16_t v);
 void write_i32le(std::ostream &streamOut, int32_t v);
 
+template <typename T>
+struct Read16
+{
+	Read16(T &v_) : value(v_) {}
+	T &value;
+};
 
-template <typename T> struct pack_traits;
+template <typename T>
+Read16<T> read16(T &v) { return Read16<T>(v); }
 
-// compatible (?) with C# BinaryWriter
-class Packer
+template <typename T>
+struct Read8
+{
+	Read8(T &v_) : value(v_) {}
+	T &value;
+};
+
+template <typename T>
+Read8<T> read8(T &v) { return Read8<T>(v); }
+
+class IArchive
 {
 public:
-	Packer(std::ostream &streamOut) : mStreamOut(streamOut) {}
-	Packer &pack(char c) { mStreamOut.put(c); return *this; }
-	Packer &pack16(short v) { write_i16le(mStreamOut, v); return *this; }
-	Packer &pack16(unsigned short v) { write_u16le(mStreamOut, v); return *this; }
-	Packer &pack(int v) { write_i32le(mStreamOut, v); return *this; }
-	Packer &pack(unsigned int v) { write_u32le(mStreamOut, v); return *this; }
-	Packer &pack(float v) { mStreamOut.write((char*)&v, sizeof(float)); return *this; }
-	Packer &pack(double v) { mStreamOut.write((char*)&v, sizeof(double)); return *this; }
+	IArchive(std::istream &streamIn) : stream_in(streamIn) 
+	{
+		stream_in.exceptions(std::ios::eofbit | std::ios::badbit);
+	}
+
+	IArchive &operator>>(char &v) { read_i8(stream_in, v); return *this; }
+	IArchive &operator>>(unsigned char &v) { read_u8(stream_in, v); return *this; }
+	IArchive &operator>>(short &v) { read_i16le(stream_in, v); return *this; }
+	IArchive &operator>>(unsigned short &v) { read_u16le(stream_in, v); return *this; }
+	IArchive &operator>>(int &v) { read_i32le(stream_in, v); return *this; }
+	IArchive &operator>>(unsigned int &v) { read_u32le(stream_in, v); return *this; }
+	IArchive &operator>>(float &v)  { stream_in.read((char*)&v, sizeof(float)); return *this; }
+	IArchive &operator>>(double &v) { stream_in.read((char*)&v, sizeof(double)); return *this; }
 	
-	Packer &pack_7bit(unsigned int v) 
+	// TODO put these functions out of the class
+
+	// Read16 signed
+	template <typename T>
+	typename std::enable_if<
+		std::is_signed<T>::value, IArchive>::type &
+	operator>>(
+		Read16<T> v
+		) 
 	{
-		while (v >= 128U) {
-			write_u8(mStreamOut, (uint8_t)(v | 128U));
-			v >>= 7;
-		}
-		write_u8(mStreamOut, (uint8_t)v);
-		return *this;
+		read_i16le(stream_in, v.value); return *this;
 	}
 
-	template <std::size_t size>
-	Packer &pack(const char (&v)[size]) {
-		pack(v, size);
-		return *this;
-	}
-	Packer &pack(const char *str) {
-		pack(str, std::strlen(str));
-		return *this;
-	}
-	// XXX fail if size > 4G
-	Packer &pack(const char *str, std::size_t size) { pack_7bit(static_cast<unsigned int>(size)); mStreamOut.write(str, size); return *this; }
-	Packer &pack(std::string const &str) { pack(str.c_str(), str.size()); return *this; }
-	Packer &pack_array_size(unsigned int size) { write_u32le(mStreamOut, size); return *this; }
-	template <typename Iter>
-	Packer &pack_n(Iter begin, Iter end) {
-		while (begin != end) {
-			pack(*begin++);
-		}
-		return *this;
-	}
-	template <typename Iter, typename Fn>
-	Packer &pack_n(Iter begin, Iter end, Fn f) {
-		while (begin != end) {
-			f(*this, *begin++);
-		}
-		return *this;
-	}
+	// Read16 unsigned
 	template <typename T>
-	Packer &pack(std::vector<T> const &v) {
-		pack_array_size(v.size());
-		return pack_n(v.cbegin(), v.cend());
-	}
-	template <typename T, typename Fn>
-	Packer &pack(std::vector<T> const &v, Fn f) {
-		pack_array_size(v.size());
-		return pack_n(v.cbegin(), v.cend(), f);
-	}
-	template <typename T>
-	Packer &pack(T const &v) {
-		pack_traits<T>::pack(*this, v);
-		return *this;
+	typename std::enable_if<
+		std::is_unsigned<T>::value, IArchive>::type &
+	operator>>(
+		Read16<T> v
+		) 
+	{
+		read_u16le(stream_in, v.value); return *this;
 	}
 
-	Packer &pack_bin(void const *ptr, unsigned int size) {
-		pack_array_size(size);
-		mStreamOut.write((const char*)ptr, size);
-		return *this;
+	// Read8 signed
+	template <typename T>
+	typename std::enable_if<
+		std::is_signed<T>::value, IArchive>::type &
+	operator>>(
+		Read8<T> v
+		)
+	{
+		read_i8(stream_in, v.value); return *this;
+	}
+
+	// Read8 unsigned
+	template <typename T>
+	typename std::enable_if<
+		std::is_unsigned<T>::value, IArchive>::type &
+	operator>>(
+		Read8<T> v
+		)
+	{
+		read_u8(stream_in, v.value); return *this;
 	}
 
 private:
-	std::ostream &mStreamOut;
+	std::istream &stream_in;
 };
 
-class Unpacker
-{
-public:
-	Unpacker(std::istream &streamIn) : mStreamIn(streamIn) 
-	{
-		mStreamIn.exceptions(std::ios::eofbit | std::ios::badbit);
-	}
-
-	Unpacker &unpack_array(unsigned int &v) { read_u32le(mStreamIn, v); return *this; }
-	Unpacker &unpack16(short &v) { read_i16le(mStreamIn, v); return *this; }
-	Unpacker &unpack16(unsigned short &v) { read_u16le(mStreamIn, v); return *this; }
-	Unpacker &unpack(int &v) { read_i32le(mStreamIn, v); return *this; }
-	Unpacker &unpack(unsigned int &v) { read_u32le(mStreamIn, v); return *this; }
-	Unpacker &unpack(float &v)  { mStreamIn.read((char*)&v, sizeof(float)); return *this; }
-	Unpacker &unpack(double &v) { mStreamIn.read((char*)&v, sizeof(double)); return *this; }
-
-	Unpacker &unpack_7bit(unsigned int &v)
-	{
-		// http://dpatrickcaldwell.blogspot.se/2011/09/7-bit-encoding-with-binarywriter-in-net.html  
-		int returnValue = 0;
-		int bitIndex = 0;
-		while (bitIndex != 35)
-		{
-			uint8_t currentByte;
-			read_u8(mStreamIn, currentByte);
-			returnValue |= ((int)currentByte & 127) << bitIndex;
-			bitIndex += 7;
-			if (((int)currentByte & 128) == 0) {
-				v = returnValue;
-				return *this;
-			}
-		}
-		// bad format
-		assert(false);
-		return *this;	// dummy
-	}
-
-	template <typename T>
-	Unpacker &skip() { T t; return unpack(t); }
-
-	template <std::size_t size>
-	Unpacker &unpack(char (&v)[size]) {
-		unsigned int rsize;
-		unpack(v, size, rsize);
-		assert(rsize == size);
-		return *this;
-	}
-	Unpacker &unpack(char *v, unsigned int maxSize, unsigned int &size) {
-		read_u32le(mStreamIn, size);
-		assert(size < maxSize);
-		mStreamIn.read(v, size);
-		return *this;
-	}
-	template <std::size_t size>
-		Unpacker &unpack_n(char(&v)[size]) {
-		unpack_n(v, size);
-		return *this;
-	}
-	Unpacker &unpack_n(char *v, unsigned int size) {
-		mStreamIn.read(v, size);
-		return *this;
-	}
-	Unpacker &unpack(std::string &str) {
-		unsigned int size;
-		unpack_7bit(size);
-		assert(size < 65536);
-		auto ch = std::unique_ptr<char[]>(new char[size]);
-		mStreamIn.read(ch.get(), size);
-		str.assign(ch.get(), size);
-		return *this;
-	}
-	template <typename T>
-	Unpacker &unpack(std::vector<T> &v) {
-		unsigned int size;
-		unpack(size);
-		unpack_n(size, v);
-		return *this;
-	}
-	template <typename T, typename Fn>
-	Unpacker &unpack(std::vector<T> &v, Fn f) {
-		unsigned int size;
-		unpack(size);
-		unpack_n(size, v, f);
-		return *this;
-	}
-	template <typename T>
-	Unpacker &unpack_n(unsigned int n, std::vector<T> &v)
-	{
-		v.resize(n);
-		for (unsigned int i = 0; i < n; ++i) {
-			unpack(v[i]);
-		}
-		return *this;
-	}
-	template <typename T, typename Fn>
-	Unpacker &unpack_n(unsigned int n, std::vector<T> &v, Fn f)
-	{
-		v.reserve(n);
-		for (unsigned int i = 0; i < n; ++i) {
-			v.emplace_back(f(*this));
-		}
-		return *this;
-	}
-
-	template <typename T>
-	Unpacker &unpack(T &v) {
-		pack_traits<T>::unpack(*this, v);
-		return *this;
-	}
-	template <typename Fn>
-	Unpacker &skip_array(Fn f) {
-		unsigned int size;
-		unpack(size);
-		for (unsigned int i = 0; i < size; ++i) {
-			f(*this);
-		}
-		return *this;
-	}
-	Unpacker &unpack_bin(std::unique_ptr<uint8_t[]> &data, unsigned int &size) {
-		unpack(size);
-		auto p = new uint8_t[size];
-		mStreamIn.read((char*)p, size);
-		data = std::unique_ptr<uint8_t[]>(p);
-		return *this;
-	}
-
-private:
-	std::istream &mStreamIn;
-};
-
-}}
+}
 
 
 #endif /* end of include guard: SERIALIZATION_HPP */
