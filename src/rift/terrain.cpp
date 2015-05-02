@@ -199,7 +199,7 @@ void Terrain::renderNode(SceneRenderContext &context, Node const &node)
 		terrain_uniforms.get(),
 		&cbPatchUniforms });
 
-	context.opaqueList->drawIndexed(PrimitiveType::Triangle, *patch_grid_ib, 0, patch_num_indices, 0, 0, 1);
+	context.opaqueList->drawIndexed(PrimitiveType::Triangle, *patch_grid_ib, 0, 0, patch_num_indices, 0, 1);
 }
 
 //=============================================================================

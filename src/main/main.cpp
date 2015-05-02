@@ -246,10 +246,10 @@ void RiftGame::init()
 	skel_anim_sampler = std::make_unique<SkeletonAnimationSampler>(*skel, skel_animation, 0.003f);
 	skel_anim_sampler->nextFrame();
 
-	/*terrain = std::make_unique<Terrain>(
+	terrain = std::make_unique<Terrain>(
 		Image::loadFromFile("resources/img/terrain/test_heightmap_2.dds"),
 		resources->textures.load("resources/img/mb_rocklface07_d.dds"),
-		resources->textures.load("resources/img/grasstile_c.dds"));*/
+		resources->textures.load("resources/img/grasstile_c.dds"));
 
 	// TEST 
 	//mokou_skin = resources->skinnedMeshes.load("resources/models/animated/mokou.mesh");
@@ -329,7 +329,7 @@ void RiftGame::render(float dt)
 	}
 
 	// render terrain
-	//terrain->render(context);
+	terrain->render(context);
 
 	// PostFX pass
 	auto &cbFxParams = Renderer::allocTransientBuffer(BufferUsage::ConstantBuffer, sizeof(FXParams));
