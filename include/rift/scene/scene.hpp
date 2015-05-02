@@ -2,7 +2,6 @@
 #define SCENE_HPP
 
 #include <gl4/renderer.hpp>
-#include <hudtext.hpp>
 #include <font.hpp>
 #include <material.hpp>
 #include <mesh.hpp>
@@ -27,7 +26,6 @@ struct SceneRenderContext
 	RenderTarget *overlayRenderTarget;
 	// drawn before postFX (opaque)
 	CommandBuffer *opaqueList;
-	HUDTextRenderer *textRenderer;
 	Font *defaultFont;
 	SceneData sceneData;
 	Buffer *sceneDataCB;

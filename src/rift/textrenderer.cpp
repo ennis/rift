@@ -1,4 +1,4 @@
-#include <hudtext.hpp>
+#include <textrenderer.hpp>
 #include <cstring>
 #include <effect.hpp>
 #include <transform.hpp>
@@ -20,7 +20,7 @@ namespace
 	};
 }
 
-HUDTextRenderer::HUDTextRenderer() 
+TextRenderer::TextRenderer()
 {
 	layout = InputLayout::create(1, { Attribute{ ElementFormat::Float4 } });
 	auto effect = gl4::Effect::loadFromFile("resources/shaders/text.glsl");
@@ -33,7 +33,7 @@ HUDTextRenderer::HUDTextRenderer()
 	shader = effect->compileShader({}, rs, ds, om);
 }
 
-void HUDTextRenderer::renderText(
+void TextRenderer::render(
 	CommandBuffer &cmdBuf,
 	util::string_ref str,
 	const Font &font,

@@ -12,7 +12,6 @@
 #include <gl4/renderer.hpp>
 #include <gl4/effect.hpp>	// Effect
 #include <font.hpp>
-#include <hudtext.hpp>
 #include <colors.hpp>
 #include <small_vector.hpp>
 #include <skeleton.hpp>
@@ -22,6 +21,7 @@
 #include <mesh.hpp>
 #include <terrain.hpp>
 #include <camera.hpp>
+#include <textrenderer.hpp>
 
 /*class SkeletonDebug
 {
@@ -82,6 +82,7 @@ public:
 	void update(float dt);
 	void tearDown();
 	void initTweakBar();
+	void renderDebugHud();
 
 private:
 	float mLastTime = 0.f;
@@ -89,6 +90,7 @@ private:
 	float mFPS = 0;
 	float spinAngle = 0.f;
 	unsigned long numFrames = 0;
+	unsigned sizeX, sizeY;
 
 	std::unique_ptr<Resources> resources;
 
@@ -141,7 +143,8 @@ private:
 	};
 
 	Font::Ptr font;
-	std::unique_ptr<HUDTextRenderer> hud;
+	Font::Ptr debugFont;
+	std::unique_ptr<TextRenderer> hud;
 	std::unique_ptr<Terrain> terrain;
 
 	Sky sky;
@@ -223,12 +226,12 @@ void RiftGame::init()
 	envmap = resources->cubeMaps.load("resources/img/env/uffizi/env.dds");
 	envmap = resources->cubeMaps.load("resources/img/env/uffizi/env.dds");	// TEST
 
-
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	shadowRT = RenderTarget::create(win_size, {}, ElementFormat::Depth16);
 
+	debugFont = Font::loadFromFile("resources/img/fonts/lucida_console.fnt");
 	font = Font::loadFromFile("resources/img/fonts/arno_pro.fnt");
-	hud = std::make_unique<HUDTextRenderer>();
+	hud = std::make_unique<TextRenderer>();
 
 	DepthStencilDesc ds_fx;
 	ds_fx.depthTestEnable = false;
@@ -259,14 +262,13 @@ void RiftGame::init()
 void RiftGame::render(float dt)
 {
 	// rendu de la scene
-	glm::ivec2 win_size = Engine::instance().getWindow().size();
-	glm::vec2 win_size_f = glm::vec2(win_size.x, win_size.y);
+	auto win_size = glm::ivec2(sizeX, sizeY);
+	auto win_size_f = glm::vec2(sizeX, sizeY);
 	auto cam = trackball->updateCamera();
 
 	CommandBuffer opaqueList;
 	SceneRenderContext context;
 	context.opaqueList = &opaqueList;
-	context.textRenderer = hud.get();
 	context.defaultFont = font.get();
 
 	// update scene data buffer
@@ -352,16 +354,42 @@ void RiftGame::render(float dt)
 	postProc.setConstantBuffers({ &cbFxParams });
 	postProc.drawProcedural(PrimitiveType::Triangle, 0, 3, 0, 1);
 
-	hud->renderText(postProc, "Hello world!", *font, { 10.0, 10.0 }, win_size_f, Color::White, Color::Black);
-	hud->renderText(postProc, "Frame " + std::to_string(numFrames), *font, { 10.0, 50.0 }, win_size_f, Color::White, Color::Black);
-	hud->renderText(postProc, "dt " + std::to_string(dt), *font, { 10.0, 90.0 }, win_size_f, Color::White, Color::Black);
+	Logging::screenMessage("F       : " + std::to_string(numFrames));
+	Logging::screenMessage("DT      : " + std::to_string(dt));
 
 	Renderer::execute(opaqueList);
 	Renderer::execute(postProc);
+	renderDebugHud();
+}
+
+void RiftGame::renderDebugHud()
+{
+	CommandBuffer cmdBuf;
+	auto lines = Logging::clearScreenMessages();
+	unsigned ypos = 5;
+	unsigned xpos = 5;
+	unsigned yinc = debugFont->getMetrics().height;
+	for (auto &&line : lines)
+	{
+		hud->render(
+			cmdBuf,
+			line,
+			*debugFont,
+			glm::vec2(xpos, ypos),
+			glm::vec2(sizeX, sizeY),
+			Color::Red,
+			Color::Black);
+		ypos += yinc;
+	}
+	Renderer::execute(cmdBuf);
 }
 
 void RiftGame::update(float dt)
 {
+	auto win_size = Engine::instance().getWindow().size();
+	sizeX = win_size.x;
+	sizeY = win_size.y;
+
 	mLastTime += dt;
 	mTotalTime += dt;
 
@@ -382,7 +410,6 @@ void RiftGame::tearDown()
 
 int main()
 {
-	logInit("log");
 	Window window("Rift", 1280, 720);
 	Engine::run<RiftGame>(window);
 	return 0;

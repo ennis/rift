@@ -41,7 +41,7 @@ Window::Window(
 
 bool Window::shouldClose()
 {
-	return glfwWindowShouldClose(mHandle);
+	return !!glfwWindowShouldClose(mHandle);
 }
 
 void Window::pollEvents()

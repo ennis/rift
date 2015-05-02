@@ -1,16 +1,16 @@
-#ifndef HUDTEXT_HPP
-#define HUDTEXT_HPP
+#ifndef TEXTRENDERER_HPP
+#define TEXTRENDERER_HPP
 
 #include <gl4/renderer.hpp>
 #include <font.hpp>
 #include <string_ref.hpp>
 
-class HUDTextRenderer
+class TextRenderer
 {
 public:
-	HUDTextRenderer();
+	TextRenderer();
 	
-	void renderText(
+	void render(
 		CommandBuffer &cmdBuf,
 		util::string_ref str,
 		const Font &font,

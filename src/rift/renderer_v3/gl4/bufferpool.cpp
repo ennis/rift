@@ -204,6 +204,7 @@ namespace gl4
 		// fence current frame
 		auto curFrame = previousFrame(0);
 		//LOG << "Number of transient buffers allocated this frame: " << transient_buffers[curFrame].size();
+		Logging::screenMessage("TBUF    : " + std::to_string(transient_buffers[curFrame].size()));
 		syncs[curFrame] = gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0);
 		frame_index = (frame_index + 1) % 3;
 	}
