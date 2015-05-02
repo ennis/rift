@@ -46,7 +46,7 @@ struct MeshLoader
 	}
 }; 
 
-struct SkinnedMeshLoader
+/*struct SkinnedMeshLoader
 {
 	using pointer = SkinnedMesh::Ptr;
 	using key_type = std::string;
@@ -58,7 +58,7 @@ struct SkinnedMeshLoader
 		serialization::IArchive arc(fileIn);
 		return SkinnedMesh::loadFromArchive(arc);
 	}
-};
+};*/
 
 
 struct Resources
@@ -66,7 +66,7 @@ struct Resources
 	util::resource_manager<Texture2DLoader> textures;
 	util::resource_manager<TextureCubeMapLoader> cubeMaps;
 	util::resource_manager<MeshLoader> meshes;
-	util::resource_manager<SkinnedMeshLoader> skinnedMeshes;
+	//util::resource_manager<SkinnedMeshLoader> skinnedMeshes;
 };
 
  

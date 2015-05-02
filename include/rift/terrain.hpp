@@ -77,8 +77,7 @@ private:
 	Shader::Ptr shader;
 	Shader::Ptr shader_wireframe;
 	// shader parameters
-	Stream::Ptr terrain_uniforms;
-	Stream::Ptr terrain_patch_uniforms;
+	Buffer::Ptr terrain_uniforms;
 };
 
 #endif

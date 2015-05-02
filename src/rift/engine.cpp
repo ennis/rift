@@ -72,7 +72,7 @@ void Engine::init()
 	LOG << "OpenGL version: " << gl::GetString(gl::VERSION);
 	LOG << "GLSL version: " << gl::GetString(gl::SHADING_LANGUAGE_VERSION);
 
-	gl4::Renderer::initialize();
+	Renderer::initialize();
 	
 	// init anttweakbar
 	TwInit(TW_OPENGL_CORE, NULL);
@@ -108,8 +108,10 @@ void Engine::mainLoop()
 			duration<float> frame = duration_cast<nanoseconds>(tf - tb);
 			tb = tf;
 			float dt = frame.count();
+			Renderer::beginFrame();
 			mGame->render(dt);
 			mGame->update(dt);
+			Renderer::endFrame();
 			mWindow.swapBuffers();
 			mWindow.pollEvents();
 		}

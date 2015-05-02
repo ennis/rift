@@ -35,8 +35,8 @@ public:
 			submeshes);
 	}
 
-	void draw(RenderQueue &renderQueue, unsigned submesh);
-	void drawInstanced(RenderQueue &renderQueue, unsigned submesh, unsigned baseInstance, unsigned numInstances);
+	void draw(CommandBuffer &commandBuffer, unsigned submesh);
+	void drawInstanced(CommandBuffer &commandBuffer, unsigned submesh, unsigned baseInstance, unsigned numInstances);
 
 	static Ptr loadFromArchive(serialization::IArchive &ar);
 
@@ -51,7 +51,7 @@ public:
 };
 
 
-class SkinnedMesh
+/*class SkinnedMesh
 {
 public:
 	using Ptr = std::unique_ptr < SkinnedMesh >;
@@ -97,7 +97,7 @@ private:
 	GLenum index_format;
 	std::vector<Submesh> submeshes;
 
-};
+};*/
 
  
 #endif /* end of include guard: MESH_HPP */

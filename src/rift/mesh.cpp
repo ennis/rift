@@ -90,9 +90,9 @@ Mesh::Mesh(
 	nbindex = numIndices;
 	auto ibsize = numIndices * 2;
 
-	vbo = Buffer::create(vbsize, ResourceUsage::Static, BufferUsage::VertexBuffer, vertexData);
+	vbo = Renderer::allocBuffer(BufferUsage::VertexBuffer, vbsize, vertexData);
 	if (numIndices)
-		ibo = Buffer::create(ibsize, ResourceUsage::Static, BufferUsage::IndexBuffer, indexData);
+		ibo = Renderer::allocBuffer(BufferUsage::VertexBuffer, ibsize, indexData);
 
 	submeshes.assign(submeshes_.begin(), submeshes_.end());
 }
@@ -136,36 +136,38 @@ Mesh::Ptr Mesh::loadFromArchive(serialization::IArchive &ar)
 	return ptr;
 }
 
-void Mesh::draw(RenderQueue &renderQueue, unsigned submesh)
+void Mesh::draw(CommandBuffer &commandBuffer, unsigned submesh)
 {
-	drawInstanced(renderQueue, submesh, 0, 1);
+	drawInstanced(commandBuffer, submesh, 0, 1);
 }
 
-void Mesh::drawInstanced(RenderQueue &renderQueue, unsigned submesh, unsigned baseInstance, unsigned numInstances)
+void Mesh::drawInstanced(CommandBuffer &commandBuffer, unsigned submesh, unsigned baseInstance, unsigned numInstances)
 {
-	renderQueue.setVertexBuffers({ vbo->getDescriptor() }, *layout);
+	commandBuffer.setVertexBuffers({ vbo.get() }, *layout);
 	const auto &sm = submeshes[submesh];
 	if (nbindex)
 	{
-		renderQueue.setIndexBuffer(ibo->getDescriptor());
-		renderQueue.drawIndexed(
+		commandBuffer.drawIndexed(
 			sm.primitiveType,
+			*ibo,
+			sm.startVertex,
 			sm.startIndex,
 			sm.numIndices,
-			sm.startVertex,
-			baseInstance, numInstances);
+			baseInstance,
+			numInstances);
 	}
 	else
 	{
-		renderQueue.draw(
+		commandBuffer.draw(
 			sm.primitiveType,
 			sm.startVertex,
 			sm.numVertices,
-			baseInstance, numInstances);
+			baseInstance,
+			numInstances);
 	}
 }
 
-void SkinnedMesh::update(util::array_ref<glm::mat4> pose)
+/*void SkinnedMesh::update(util::array_ref<glm::mat4> pose)
 {
 	auto nv = base_pos.size();
 
@@ -309,4 +311,4 @@ void SkinnedMesh::drawInstanced(
 			numInstances);
 	}
 	dynamic_attribs->fence(renderQueue);
-}
+}*/

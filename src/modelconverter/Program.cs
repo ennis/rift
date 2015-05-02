@@ -24,18 +24,33 @@ namespace modelconverter
             }
             if (options.InputFiles.Count == 0)
             {
-                var ofd = new OpenFileDialog();
-                if (ofd.ShowDialog() == DialogResult.OK)
+                if (options.ImportUnityScene)
                 {
-                    options.InputFiles.Add(ofd.FileName);
+                    var bfd = new FolderBrowserDialog();
+                    if (bfd.ShowDialog() == DialogResult.OK)
+                    {
+                        options.InputFiles.Add(bfd.SelectedPath);
+                    }
+                } 
+                else
+                {
+
+                    var ofd = new OpenFileDialog();
+                    if (ofd.ShowDialog() == DialogResult.OK)
+                    {
+                        options.InputFiles.Add(ofd.FileName);
+                    }
                 }
             }
             if (options.InputFiles.Count == 0)
                 return;
+
             // are we loading a unity scene?
-            if (Path.GetExtension(options.InputFiles[0]) == ".unity")
+            if (options.ImportUnityScene)
             {
-                SceneImporter.Import(options.InputFiles[0]);
+                options.OutputDirectory = options.OutputDirectory ?? Path.Combine(options.InputFiles[0], "exported");
+                var si = new UnitySceneImporter(options);
+                si.ImportUnityProject();
             }
             else
             {
@@ -82,10 +97,10 @@ namespace modelconverter
                     Scene scene = importer.ImportFile(file, PostProcessSteps.OptimizeGraph | PostProcessSteps.OptimizeMeshes);
                     AnimationExporter.Export(scene, options);
                 }
-
-                Console.WriteLine("*** Press any key ***");
-                Console.ReadKey();
             }
+
+            Console.WriteLine("*** Press any key ***");
+            Console.ReadKey();
         }
     }
 }

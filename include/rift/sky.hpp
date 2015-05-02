@@ -14,13 +14,11 @@ public:
 	Sky(Sky &&rhs) : 
 		timeOfDay(rhs.timeOfDay), 
 		skyShader(std::move(rhs.skyShader)),
-		cbSkyParams(std::move(rhs.cbSkyParams)), 
 		skybox(std::move(rhs.skybox))
 	{}
 	Sky &operator=(Sky &&rhs) {
 		timeOfDay = rhs.timeOfDay;
 		skyShader = std::move(rhs.skyShader);
-		cbSkyParams = std::move(rhs.cbSkyParams);
 		skybox = std::move(rhs.skybox);
 		return *this;
 	}
@@ -32,7 +30,6 @@ public:
 private:
 	float timeOfDay;
 	Shader::Ptr skyShader;
-	Stream::Ptr cbSkyParams;
 	Mesh::Ptr skybox;
 };
 

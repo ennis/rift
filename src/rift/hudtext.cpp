@@ -22,11 +22,7 @@ namespace
 
 HUDTextRenderer::HUDTextRenderer() 
 {
-	vb_stream = Stream::create(BufferUsage::VertexBuffer, 4 * kMaxGlyphsPerFrame * sizeof(glm::vec4), 3);
-	ib_stream = Stream::create(BufferUsage::IndexBuffer, 6 * kMaxGlyphsPerFrame * sizeof(glm::vec4), 3);
-	cb_stream = Stream::create(BufferUsage::ConstantBuffer, kMaxCallsPerFrame * sizeof(TextParams), 3);
 	layout = InputLayout::create(1, { Attribute{ ElementFormat::Float4 } });
-
 	auto effect = gl4::Effect::loadFromFile("resources/shaders/text.glsl");
 	RasterizerDesc rs;
 	rs.fillMode = PolygonFillMode::Fill;
@@ -38,7 +34,7 @@ HUDTextRenderer::HUDTextRenderer()
 }
 
 void HUDTextRenderer::renderText(
-	RenderQueue &renderQueue,
+	CommandBuffer &cmdBuf,
 	util::string_ref str,
 	const Font &font,
 	glm::vec2 viewPos,
@@ -47,9 +43,15 @@ void HUDTextRenderer::renderText(
 	const glm::vec4 &outlineColor)
 {
 	auto len = str.size();
-	if (len > kMaxGlyphsPerFrame) len = kMaxGlyphsPerFrame;
-	auto vbuf = vb_stream->reserve_many<GlyphVertex>(len * 4);
-	auto ibuf = ib_stream->reserve_many<uint16_t>(len * 6);
+	if (len > kMaxGlyphsPerCall) 
+		len = kMaxGlyphsPerCall;
+
+	auto &vb_stream = Renderer::allocTransientBuffer(BufferUsage::VertexBuffer, sizeof(GlyphVertex) * len * 4);
+	auto &ib_stream = Renderer::allocTransientBuffer(BufferUsage::IndexBuffer, sizeof(uint16_t) * len * 6);
+	auto &cb_stream = Renderer::allocTransientBuffer(BufferUsage::ConstantBuffer, sizeof(TextParams));
+	auto vbuf = vb_stream.map_as<GlyphVertex>();
+	auto ibuf = ib_stream.map_as<uint16_t>();
+
 	auto &metrics=font.getMetrics();
 
 	int x=0,y=0;
@@ -89,28 +91,18 @@ void HUDTextRenderer::renderText(
 		x+=g->xAdvance;
 	}
 
-	TextParams p;
-	p.transform = glm::ortho(
+	auto p = cb_stream.map_as<TextParams>();
+	p->transform = glm::ortho(
 		-viewPos.x, 
 		viewportSize.x - viewPos.x,
 		viewportSize.y - viewPos.y,
 		-viewPos.y);
-	p.fillColor = color;
-	p.outlineColor = outlineColor;
-	cb_stream->write(p);
+	p->fillColor = color;
+	p->outlineColor = outlineColor;
 
-	renderQueue.beginCommand();
-	renderQueue.setVertexBuffers({ vb_stream->getDescriptor() }, *layout);
-	renderQueue.setIndexBuffer(ib_stream->getDescriptor());
-	renderQueue.setUniformBuffers({ cb_stream->getDescriptor() });
-	renderQueue.setTexture2D(0, font.getTexture(), {});
-	renderQueue.setShader(*shader);
-	renderQueue.drawIndexed(PrimitiveType::Triangle, 0, len * 6, 0, 0, 1);
-}
-
-void HUDTextRenderer::fence(RenderQueue &renderQueue)
-{
-	cb_stream->fence(renderQueue);
-	vb_stream->fence(renderQueue);
-	ib_stream->fence(renderQueue);
+	cmdBuf.setShader(shader.get());
+	cmdBuf.setVertexBuffers({ &vb_stream }, *layout);
+	cmdBuf.setConstantBuffers({ &cb_stream });
+	cmdBuf.setTextures({ &font.getTexture() }, { Renderer::getSampler_LinearClamp() });
+	cmdBuf.drawIndexed(PrimitiveType::Triangle, ib_stream, 0, 0, len * 6, 0, 1);
 }

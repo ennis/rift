@@ -144,30 +144,25 @@ void Terrain::initGrid()
 		}
 	}
 	// create VB and IB
-	patch_grid_vb = Buffer::create(
-		vertices.size() * sizeof(float),
-		ResourceUsage::Static,
+	patch_grid_vb = Renderer::allocBuffer(
 		BufferUsage::VertexBuffer,
+		vertices.size() * sizeof(float),
 		vertices.data());
 
-	patch_grid_ib = Buffer::create(
-		indices.size() * sizeof(uint16_t),
-		ResourceUsage::Static,
+	patch_grid_ib = Renderer::allocBuffer(
 		BufferUsage::IndexBuffer,
+		indices.size() * sizeof(uint16_t),
 		indices.data());
 
 	input_layout = InputLayout::create(1, { { ElementFormat::Float2, 0 } });
 
-	terrain_uniforms = Stream::create(BufferUsage::ConstantBuffer, sizeof(TerrainUniforms), 3);
-	terrain_patch_uniforms = Stream::createConstantBuffer(sizeof(TerrainPatchUniforms), max_terrain_patches, 3);
-
-	TerrainUniforms uniforms;
-	uniforms.modelMatrix = Transform().scale(1.f).toMatrix();
-	uniforms.heightmapSize = glm::vec2(hm_size.x, hm_size.y);
-	uniforms.heightmapScale = hm_vert_scale;
-	uniforms.flatTextureScale = 50.0f;
-	uniforms.slopeTextureScale = 50.0f;
-	terrain_uniforms->write(uniforms);
+	terrain_uniforms = Renderer::allocBuffer(BufferUsage::ConstantBuffer, sizeof(TerrainUniforms));
+	auto terrain_uniforms_ptr = terrain_uniforms->map_as<TerrainUniforms>();
+	terrain_uniforms_ptr->modelMatrix = Transform().scale(1.f).toMatrix();
+	terrain_uniforms_ptr->heightmapSize = glm::vec2(hm_size.x, hm_size.y);
+	terrain_uniforms_ptr->heightmapScale = hm_vert_scale;
+	terrain_uniforms_ptr->flatTextureScale = 50.0f;
+	terrain_uniforms_ptr->slopeTextureScale = 50.0f;
 }
 
 
@@ -177,53 +172,34 @@ void Terrain::renderSelection(SceneRenderContext &context)
 	for (int i = 0; i < selected_nodes.size(); ++i) {
 		const auto &node = selected_nodes[i];
 		renderNode(context, node);
-
-		// create a transient buffer: will be freed at end of frame
-		/*auto &patch = CreateTransientBuffer<TerrainPatchUniforms>();
-		patchUniforms.lodLevel = node.lod;
-		patchUniforms.patchOffset = glm::vec2(node.x, node.y);
-		patchUniforms.patchScale = static_cast<float>(node.size);
-
-		renderQueue.encodeDraw(context.defaultRenderState)
-			.setMesh(*input_layout, { patch_grid_vb })
-			.setShader(*shader)
-			.setBuffers({context.sceneData, terrain_uniforms, patch})
-			.setTextures({ *hm_tex, *hm_normals_tex, *slope_tex, *flat_tex })
-			.drawIndexed(PrimitiveType::Triangle, patch_grid_ib, 0, patch_num_indices, 0, 0, 1);*/
 	}
-
-	terrain_patch_uniforms->fence(*context.opaqueRenderQueue);
 }
 
 void Terrain::renderNode(SceneRenderContext &context, Node const &node)
 {
-	auto &renderQueue = *context.opaqueRenderQueue;
+	context.opaqueList->setVertexBuffers({ patch_grid_vb.get() }, *input_layout);
+	context.opaqueList->setShader(shader.get());
+	context.opaqueList->setTextures(
+		{ hm_tex.get(), hm_normals_tex.get(), slope_tex, flat_tex },
+		{ 
+			Renderer::getSampler_LinearClamp(), 
+			Renderer::getSampler_LinearClamp(),
+			Renderer::getSampler_LinearRepeat(),
+			Renderer::getSampler_LinearRepeat()
+		});
+	
+	auto &cbPatchUniforms = Renderer::allocTransientBuffer(BufferUsage::ConstantBuffer, sizeof(TerrainPatchUniforms));
+	auto cbPatchUniformsPtr = cbPatchUniforms.map_as<TerrainPatchUniforms>();
+	cbPatchUniformsPtr->lodLevel = node.lod;
+	cbPatchUniformsPtr->patchOffset = glm::vec2(node.x, node.y);
+	cbPatchUniformsPtr->patchScale = static_cast<float>(node.size);
 
-	renderQueue.beginCommand();
-	renderQueue.setVertexBuffers({ patch_grid_vb->getDescriptor() }, *input_layout);
-	renderQueue.setIndexBuffer(patch_grid_ib->getDescriptor());
-	renderQueue.setShader(*shader);
-	renderQueue.setTexture2D(0, *hm_tex, SamplerDesc{});
-	renderQueue.setTexture2D(1, *hm_normals_tex, SamplerDesc{});
-	SamplerDesc sd;
-	sd.addrU = TextureAddressMode::Repeat;
-	sd.addrV = TextureAddressMode::Repeat;
-	sd.addrW = TextureAddressMode::Repeat;
-	renderQueue.setTexture2D(2, *slope_tex, sd);
-	renderQueue.setTexture2D(3, *flat_tex, sd);
-
-	TerrainPatchUniforms patchUniforms;
-	patchUniforms.lodLevel = node.lod;
-	patchUniforms.patchOffset = glm::vec2(node.x, node.y);
-	patchUniforms.patchScale = static_cast<float>(node.size);
-	terrain_patch_uniforms->write(patchUniforms);
-
-	renderQueue.setUniformBuffers({
+	context.opaqueList->setConstantBuffers({
 		context.sceneDataCB,
-		terrain_uniforms->getDescriptor(),
-		terrain_patch_uniforms->getDescriptor() });
+		terrain_uniforms.get(),
+		&cbPatchUniforms });
 
-	renderQueue.drawIndexed(PrimitiveType::Triangle, 0, patch_num_indices, 0, 0, 1);
+	context.opaqueList->drawIndexed(PrimitiveType::Triangle, *patch_grid_ib, 0, patch_num_indices, 0, 0, 1);
 }
 
 //=============================================================================

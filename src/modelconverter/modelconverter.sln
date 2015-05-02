@@ -1,20 +1,46 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+VisualStudioVersion = 12.0.40302.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "modelconverter", "modelconverter.csproj", "{4B6E34F2-E610-4DDA-BECE-6507D54328A0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YamlDotNet", "..\..\..\libs\YamlDotNet\YamlDotNet\YamlDotNet.csproj", "{BF32DE1B-6276-4341-B212-F8862ADBBA7A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
+		Release-Portable-Signed|Any CPU = Release-Portable-Signed|Any CPU
+		Release-Portable-Unsigned|Any CPU = Release-Portable-Unsigned|Any CPU
+		Release-Signed|Any CPU = Release-Signed|Any CPU
+		Release-Unsigned|Any CPU = Release-Unsigned|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{4B6E34F2-E610-4DDA-BECE-6507D54328A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4B6E34F2-E610-4DDA-BECE-6507D54328A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4B6E34F2-E610-4DDA-BECE-6507D54328A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4B6E34F2-E610-4DDA-BECE-6507D54328A0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4B6E34F2-E610-4DDA-BECE-6507D54328A0}.Release-Portable-Signed|Any CPU.ActiveCfg = Release|Any CPU
+		{4B6E34F2-E610-4DDA-BECE-6507D54328A0}.Release-Portable-Signed|Any CPU.Build.0 = Release|Any CPU
+		{4B6E34F2-E610-4DDA-BECE-6507D54328A0}.Release-Portable-Unsigned|Any CPU.ActiveCfg = Release|Any CPU
+		{4B6E34F2-E610-4DDA-BECE-6507D54328A0}.Release-Portable-Unsigned|Any CPU.Build.0 = Release|Any CPU
+		{4B6E34F2-E610-4DDA-BECE-6507D54328A0}.Release-Signed|Any CPU.ActiveCfg = Release|Any CPU
+		{4B6E34F2-E610-4DDA-BECE-6507D54328A0}.Release-Signed|Any CPU.Build.0 = Release|Any CPU
+		{4B6E34F2-E610-4DDA-BECE-6507D54328A0}.Release-Unsigned|Any CPU.ActiveCfg = Release|Any CPU
+		{4B6E34F2-E610-4DDA-BECE-6507D54328A0}.Release-Unsigned|Any CPU.Build.0 = Release|Any CPU
+		{BF32DE1B-6276-4341-B212-F8862ADBBA7A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF32DE1B-6276-4341-B212-F8862ADBBA7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF32DE1B-6276-4341-B212-F8862ADBBA7A}.Release|Any CPU.ActiveCfg = Release-Portable-Signed|Any CPU
+		{BF32DE1B-6276-4341-B212-F8862ADBBA7A}.Release|Any CPU.Build.0 = Release-Portable-Signed|Any CPU
+		{BF32DE1B-6276-4341-B212-F8862ADBBA7A}.Release-Portable-Signed|Any CPU.ActiveCfg = Release-Portable-Signed|Any CPU
+		{BF32DE1B-6276-4341-B212-F8862ADBBA7A}.Release-Portable-Signed|Any CPU.Build.0 = Release-Portable-Signed|Any CPU
+		{BF32DE1B-6276-4341-B212-F8862ADBBA7A}.Release-Portable-Unsigned|Any CPU.ActiveCfg = Release-Portable-Unsigned|Any CPU
+		{BF32DE1B-6276-4341-B212-F8862ADBBA7A}.Release-Portable-Unsigned|Any CPU.Build.0 = Release-Portable-Unsigned|Any CPU
+		{BF32DE1B-6276-4341-B212-F8862ADBBA7A}.Release-Signed|Any CPU.ActiveCfg = Release-Signed|Any CPU
+		{BF32DE1B-6276-4341-B212-F8862ADBBA7A}.Release-Signed|Any CPU.Build.0 = Release-Signed|Any CPU
+		{BF32DE1B-6276-4341-B212-F8862ADBBA7A}.Release-Unsigned|Any CPU.ActiveCfg = Release-Unsigned|Any CPU
+		{BF32DE1B-6276-4341-B212-F8862ADBBA7A}.Release-Unsigned|Any CPU.Build.0 = Release-Unsigned|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -23,7 +23,7 @@
 #include <terrain.hpp>
 #include <camera.hpp>
 
-class SkeletonDebug
+/*class SkeletonDebug
 {
 public:
 	static const unsigned kMaxJoints = 60;
@@ -64,7 +64,7 @@ private:
 	Shader::Ptr shader;
 	Mesh* cylinder;
 	Stream::Ptr cb_bone_transforms;
-};
+};*/
 
 //============================================================================
 // Classe de base du jeu
@@ -96,24 +96,24 @@ private:
 	{
 		glm::mat4 modelMatrix;
 		glm::vec4 objectColor;
-	} perObj;
+	};
 
 	struct PerObjectPBR
 	{
 		glm::mat4 modelMatrix;
 		glm::vec4 objectColor;
 		float eta;
-	} perObjPBR;
+	};
 
 	struct EnvCubeParams
 	{
 		glm::mat4 modelMatrix;
-	} envCubeParams;
+	};
 
 	std::unique_ptr<TrackballCameraControl> trackball;
 	Mesh::Ptr mesh;
 	Mesh *mokou = nullptr;
-	SkinnedMesh *mokou_skin = nullptr;
+	//SkinnedMesh *mokou_skin = nullptr;
 
 	gl4::Effect::Ptr effect;
 	gl4::Effect::Ptr effectEnvCube;
@@ -123,12 +123,6 @@ private:
 	Shader::Ptr shaderWireframe;
 	Shader::Ptr shaderPBR;
 	Shader::Ptr shaderEnvCube;
-
-	Stream::Ptr cbSceneData;
-	Stream::Ptr cbPerObj;
-	Stream::Ptr cbPerObjPBR;
-	Stream::Ptr cbEnvmap;
-	Stream::Ptr cbFxParams;
 
 	Texture2D *tex;
 	TextureCubeMap *envmap;
@@ -152,7 +146,7 @@ private:
 
 	Sky sky;
 	std::unique_ptr<Skeleton> skel;
-	std::unique_ptr<SkeletonDebug>  skel_debug;
+	//std::unique_ptr<SkeletonDebug>  skel_debug;
 	SkeletonAnimation skel_animation;
 	std::unique_ptr<SkeletonAnimationSampler> skel_anim_sampler;
 };
@@ -229,17 +223,12 @@ void RiftGame::init()
 	envmap = resources->cubeMaps.load("resources/img/env/uffizi/env.dds");
 	envmap = resources->cubeMaps.load("resources/img/env/uffizi/env.dds");	// TEST
 
-	cbSceneData = Stream::create(BufferUsage::ConstantBuffer, sizeof(SceneData), 3);
-	cbPerObj = Stream::create(BufferUsage::ConstantBuffer, sizeof(PerObject), 3);
-	cbPerObjPBR = Stream::create(BufferUsage::ConstantBuffer, sizeof(PerObjectPBR), 3);
-	cbEnvmap = Stream::create(BufferUsage::ConstantBuffer, sizeof(EnvCubeParams), 3);
-	cbFxParams = Stream::create(BufferUsage::ConstantBuffer, sizeof(FXParams), 3);
 
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	shadowRT = RenderTarget::create(win_size, {}, ElementFormat::Depth16);
 
 	font = Font::loadFromFile("resources/img/fonts/arno_pro.fnt");
-	//hud = std::make_unique<HUDTextRenderer>();
+	hud = std::make_unique<HUDTextRenderer>();
 
 	DepthStencilDesc ds_fx;
 	ds_fx.depthTestEnable = false;
@@ -252,7 +241,7 @@ void RiftGame::init()
 	skel = Skeleton::loadFromBVH(bvh, mappings);
 
 	std::ifstream motion_file("resources/models/animated/mokou_run.bvh");
-	skel_debug = std::make_unique<SkeletonDebug>(*resources);
+	//skel_debug = std::make_unique<SkeletonDebug>(*resources);
 	skel_animation = SkeletonAnimation::loadFromBVH(motion_file, *skel, mappings);
 	skel_anim_sampler = std::make_unique<SkeletonAnimationSampler>(*skel, skel_animation, 0.003f);
 	skel_anim_sampler->nextFrame();
@@ -263,7 +252,7 @@ void RiftGame::init()
 		resources->textures.load("resources/img/grasstile_c.dds"));*/
 
 	// TEST 
-	mokou_skin = resources->skinnedMeshes.load("resources/models/animated/mokou.mesh");
+	//mokou_skin = resources->skinnedMeshes.load("resources/models/animated/mokou.mesh");
 }
 
 
@@ -272,14 +261,11 @@ void RiftGame::render(float dt)
 	// rendu de la scene
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	glm::vec2 win_size_f = glm::vec2(win_size.x, win_size.y);
-	auto &R = Renderer::getInstance();
 	auto cam = trackball->updateCamera();
 
-	RenderQueue opaqueRenderQueue;
-	RenderQueue overlayRenderQueue;
+	CommandBuffer opaqueList;
 	SceneRenderContext context;
-	context.opaqueRenderQueue = &opaqueRenderQueue;
-	context.overlayRenderQueue = &overlayRenderQueue;
+	context.opaqueList = &opaqueList;
 	context.textRenderer = hud.get();
 	context.defaultFont = font.get();
 
@@ -290,88 +276,88 @@ void RiftGame::render(float dt)
 	context.sceneData.viewProjMatrix = cam.projMat * cam.viewMat;
 	context.sceneData.viewportSize = win_size;
 	context.sceneData.lightDir = glm::vec4(0.f, 1.f, 0.f, 0.f);
-	cbSceneData->write(context.sceneData);
-	context.sceneDataCB = cbSceneData->getDescriptor();	
+	auto &sceneDataCB = Renderer::allocTransientBuffer(BufferUsage::ConstantBuffer, sizeof(SceneData));
+	*(sceneDataCB.map_as<SceneData>()) = context.sceneData;
+	context.sceneDataCB = &sceneDataCB;
 
 	// update per-model buffer
-	perObj.modelMatrix = glm::mat4(1.0f);
-	perObj.objectColor = glm::vec4(1.0f);
-	cbPerObj->write(perObj);
+	auto &cbPerObj = Renderer::allocTransientBuffer(BufferUsage::ConstantBuffer, sizeof(PerObject));
+	auto cbPerObjPtr = cbPerObj.map_as<PerObject>();
+	cbPerObjPtr->modelMatrix = glm::mat4(1.0f);
+	cbPerObjPtr->objectColor = glm::vec4(1.0f);
 
 	// update per-model buffer
+	auto &cbPerObjPBR = Renderer::allocTransientBuffer(BufferUsage::ConstantBuffer, sizeof(PerObjectPBR));
+	auto cbPerObjPBRPtr = cbPerObjPBR.map_as<PerObjectPBR>();
 	spinAngle = fmodf(spinAngle + 0.1f*3.14159f*dt, 2 * 3.14159);
-	perObjPBR.modelMatrix = glm::scale(glm::rotate(glm::mat4(1.0f), spinAngle, glm::vec3{ 0, 1, 0 }), glm::vec3(0.01f));
-	//perObjPBR.modelMatrix = glm::mat4();
-	perObjPBR.objectColor = glm::vec4(1.0f);
-	perObjPBR.eta = 1.40f;
-	cbPerObjPBR->write(perObjPBR);
+	cbPerObjPBRPtr->modelMatrix = glm::scale(glm::rotate(glm::mat4(1.0f), spinAngle, glm::vec3{ 0, 1, 0 }), glm::vec3(0.01f));
+	cbPerObjPBRPtr->objectColor = glm::vec4(1.0f);
+	cbPerObjPBRPtr->eta = 1.40f;
 
-	envCubeParams.modelMatrix = 
+	auto &cbEnvmap = Renderer::allocTransientBuffer(BufferUsage::ConstantBuffer, sizeof(EnvCubeParams));
+	auto cbEnvmapPtr = cbEnvmap.map_as<EnvCubeParams>();
+	cbEnvmapPtr->modelMatrix =
 		glm::translate(
 			glm::scale(
 			glm::translate(glm::vec3(context.sceneData.eyePos.x, context.sceneData.eyePos.y, context.sceneData.eyePos.z)),
 				glm::vec3{ 1000.0f, 1000.0f, 1000.0f }),
 			glm::vec3{ -0.5f, -0.5f, -0.5f });
-	cbEnvmap->write(envCubeParams);
 
-	opaqueRenderQueue.beginCommand();
-	opaqueRenderQueue.setShader(*shaderEnvCube);
-	opaqueRenderQueue.setUniformBuffers({ context.sceneDataCB, cbEnvmap->getDescriptor() });
-	opaqueRenderQueue.setTextureCubeMap(0, *envmap, SamplerDesc{});
-	mesh->draw(opaqueRenderQueue, 0);
+	opaqueList.setRenderTarget(*screenRT2);
+	float color[] = { 0.25f, 0.25f, 0.2f, 0.0f };
+	opaqueList.clearColor(color);
+	opaqueList.clearDepth(1.0f);
 
-	skel_anim_sampler->nextFrame();
-	auto pose = skel_anim_sampler->getPose(*skel, glm::mat4(1.0));
-	skel_debug->drawSkeleton(*skel, *skel_anim_sampler, context);
+	opaqueList.setShader(shaderEnvCube.get());
+	opaqueList.setConstantBuffers({ context.sceneDataCB, &cbEnvmap });
+	opaqueList.setTextures({ envmap }, { Renderer::getSampler_LinearClamp() });
+	mesh->draw(opaqueList, 0);
+
+	//skel_anim_sampler->nextFrame();
+	//auto pose = skel_anim_sampler->getPose(*skel, glm::mat4(1.0));
+	//skel_debug->drawSkeleton(*skel, *skel_anim_sampler, context);
 	//mokou_skin->update(pose);
 
 	for (auto submesh = 0u; submesh < mokou->submeshes.size(); ++submesh)
 	{
-		opaqueRenderQueue.beginCommand();
-		opaqueRenderQueue.setShader(*shaderPBR);
-		opaqueRenderQueue.setUniformBuffers({ context.sceneDataCB, cbPerObjPBR->getDescriptor() });
-		opaqueRenderQueue.setTexture2D(0, *tex, SamplerDesc{});
-		opaqueRenderQueue.setTextureCubeMap(1, *envmap, SamplerDesc{});
-		mokou->draw(opaqueRenderQueue, submesh);
+		opaqueList.setShader(shaderPBR.get());
+		opaqueList.setConstantBuffers({ context.sceneDataCB, &cbPerObjPBR });
+		opaqueList.setTextures(
+			{ tex, envmap }, 
+			{ Renderer::getSampler_LinearClamp(), Renderer::getSampler_LinearClamp() });
+		mokou->draw(opaqueList, submesh);
 	}
 
 	// render terrain
 	//terrain->render(context);
 
-	// fence all constant buffer streams
-	cbEnvmap->fence(opaqueRenderQueue);
-	cbSceneData->fence(opaqueRenderQueue);
-	cbPerObj->fence(opaqueRenderQueue);
-	cbPerObjPBR->fence(opaqueRenderQueue);
-
-	screenRT2->clearColor(0.25f, 0.25f, 0.2f, 0.0f);
-	screenRT2->clearDepth(1.0f);
-	screenRT2->commit(opaqueRenderQueue);
-
 	// PostFX pass
-	auto &screen_rt = RenderTarget::getDefaultRenderTarget();
-	FXParams fxp;
-	fxp.thing = 2.0;
-	fxp.vx_offset = 1.0;
-	fxp.rt_w = 1280;
-	fxp.rt_h = 720;
-	cbFxParams->write(fxp);
-	RenderQueue tmp;
-	tmp.beginCommand();
-	tmp.setShader(*passthrough);
-	tmp.setTexture2D(0, screenRT2->getColorTexture(0), SamplerDesc{});
-	tmp.setTexture2D(0, screenRT2->getDepthTexture(), SamplerDesc{});
-	tmp.setUniformBuffers({ cbFxParams->getDescriptor() });
-	tmp.draw(PrimitiveType::Triangle, 0, 3, 0, 1);
-	screen_rt.clearColor(0.2, 0.7, 0.2, 1.0);
-	screen_rt.clearDepth(1.0);
-	screen_rt.commit(tmp);
-	/*hud->renderText(*context.overlayRenderQueue, "Hello world!", *font, { 10.0, 10.0 }, win_size_f, Color::White, Color::Black);
-	hud->renderText(*context.overlayRenderQueue, "Frame " + std::to_string(numFrames), *font, { 10.0, 50.0 }, win_size_f, Color::White, Color::Black);
-	hud->renderText(*context.overlayRenderQueue, "dt " + std::to_string(dt), *font, { 10.0, 90.0 }, win_size_f, Color::White, Color::Black);*/
-	//hud->fence(*context.overlayRenderQueue);
-	cbFxParams->fence(overlayRenderQueue);
-	screen_rt.commit(overlayRenderQueue);
+	auto &cbFxParams = Renderer::allocTransientBuffer(BufferUsage::ConstantBuffer, sizeof(FXParams));
+	auto cbFxParamsPtr = cbFxParams.map_as<FXParams>();
+	cbFxParamsPtr->thing = 2.0;
+	cbFxParamsPtr->vx_offset = 1.0;
+	cbFxParamsPtr->rt_w = 1280;
+	cbFxParamsPtr->rt_h = 720;
+
+	CommandBuffer postProc;
+	postProc.setScreenRenderTarget();
+	float screenColor[] = { 0.2, 0.7, 0.2, 1.0 };
+	postProc.clearColor(screenColor);
+	postProc.clearDepth(1.0f);
+
+	postProc.setShader(passthrough.get());
+	postProc.setTextures(
+		{ &screenRT2->getColorTexture(0), &screenRT2->getDepthTexture() },
+		{ Renderer::getSampler_LinearClamp(), Renderer::getSampler_LinearClamp() });
+	postProc.setConstantBuffers({ &cbFxParams });
+	postProc.drawProcedural(PrimitiveType::Triangle, 0, 3, 0, 1);
+
+	hud->renderText(postProc, "Hello world!", *font, { 10.0, 10.0 }, win_size_f, Color::White, Color::Black);
+	hud->renderText(postProc, "Frame " + std::to_string(numFrames), *font, { 10.0, 50.0 }, win_size_f, Color::White, Color::Black);
+	hud->renderText(postProc, "dt " + std::to_string(dt), *font, { 10.0, 90.0 }, win_size_f, Color::White, Color::Black);
+
+	Renderer::execute(opaqueList);
+	Renderer::execute(postProc);
 }
 
 void RiftGame::update(float dt)

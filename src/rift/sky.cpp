@@ -59,8 +59,6 @@ Sky::Sky()
 	auto effect = gl4::Effect::loadFromFile("resources/shaders/sky.glsl");
 	skyShader = effect->compileShader();
 
-	cbSkyParams = Stream::create(BufferUsage::ConstantBuffer, sizeof(SkyParams), 3);
-
 	skybox = Mesh::create(
 		{ Attribute{ ElementFormat::Float3 } },
 		36, 
@@ -81,17 +79,16 @@ void Sky::render(
 	SceneRenderContext &context
 	)
 {
-	SkyParams params;
 	using namespace glm;
 	float sunAngle = timeOfDay / 24.0f * 2 * 3.14159f;
-	params.sunDirection = vec3(cosf(sunAngle), sinf(sunAngle), 0);
-	params.sunColor = vec3(1.0f, 1.0f, 1.0f);
-	cbSkyParams->write(params);
+	auto &paramsCB = Renderer::allocTransientBuffer(BufferUsage::ConstantBuffer, sizeof(SkyParams));
+	auto params = paramsCB.map_as<SkyParams>();
+	params->sunDirection = vec3(cosf(sunAngle), sinf(sunAngle), 0);
+	params->sunColor = vec3(1.0f, 1.0f, 1.0f);
 
-	auto &renderQueue = *context.opaqueRenderQueue;
-	renderQueue.beginCommand();
-	renderQueue.setUniformBuffers({ context.sceneDataCB, cbSkyParams->getDescriptor() });
-	renderQueue.setShader(*skyShader);
-	skybox->draw(renderQueue, 0);
+	auto cmdBuf = *context.opaqueList;
+	cmdBuf.setConstantBuffers({ context.sceneDataCB, &paramsCB });
+	cmdBuf.setShader(skyShader.get());
+	skybox->draw(cmdBuf, 0);
 }
 
