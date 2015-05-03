@@ -10,60 +10,64 @@ struct NVGscissor;
 struct NVGpath;
 struct NVGvertex;
 
-namespace nvg { namespace detail {
+namespace nvg {
+	namespace backend {
 
-class Renderer
-{
-public:
-	int renderCreate();
-	int renderCreateTexture(int type, int w, int h, int imageFlags, const unsigned char* data);
-	int renderDeleteTexture(int image);
-	int renderUpdateTexture(int image, int x, int y, int w, int h, const unsigned char* data);
-	int renderGetTextureSize(int image, int* w, int* h);
-	void renderViewport(int width, int height);
-	void renderCancel();
-	void renderFlush();
+		class Renderer
+		{
+		public:
+			int renderCreate();
+			int renderCreateTexture(int type, int w, int h, int imageFlags, const unsigned char* data);
+			int renderDeleteTexture(int image);
+			int renderUpdateTexture(int image, int x, int y, int w, int h, const unsigned char* data);
+			int renderGetTextureSize(int image, int* w, int* h);
+			void renderViewport(int width, int height);
+			void renderCancel();
+			void renderFlush();
 
-	void renderFill(
-		NVGpaint* paint, 
-		NVGscissor* scissor, 
-		float fringe, 
-		const float* bounds, 
-		const NVGpath* paths, 
-		int npaths);
+			void renderFill(
+				NVGpaint* paint,
+				NVGscissor* scissor,
+				float fringe,
+				const float* bounds,
+				const NVGpath* paths,
+				int npaths);
 
-	void renderStroke(
-		NVGpaint* paint, 
-		NVGscissor* scissor, 
-		float fringe, 
-		float strokeWidth, 
-		const NVGpath* paths, 
-		int npaths);
+			void renderStroke(
+				NVGpaint* paint,
+				NVGscissor* scissor,
+				float fringe,
+				float strokeWidth,
+				const NVGpath* paths,
+				int npaths);
 
-	void renderTriangles(
-		NVGpaint* paint, 
-		NVGscissor* scissor, 
-		const NVGvertex* verts, 
-		int nverts);
+			void renderTriangles(
+				NVGpaint* paint,
+				NVGscissor* scissor,
+				const NVGvertex* verts,
+				int nverts);
 
-	void renderDelete();
+			void renderDelete();
 
-private:
-	Shader::Ptr stencilPass;
-	Shader::Ptr aaPass;
-	Shader::Ptr fillPass;
-	Shader::Ptr defaultPass;
+		private:
+			Shader::Ptr stencilPass;
+			Shader::Ptr aaPass;
+			Shader::Ptr fillPass;
+			Shader::Ptr defaultPass;
+			InputLayout::Ptr layout;
+			CommandBuffer cmdBuf;
+			unsigned viewportWidth, viewportHeight;
 
-	InputLayout::Ptr inputLayout;
-	struct Vertex
-	{
-		float x, y, tx, ty;
-	};
-	std::vector<Vertex> vertices;
-};
+			struct Vertex
+			{
+				float x, y, u, v;
+			};
+			std::vector<Vertex> vertices;
+		};
 
-NVGcontext* createContext();
+		NVGcontext* createContext();
 
-}}
+	}
+}
  
 #endif /* end of include guard: NANOVG_BACKEND_HPP */

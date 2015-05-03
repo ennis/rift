@@ -3,18 +3,18 @@
 #include <log.hpp>
 #include <gl4/effect.hpp>
 
-namespace nvg { namespace detail {
+namespace nvg { namespace backend {
 
 	struct FillShaderParams
 	{
-		glm::vec2 viewSize;
-		glm::mat3 scissorMat;
-		glm::mat3 paintMat;
+		glm::mat3x4 scissorMat;
+		glm::mat3x4 paintMat;
 		glm::vec4 innerCol;
 		glm::vec4 outerCol;
 		glm::vec2 scissorExt;
 		glm::vec2 scissorScale;
 		glm::vec2 extent;
+		glm::vec2 viewSize;
 		float radius;
 		float feather;
 		float strokeMult;
@@ -22,6 +22,19 @@ namespace nvg { namespace detail {
 		int texType;
 		int type;
 	};
+
+	namespace
+	{
+		int maxVertCount(const NVGpath* paths, int npaths)
+		{
+			int i, count = 0;
+			for (i = 0; i < npaths; i++) {
+				count += paths[i].nfill;
+				count += paths[i].nstroke;
+			}
+			return count;
+		}
+	}
 
 	int Renderer::renderCreate()
 	{
@@ -57,7 +70,7 @@ namespace nvg { namespace detail {
 		ds.stencilTestEnable = false;
 		defaultPass = effect->compileShader({}, RasterizerDesc{}, ds);
 
-		inputLayout = InputLayout::create(1, { Attribute{ ElementFormat::Float2 }, Attribute{ ElementFormat::Float2 } });
+		layout = InputLayout::create(1, { Attribute{ ElementFormat::Float2 }, Attribute{ ElementFormat::Float2 } });
 		return 1;
 	}
 
@@ -87,7 +100,9 @@ namespace nvg { namespace detail {
 
 	void Renderer::renderViewport(int width, int height)
 	{
-		LOG << "renderViewport " << width << ' ' << height;
+		//LOG << "renderViewport " << width << ' ' << height;
+		viewportWidth = width;
+		viewportHeight = height;
 	}
 
 	void Renderer::renderCancel()
@@ -97,7 +112,9 @@ namespace nvg { namespace detail {
 
 	void Renderer::renderFlush()
 	{
-		LOG << "renderFlush";
+		::Renderer::execute(cmdBuf);
+		cmdBuf = {};
+		//LOG << "renderFlush";
 	}
 
 	void Renderer::renderFill(
@@ -108,13 +125,45 @@ namespace nvg { namespace detail {
 		const NVGpath* paths, 
 		int npaths)
 	{
-		LOG << "renderFill";
+		//LOG << "renderFill";
 
+		// allocate space for the vertices
+		auto maxVerts = maxVertCount(paths, npaths);
+		auto &buf = ::Renderer::allocTransientBuffer(BufferUsage::VertexBuffer, sizeof(Vertex) * maxVerts, nullptr);
+		auto vptr = buf.map_as<Vertex>();
+		int voffset = 0;
 		for (int i = 0; i < npaths; ++i)
 		{
 			auto p = paths[i];
+			//LOG << "p.closed " << p.closed << " p.count " << p.count << " p.nfill " << p.nfill << " p.nstroke " << p.nstroke;
+			// copy vertices
+			for (int v = 0; v < p.nstroke; ++v, ++voffset)
+			{
+				vptr[voffset].x = p.stroke[v].x;
+				vptr[voffset].y = p.stroke[v].y;
+				vptr[voffset].u = p.stroke[v].u;
+				vptr[voffset].v = p.stroke[v].v;
+			}
 			
+			for (int v = 0; v < p.nfill; ++v, ++voffset)
+			{
+				vptr[voffset].x = p.fill[v].x;
+				vptr[voffset].y = p.fill[v].y;
+				vptr[voffset].u = p.fill[v].u;
+				vptr[voffset].v = p.fill[v].v;
+			}
 		}
+
+		auto &cb = ::Renderer::allocTransientBuffer(BufferUsage::ConstantBuffer, sizeof(FillShaderParams), nullptr);
+		auto cbPtr = cb.map_as<FillShaderParams>();
+		cbPtr->type = 2;
+		cbPtr->viewSize = glm::vec2(viewportWidth, viewportHeight);
+
+		cmdBuf.setScreenRenderTarget();
+		cmdBuf.setVertexBuffers({ &buf }, *layout);
+		cmdBuf.setConstantBuffers({ &cb });
+		cmdBuf.setShader(stencilPass.get());
+		cmdBuf.draw(PrimitiveType::TriangleStrip, 0, voffset, 0, 1);
 	}
 
 	void Renderer::renderStroke(
