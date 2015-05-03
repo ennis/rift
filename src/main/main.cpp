@@ -2,6 +2,11 @@
 #include <string>
 #include <transform.hpp>
 #include <log.hpp>
+<<<<<<< HEAD
+=======
+#include <freecameracontrol.hpp>
+#include <entity2.hpp>
+>>>>>>> entity_system
 #include <AntTweakBar.h>
 #include <serialization.hpp>
 #include <scene.hpp>
@@ -154,9 +159,62 @@ private:
 	std::unique_ptr<SkeletonAnimationSampler> skel_anim_sampler;
 };
 
+
+// entity test!
+
+struct Position : public util::ecs::component<Position>
+{
+	Position(int x_, int y_) : x(x_), y(y_)
+	{
+		LOG << "CTOR Position";
+	}
+
+	~Position() 
+	{
+		LOG << "DTOR Position";
+	}
+
+	int x, y;
+};
+
+struct Health : public util::ecs::component<Health>
+{
+	Health(int hp_, int sp_) : hp(hp_), sp(sp_)
+	{
+		LOG << "CTOR Health";
+	}
+	
+	~Health()
+	{
+		LOG << "DTOR Health";
+	}
+
+	int hp, sp;
+};
+
+
+
 //============================================================================
 void RiftGame::init()
 {
+	boost::filesystem::path path(".");
+
+	using namespace util::ecs;
+	world w;
+	entity *e = w.create_entity();
+
+
+	w.add_component<Health>(e, 200, 10);
+	w.add_component<Position>(e, 10, 10);
+	w.get_component<Health>(e);
+	w.add_component<Health>(e, 200, 10);
+	w.add_component<Position>(e, 10, 10);
+
+	w.remove_component<Health>(e);
+	w.add_component<Health>(e, 300, 10);
+
+	w.delete_entity(e);
+	
 	resources = std::make_unique<Resources>();
 	trackball = std::make_unique<TrackballCameraControl>(
 		Engine::instance().getWindow(),
