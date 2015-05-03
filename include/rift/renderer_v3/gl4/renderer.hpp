@@ -47,6 +47,8 @@ namespace gl4
 	GLenum cullModeToGLenum(CullMode mode);
 	GLenum fillModeToGLenum(PolygonFillMode fillMode);
 	GLenum primitiveTypeToGLenum(PrimitiveType type);
+	GLenum stencilOpToGLenum(StencilOp op);
+	GLenum stencilFuncToGLenum(StencilFunc func);
 	GLuint createBuffer(
 		GLenum bindingPoint,
 		int size,
@@ -309,7 +311,9 @@ namespace gl4
 			util::array_ref<const Sampler*> samplers);
 
 		void setShader(
-			const Shader *shader);
+			const Shader *shader);	
+		
+		void setStencilRef(int8_t ref);
 
 		void draw(
 			PrimitiveType primitiveType,

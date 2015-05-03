@@ -121,11 +121,58 @@ struct RasterizerDesc
 	bool depthClipEnable = true;
 };
 
+enum class StencilFunc : int
+{
+	Never = 0,
+	Always,
+	Less,
+	LessOrEqual,
+	Greater,
+	GreaterOrEqual,
+	Equal,
+	NotEqual,
+	Max
+};
+
+enum class StencilOp
+{
+	Keep,
+	Zero,
+	Increment,
+	Decrement,
+	Invert, 
+	Replace,
+	IncrementWrap,
+	DecrementWrap,
+	Max
+};
+
+struct StencilOpDesc
+{
+	StencilOpDesc() = default;
+
+	StencilOpDesc(StencilOp stencilFailOp_, StencilOp depthFailOp_, StencilOp passOp_, StencilFunc comparisonFunc_):
+		stencilFailOp(stencilFailOp_),
+		depthFailOp(depthFailOp_),
+		passOp(passOp_),
+		comparisonFunc(comparisonFunc_)
+	{}
+	
+	StencilOp stencilFailOp = StencilOp::Keep;
+	StencilOp depthFailOp = StencilOp::Keep;
+	StencilOp passOp = StencilOp::Keep;
+	StencilFunc comparisonFunc = StencilFunc::Always;
+};
+
 struct DepthStencilDesc
 {
 	DepthStencilDesc() = default;
 	bool depthTestEnable = true;
 	bool depthWriteEnable = true;
+	bool stencilTestEnable = false;
+	uint8_t stencilMask = 0xFF;
+	StencilOpDesc stencilOpFront;
+	StencilOpDesc stencilOpBack;
 };
 
 struct SamplerDesc

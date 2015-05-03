@@ -168,4 +168,38 @@ namespace gl4
 	{
 		return primitiveTypeToGLenum_[static_cast<int>(type)];
 	}
+
+	GLenum stencilOpToGLenum_[(int)StencilOp::Max]
+	{
+		/*Keep*/ gl::KEEP,
+		/*Zero*/ gl::ZERO,
+		/*Increment*/ gl::INCR,
+		/*Decrement*/ gl::DECR,
+		/*Invert*/ gl::INVERT,
+		/*Replace*/ gl::REPLACE,
+		/*IncrementWrap*/ gl::INCR_WRAP,
+		/*DecrementWrap*/ gl::DECR_WRAP
+	};
+
+	GLenum stencilOpToGLenum(StencilOp op)
+	{
+		return stencilOpToGLenum_[(int)op];
+	}
+
+	GLenum stencilFuncToGLenum_[(int)StencilFunc::Max]
+	{
+		/*Never*/ gl::NEVER,
+		/*Always*/ gl::ALWAYS,
+		/*Less*/ gl::LESS,
+		/*LessOrEqual*/ gl::LEQUAL,
+		/*Greater*/ gl::GREATER,
+		/*GreaterOrEqual*/ gl::GEQUAL,
+		/*Equal*/ gl::EQUAL,
+		/*NotEqual*/ gl::NOTEQUAL
+	};
+
+	GLenum stencilFuncToGLenum(StencilFunc func)
+	{
+		return stencilFuncToGLenum_[(int)func];
+	}
 }

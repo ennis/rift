@@ -2,11 +2,7 @@
 #include <string>
 #include <transform.hpp>
 #include <log.hpp>
-<<<<<<< HEAD
-=======
-#include <freecameracontrol.hpp>
-#include <entity2.hpp>
->>>>>>> entity_system
+#include <entity.hpp>
 #include <AntTweakBar.h>
 #include <serialization.hpp>
 #include <scene.hpp>
@@ -27,6 +23,8 @@
 #include <terrain.hpp>
 #include <camera.hpp>
 #include <textrenderer.hpp>
+#include <nanovg/nanovg.h>
+#include <nanovg/nanovg_backend.hpp>
 
 /*class SkeletonDebug
 {
@@ -157,6 +155,9 @@ private:
 	//std::unique_ptr<SkeletonDebug>  skel_debug;
 	SkeletonAnimation skel_animation;
 	std::unique_ptr<SkeletonAnimationSampler> skel_anim_sampler;
+
+	util::ecs::world world;
+	NVGcontext *nvg_context;
 };
 
 
@@ -193,27 +194,22 @@ struct Health : public util::ecs::component<Health>
 };
 
 
-
 //============================================================================
 void RiftGame::init()
 {
-	boost::filesystem::path path(".");
+	//using namespace util::ecs;
+	auto e = world.create_entity();
 
-	using namespace util::ecs;
-	world w;
-	entity *e = w.create_entity();
+	world.add_component<Health>(e, 200, 10);
+	world.add_component<Position>(e, 10, 10);
+	world.get_component<Health>(e);
+	world.add_component<Health>(e, 200, 10);
+	world.add_component<Position>(e, 10, 10);
 
+	world.remove_component<Health>(e);
+	world.add_component<Health>(e, 300, 10);
 
-	w.add_component<Health>(e, 200, 10);
-	w.add_component<Position>(e, 10, 10);
-	w.get_component<Health>(e);
-	w.add_component<Health>(e, 200, 10);
-	w.add_component<Position>(e, 10, 10);
-
-	w.remove_component<Health>(e);
-	w.add_component<Health>(e, 300, 10);
-
-	w.delete_entity(e);
+	//w.delete_entity(e);
 	
 	resources = std::make_unique<Resources>();
 	trackball = std::make_unique<TrackballCameraControl>(
@@ -287,7 +283,7 @@ void RiftGame::init()
 	glm::ivec2 win_size = Engine::instance().getWindow().size();
 	shadowRT = RenderTarget::create(win_size, {}, ElementFormat::Depth16);
 
-	debugFont = Font::loadFromFile("resources/img/fonts/lucida_console.fnt");
+	debugFont = Font::loadFromFile("resources/img/fonts/debug.fnt");
 	font = Font::loadFromFile("resources/img/fonts/arno_pro.fnt");
 	hud = std::make_unique<TextRenderer>();
 
@@ -314,6 +310,7 @@ void RiftGame::init()
 
 	// TEST 
 	//mokou_skin = resources->skinnedMeshes.load("resources/models/animated/mokou.mesh");
+	nvg_context = nvg::detail::createContext();
 }
 
 
@@ -414,6 +411,7 @@ void RiftGame::render(float dt)
 
 	Logging::screenMessage("F       : " + std::to_string(numFrames));
 	Logging::screenMessage("DT      : " + std::to_string(dt));
+	Logging::screenMessage("E       : " + std::to_string(world.size()));
 
 	Renderer::execute(opaqueList);
 	Renderer::execute(postProc);
@@ -429,17 +427,34 @@ void RiftGame::renderDebugHud()
 	unsigned yinc = debugFont->getMetrics().height;
 	for (auto &&line : lines)
 	{
+		// drop shadow FTW
+		hud->render(
+			cmdBuf,
+			line,
+			*debugFont,
+			glm::vec2(xpos+2, ypos+2),
+			glm::vec2(sizeX, sizeY),
+			Color::Black,
+			glm::vec4(0.0, 0.0, 0.0, 0.0));
 		hud->render(
 			cmdBuf,
 			line,
 			*debugFont,
 			glm::vec2(xpos, ypos),
 			glm::vec2(sizeX, sizeY),
-			Color::Red,
-			Color::Black);
+			Color::White,
+			glm::vec4(0.0, 0.0, 0.0, 0.0));
 		ypos += yinc;
 	}
 	Renderer::execute(cmdBuf);
+	nvgBeginFrame(nvg_context, sizeX, sizeY, 1.0f);
+	nvgBeginPath(nvg_context);
+	nvgRect(nvg_context, 100, 100, 120, 30);
+	nvgCircle(nvg_context, 120, 120, 5);
+	nvgPathWinding(nvg_context, NVG_HOLE);   // Mark circle as a hole.
+	nvgFillColor(nvg_context, nvgRGBA(255, 192, 0, 255));
+	nvgFill(nvg_context);
+	nvgEndFrame(nvg_context);
 }
 
 void RiftGame::update(float dt)

@@ -20,6 +20,7 @@ namespace gl4
 				SetTextures,
 				SetRenderTarget,
 				SetScreenRenderTarget,
+				SetStencilRef,
 				SetShader
 			};
 
@@ -27,6 +28,47 @@ namespace gl4
 			{}
 
 			Opcode op;
+		};
+
+		struct CommandContext
+		{
+			bool updateStencilState = true;
+			DepthStencilDesc lastDepthStencilState;
+			int stencilRef = 0;
+
+			void prepareDrawCommand()
+			{
+				// stencil test
+				if (lastDepthStencilState.stencilTestEnable)
+				{
+					gl::Enable(gl::STENCIL_TEST);
+					gl::StencilFuncSeparate(
+						gl::FRONT, 
+						stencilFuncToGLenum(lastDepthStencilState.stencilOpFront.comparisonFunc), 
+						stencilRef, 
+						lastDepthStencilState.stencilMask);
+					gl::StencilFuncSeparate(
+						gl::BACK,
+						stencilFuncToGLenum(lastDepthStencilState.stencilOpBack.comparisonFunc),
+						stencilRef,
+						lastDepthStencilState.stencilMask);
+					gl::StencilOpSeparate(
+						gl::FRONT,
+						stencilOpToGLenum(lastDepthStencilState.stencilOpFront.stencilFailOp),
+						stencilOpToGLenum(lastDepthStencilState.stencilOpFront.depthFailOp),
+						stencilOpToGLenum(lastDepthStencilState.stencilOpFront.passOp));
+					gl::StencilOpSeparate(
+						gl::BACK,
+						stencilOpToGLenum(lastDepthStencilState.stencilOpBack.stencilFailOp),
+						stencilOpToGLenum(lastDepthStencilState.stencilOpBack.depthFailOp),
+						stencilOpToGLenum(lastDepthStencilState.stencilOpBack.passOp));
+				}
+				else
+				{
+					gl::Disable(gl::STENCIL_TEST);
+				}
+				updateStencilState = false;
+			}
 		};
 
 		template <Command::Opcode Op>
@@ -69,7 +111,7 @@ namespace gl4
 
 			const RenderTarget *render_target;
 
-			void execute() const
+			void execute(CommandContext& ctx) const
 			{
 				gl::BindFramebuffer(gl::FRAMEBUFFER, render_target->fbo);
 				gl::Viewport(0, 0, render_target->size.x, render_target->size.y);
@@ -78,7 +120,7 @@ namespace gl4
 
 		struct CmdSetScreenRenderTarget : public TCommand<Command::SetScreenRenderTarget>
 		{
-			void execute() const
+			void execute(CommandContext& ctx) const
 			{
 				gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
 				auto screen_size = Engine::instance().getWindow().size();
@@ -90,7 +132,7 @@ namespace gl4
 		{
 			VertexBufferStateGroup state;
 			
-			void execute() const
+			void execute(CommandContext& ctx) const
 			{
 				gl::BindVertexArray(state.input_layout->vao);
 				gl::BindVertexBuffers(0,
@@ -105,7 +147,7 @@ namespace gl4
 		{
 			ConstantBufferStateGroup state;
 
-			void execute() const
+			void execute(CommandContext& ctx) const
 			{
 				if (state.num_uniform_buffers)
 				{
@@ -125,7 +167,7 @@ namespace gl4
 		{
 			TextureStateGroup state;
 
-			void execute() const
+			void execute(CommandContext& ctx) const
 			{
 				if (state.num_textures)
 				{
@@ -139,7 +181,7 @@ namespace gl4
 		{
 			const Shader *shader;
 
-			void execute() const
+			void execute(CommandContext& ctx) const
 			{
 				gl::UseProgram(shader->program);
 				if (shader->rs_state.cullMode == CullMode::None) {
@@ -159,6 +201,9 @@ namespace gl4
 					gl::DepthMask(gl::TRUE_);
 				else
 					gl::DepthMask(gl::FALSE_);
+
+				ctx.lastDepthStencilState = shader->ds_state;
+				ctx.updateStencilState = true;
 
 				// OM / blend state
 				// XXX this ain't cheap
@@ -188,8 +233,9 @@ namespace gl4
 			unsigned instance_count;
 			GLenum mode;
 
-			void execute() const
+			void execute(CommandContext& ctx) const
 			{
+				ctx.prepareDrawCommand();
 				gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, index_buffer);
 				gl::DrawElementsInstancedBaseVertexBaseInstance(
 					mode,
@@ -210,8 +256,9 @@ namespace gl4
 			unsigned instance_count;
 			GLenum mode;
 
-			void execute() const
+			void execute(CommandContext& ctx) const
 			{
+				ctx.prepareDrawCommand();
 				gl::DrawArraysInstancedBaseInstance(
 					mode,
 					first_vertex,
@@ -229,8 +276,9 @@ namespace gl4
 			unsigned instance_count;
 			GLenum mode;
 
-			void execute() const
+			void execute(CommandContext& ctx) const
 			{
+				ctx.prepareDrawCommand();
 				gl::BindVertexArray(dummy_vao);
 				gl::DrawArraysInstancedBaseInstance(
 					mode,
@@ -245,7 +293,7 @@ namespace gl4
 		{
 			float color[4];
 
-			void execute() const
+			void execute(CommandContext& ctx) const
 			{
 				gl::ClearColor(color[0], color[1], color[2], color[3]);
 				gl::Clear(gl::COLOR_BUFFER_BIT);
@@ -256,11 +304,22 @@ namespace gl4
 		{
 			float depth;
 
-			void execute() const
+			void execute(CommandContext& ctx) const
 			{
 				gl::DepthMask(gl::TRUE_);
 				gl::ClearDepth(depth);
 				gl::Clear(gl::DEPTH_BUFFER_BIT);
+			}
+		};
+
+		struct CmdSetStencilRef : public TCommand<Command::SetStencilRef>
+		{
+			int8_t ref;
+
+			void execute(CommandContext& ctx) const
+			{
+				ctx.stencilRef = ref;
+				ctx.updateStencilState = true;
 			}
 		};
 	}
@@ -303,6 +362,13 @@ namespace gl4
 	{
 		CmdClearDepth cmd;
 		cmd.depth = depth;
+		write(&cmd, sizeof(cmd));
+	}
+
+	void CommandBuffer::setStencilRef(int8_t ref)
+	{
+		CmdSetStencilRef cmd;
+		cmd.ref = ref;
 		write(&cmd, sizeof(cmd));
 	}
 
@@ -420,9 +486,9 @@ namespace gl4
 namespace Renderer
 {
 	template <typename T>
-	void executeImpl(char *&ptr)
+	void executeImpl(gl4::CommandContext &ctx, char *&ptr)
 	{
-		((const T*)ptr)->execute();
+		((const T*)ptr)->execute(ctx);
 		ptr += sizeof(T);
 	}
 
@@ -431,46 +497,47 @@ namespace Renderer
 		using namespace gl4;
 		char *ptr = buffer.cmdBuf.data();
 		char *endptr = ptr + buffer.writePtr;
+		gl4::CommandContext ctx;
 		while (ptr < endptr)
 		{
 			auto opcode = *(Command::Opcode*)ptr;
 			switch (opcode)
 			{
 			case Command::Draw:
-				executeImpl<CmdDraw>(ptr);
+				executeImpl<CmdDraw>(ctx, ptr);
 				break;
 			case Command::DrawIndexed:
-				executeImpl<CmdDrawIndexed>(ptr);
+				executeImpl<CmdDrawIndexed>(ctx, ptr);
 				break;
 			case Command::DrawProcedural:
-				executeImpl<CmdDrawProcedural>(ptr);
+				executeImpl<CmdDrawProcedural>(ctx, ptr);
 				break;
 			case Command::ClearColor:
-				executeImpl<CmdClearColor>(ptr);
+				executeImpl<CmdClearColor>(ctx, ptr);
 				break;
 			case Command::ClearDepth:
-				executeImpl<CmdClearDepth>(ptr);
+				executeImpl<CmdClearDepth>(ctx, ptr);
 				break;
 			case Command::Blit:
 				//
 				break;
 			case Command::SetVertexBuffers:
-				executeImpl<CmdSetVertexBuffers>(ptr);
+				executeImpl<CmdSetVertexBuffers>(ctx, ptr);
 				break;
 			case Command::SetConstantBuffers:
-				executeImpl<CmdSetConstantBuffers>(ptr);
+				executeImpl<CmdSetConstantBuffers>(ctx, ptr);
 				break;
 			case Command::SetTextures:
-				executeImpl<CmdSetTextures>(ptr);
+				executeImpl<CmdSetTextures>(ctx, ptr);
 				break;
 			case Command::SetRenderTarget:
-				executeImpl<CmdSetRenderTarget>(ptr);
+				executeImpl<CmdSetRenderTarget>(ctx, ptr);
 				break;
 			case Command::SetScreenRenderTarget:
-				executeImpl<CmdSetScreenRenderTarget>(ptr);
+				executeImpl<CmdSetScreenRenderTarget>(ctx, ptr);
 				break;
 			case Command::SetShader:
-				executeImpl<CmdSetShader>(ptr);
+				executeImpl<CmdSetShader>(ctx, ptr);
 				break;
 			}
 		}
