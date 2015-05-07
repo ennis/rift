@@ -21,7 +21,7 @@ namespace gl4
 				SetRenderTarget,
 				SetScreenRenderTarget,
 				SetStencilRef,
-				SetShader
+				SetPipelineState
 			};
 
 			Command(Opcode op_) : op(op_)
@@ -177,32 +177,32 @@ namespace gl4
 			}
 		};
 
-		struct CmdSetShader : public TCommand<Command::SetShader>
+		struct CmdSetPipelineState : public TCommand<Command::SetPipelineState>
 		{
-			const Shader *shader;
+			const PipelineState *pipeline_state;
 
 			void execute(CommandContext& ctx) const
 			{
-				gl::UseProgram(shader->program);
-				if (shader->rs_state.cullMode == CullMode::None) {
+				gl::UseProgram(pipeline_state->program);
+				if (pipeline_state->rs_state.cullMode == CullMode::None) {
 					gl::Disable(gl::CULL_FACE);
 				}
 				else {
 					gl::Enable(gl::CULL_FACE);
-					gl::CullFace(cullModeToGLenum(shader->rs_state.cullMode));
+					gl::CullFace(cullModeToGLenum(pipeline_state->rs_state.cullMode));
 				}
-				gl::PolygonMode(gl::FRONT_AND_BACK, fillModeToGLenum(shader->rs_state.fillMode));
+				gl::PolygonMode(gl::FRONT_AND_BACK, fillModeToGLenum(pipeline_state->rs_state.fillMode));
 				gl::Enable(gl::DEPTH_TEST);
-				if (!shader->ds_state.depthTestEnable)
+				if (!pipeline_state->ds_state.depthTestEnable)
 					gl::DepthFunc(gl::ALWAYS);
 				else
 					gl::DepthFunc(gl::LEQUAL);
-				if (shader->ds_state.depthWriteEnable)
+				if (pipeline_state->ds_state.depthWriteEnable)
 					gl::DepthMask(gl::TRUE_);
 				else
 					gl::DepthMask(gl::FALSE_);
 
-				ctx.lastDepthStencilState = shader->ds_state;
+				ctx.lastDepthStencilState = pipeline_state->ds_state;
 				ctx.updateStencilState = true;
 
 				// OM / blend state
@@ -211,14 +211,14 @@ namespace gl4
 				gl::Enable(gl::BLEND);
 				gl::BlendEquationSeparatei(
 					0,
-					blendOpToGL(shader->om_state.rgbOp),
-					blendOpToGL(shader->om_state.alphaOp));
+					blendOpToGL(pipeline_state->om_state.rgbOp),
+					blendOpToGL(pipeline_state->om_state.alphaOp));
 				gl::BlendFuncSeparatei(
 					0,
-					blendFactorToGL(shader->om_state.rgbSrcFactor),
-					blendFactorToGL(shader->om_state.rgbDestFactor),
-					blendFactorToGL(shader->om_state.alphaSrcFactor),
-					blendFactorToGL(shader->om_state.alphaDestFactor));
+					blendFactorToGL(pipeline_state->om_state.rgbSrcFactor),
+					blendFactorToGL(pipeline_state->om_state.rgbDestFactor),
+					blendFactorToGL(pipeline_state->om_state.alphaSrcFactor),
+					blendFactorToGL(pipeline_state->om_state.alphaDestFactor));
 			}
 		};
 
@@ -417,11 +417,11 @@ namespace gl4
 		write(&cmd, sizeof(cmd));
 	}
 
-	void CommandBuffer::setShader(
-		const Shader *shader)
+	void CommandBuffer::setPipelineState(
+		const PipelineState *pipelineState)
 	{
-		CmdSetShader cmd;
-		cmd.shader = shader;
+		CmdSetPipelineState cmd;
+		cmd.pipeline_state = pipelineState;
 		write(&cmd, sizeof(cmd));
 	}
 
@@ -536,8 +536,8 @@ namespace Renderer
 			case Command::SetScreenRenderTarget:
 				executeImpl<CmdSetScreenRenderTarget>(ctx, ptr);
 				break;
-			case Command::SetShader:
-				executeImpl<CmdSetShader>(ctx, ptr);
+			case Command::SetPipelineState:
+				executeImpl<CmdSetPipelineState>(ctx, ptr);
 				break;
 			}
 		}

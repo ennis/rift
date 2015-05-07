@@ -1,6 +1,6 @@
 #include <textrenderer.hpp>
 #include <cstring>
-#include <effect.hpp>
+#include <gl4/shadercompiler.hpp>
 #include <transform.hpp>
 
 namespace
@@ -23,14 +23,23 @@ namespace
 TextRenderer::TextRenderer()
 {
 	layout = InputLayout::create(1, { Attribute{ ElementFormat::Float4 } });
-	auto effect = gl4::Effect::loadFromFile("resources/shaders/text.glsl");
-	RasterizerDesc rs;
-	rs.fillMode = PolygonFillMode::Fill;
-	DepthStencilDesc ds;
-	ds.depthTestEnable = false;
-	ds.depthWriteEnable = false;
-	BlendDesc om{};
-	shader = effect->compileShader({}, rs, ds, om);
+
+	{
+		auto src = gl4::loadShaderSource("resources/shaders/text.glsl");
+		auto vs = gl4::compileShader(src.c_str(), "", ShaderStage::VertexShader, {});
+		auto ps = gl4::compileShader(src.c_str(), "", ShaderStage::PixelShader, {});
+		RasterizerDesc rs;
+		rs.fillMode = PolygonFillMode::Fill;
+		DepthStencilDesc ds;
+		ds.depthTestEnable = false;
+		ds.depthWriteEnable = false;
+		BlendDesc om{};
+		textPS = PipelineState::create(
+			vs.get(),
+			nullptr,
+			ps.get(),
+			rs, ds, om);
+	}
 }
 
 void TextRenderer::render(
@@ -100,7 +109,7 @@ void TextRenderer::render(
 	p->fillColor = color;
 	p->outlineColor = outlineColor;
 
-	cmdBuf.setShader(shader.get());
+	cmdBuf.setPipelineState(textPS.get());
 	cmdBuf.setVertexBuffers({ &vb_stream }, *layout);
 	cmdBuf.setConstantBuffers({ &cb_stream });
 	cmdBuf.setTextures({ &font.getTexture() }, { Renderer::getSampler_LinearClamp() });

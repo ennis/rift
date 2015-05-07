@@ -50,10 +50,10 @@ namespace nvg {
 			void renderDelete();
 
 		private:
-			Shader::Ptr stencilPass;
-			Shader::Ptr aaPass;
-			Shader::Ptr fillPass;
-			Shader::Ptr defaultPass;
+			PipelineState::Ptr stencilPassPS;
+			PipelineState::Ptr aaPassPS;
+			PipelineState::Ptr fillPassPS;
+			PipelineState::Ptr defaultPassPS;
 			InputLayout::Ptr layout;
 			CommandBuffer cmdBuf;
 			unsigned viewportWidth, viewportHeight;
@@ -63,6 +63,13 @@ namespace nvg {
 				float x, y, u, v;
 			};
 			std::vector<Vertex> vertices;
+			struct DrawCall
+			{
+				bool fill;
+				unsigned vstart;
+				unsigned nvertex;
+			};
+			std::vector<DrawCall> calls;
 		};
 
 		NVGcontext* createContext();

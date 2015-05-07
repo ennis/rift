@@ -74,8 +74,8 @@ private:
 	// LOD ranges
 	static const unsigned kMaxLodLevel = 16;
 	util::small_vector<float, kMaxLodLevel> lod_ranges;
-	Shader::Ptr shader;
-	Shader::Ptr shader_wireframe;
+	PipelineState::Ptr terrainPS;
+	PipelineState::Ptr terrainWireframePS;
 	// shader parameters
 	Buffer::Ptr terrain_uniforms;
 };

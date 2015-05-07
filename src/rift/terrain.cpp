@@ -1,7 +1,7 @@
 #include <terrain.hpp>
 #include <limits>
 #include <glm/gtc/packing.hpp>
-#include <gl4/effect.hpp>
+#include <gl4/shadercompiler.hpp>
 #include <transform.hpp>
 #include <boundingbox.hpp>
 #include <colors.hpp>
@@ -91,10 +91,13 @@ void Terrain::initHeightmap()
 //=============================================================================
 void Terrain::initEffect()
 {
-	gl4::Effect::Ptr effect = gl4::Effect::loadFromFile("resources/shaders/terrain.glsl");
+	auto src = gl4::loadShaderSource("resources/shaders/terrain.glsl");
+	auto vs = gl4::compileShader(src.c_str(), "", ShaderStage::VertexShader, {});
+	auto ps = gl4::compileShader(src.c_str(), "", ShaderStage::PixelShader, {});
 	RasterizerDesc rs = {};
+	terrainPS = PipelineState::create(vs.get(), nullptr, ps.get(), rs, DepthStencilDesc{}, BlendDesc{});
 	rs.fillMode = PolygonFillMode::Wireframe;
-	shader = effect->compileShader({}, rs, DepthStencilDesc{});
+	terrainWireframePS = PipelineState::create(vs.get(), nullptr, ps.get(), rs, DepthStencilDesc{}, BlendDesc{});
 }
 
 //=============================================================================
@@ -178,7 +181,7 @@ void Terrain::renderSelection(SceneRenderContext &context)
 void Terrain::renderNode(SceneRenderContext &context, Node const &node)
 {
 	context.opaqueList->setVertexBuffers({ patch_grid_vb.get() }, *input_layout);
-	context.opaqueList->setShader(shader.get());
+	context.opaqueList->setPipelineState(terrainPS.get());
 	context.opaqueList->setTextures(
 		{ hm_tex.get(), hm_normals_tex.get(), slope_tex, flat_tex },
 		{ 

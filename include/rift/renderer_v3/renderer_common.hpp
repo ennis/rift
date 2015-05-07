@@ -112,6 +112,14 @@ enum class PolygonFillMode : int
 	Max
 };
 
+enum class ShaderStage : int
+{
+	VertexShader,
+	GeometryShader,
+	PixelShader,
+	Max
+};
+
 struct RasterizerDesc
 {
 	RasterizerDesc() = default;

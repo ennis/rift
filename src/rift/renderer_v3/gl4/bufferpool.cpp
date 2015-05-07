@@ -1,6 +1,7 @@
 #include <renderer.hpp>
 #include <cassert>
 #include <log.hpp>
+#include <iomanip>
 
 namespace gl4
 {
@@ -199,12 +200,29 @@ namespace gl4
 		transient_buffers[prev].clear();
 	}
 
+	void debugPools()
+	{
+		for (auto i = 0u; i < kNumPools; ++i)
+		{
+			auto size = blockSizeFromPoolIndex(i);
+			auto &pool = pools[i];
+			auto &free = free_list[i];
+			std::ostringstream os;
+			os << std::left << std::setw(8) << size << std::setw(0) << ": " << free_list[i].size() << "/" << pools[i].size() * (kPoolPageSize / size);
+			Logging::screenMessage(os.str());
+		}
+	}
+
 	void syncTransientBuffers()
 	{
 		// fence current frame
 		auto curFrame = previousFrame(0);
 		//LOG << "Number of transient buffers allocated this frame: " << transient_buffers[curFrame].size();
-		Logging::screenMessage("TBUF    : " + std::to_string(transient_buffers[curFrame].size()));
+		debugPools();
+		Logging::screenMessage("TBUF    : " 
+			+ std::to_string(transient_buffers[curFrame].size())
+			+ "," + std::to_string(transient_buffers[previousFrame(1)].size())
+			+ "," + std::to_string(transient_buffers[previousFrame(2)].size()));
 		syncs[curFrame] = gl::FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0);
 		frame_index = (frame_index + 1) % 3;
 	}

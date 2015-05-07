@@ -1,4 +1,6 @@
-#include <gl4/effect.hpp>
+#include <gl4/renderer.hpp>
+#include <gl4/shadercompiler.hpp>
+#include <log.hpp>
 #include <sstream>
 #include <algorithm>
 #include <vector>
@@ -6,6 +8,7 @@
 #include <fstream>
 #include <iomanip>
 #include <array_ref.hpp>
+#include <boost/filesystem.hpp>
 
 namespace gl4
 {
@@ -73,18 +76,6 @@ namespace gl4
 			if (pos != end) return "";
 			return path;
 		}
-
-		enum class GLShaderStage
-		{
-			Vertex,
-			Fragment
-		};
-
-		struct GLSLKeyword
-		{
-			std::string define;
-			std::string value;
-		};
 
 		void glslPreprocessRec(
 			const boost::filesystem::path &sourcePath,
@@ -158,8 +149,8 @@ namespace gl4
 		std::string glslPreprocess(
 			const boost::filesystem::path &sourcePath,
 			std::istream &sourceIn,
-			util::array_ref<Effect::Keyword> keywords,
-			GLShaderStage stage)
+			ShaderStage stage,
+			util::array_ref<Keyword> keywords)
 		{
 			int glslVersion = 110;
 			std::ostringstream tmp;
@@ -168,11 +159,14 @@ namespace gl4
 			std::ostringstream source;
 			source << "#version " << glslVersion << '\n';
 			switch (stage) {
-			case GLShaderStage::Vertex:
+			case ShaderStage::VertexShader:
 				source << "#define _VERTEX_\n";
 				break;
-			case GLShaderStage::Fragment:
+			case ShaderStage::PixelShader:
 				source << "#define _FRAGMENT_\n";
+				break;
+			case ShaderStage::GeometryShader:
+				source << "#define _GEOMETRY_\n";
 				break;
 			}
 			for (auto &k : keywords) {
@@ -183,7 +177,7 @@ namespace gl4
 		}
 
 		std::size_t hashKeywords(
-			util::array_ref<Effect::Keyword> keywords)
+			util::array_ref<Keyword> keywords)
 		{
 			std::size_t a = 0;
 			std::hash<std::string> hashfn;
@@ -196,119 +190,112 @@ namespace gl4
 
 		int sCurrentEffectCacheID = 0;
 
-
-		std::pair<std::string, std::string> preprocessGLSLEffect(
-			const char *vs_source,
-			const char *ps_source,
-			const char *include_path,
-			util::array_ref<Effect::Keyword> keywords
-			)
-		{
-			auto hash = hashKeywords(keywords);
-			//LOG << "Hash " << hash;
-			/*auto &cs = mShaderCache[hash];
-			if (cs != nullptr) {
-			// already compiled
-			return cs.get();
-			}*/
-
-			std::ostringstream shader_name;
-			shader_name << '/'
-				<< std::setw(16) << std::setfill('0') << std::hex << hash << std::dec << '/';
-			// log keywords
-			for (const auto &k : keywords) {
-				shader_name << k.define;
-				if (k.value.size()) {
-					shader_name << '=' << k.value;
-				}
-				shader_name << '/';
-			}
-			LOG << "Compiling " << shader_name.str();
-
-			std::string vs, fs;
-			// combined source file
-			std::istringstream vsIn(vs_source);
-			// preprocess source file as a vertex shader source
-			vs = glslPreprocess(
-				include_path,
-				vsIn,
-				keywords,
-				GLShaderStage::Vertex
-				);
-			// rewind stream and parse as a fragment shader source
-			std::istringstream psIn(ps_source);
-			fs = glslPreprocess(
-				include_path,
-				psIn,
-				keywords,
-				GLShaderStage::Fragment
-				);
-
-			// create new shader 
-			// TODO error handling
-			return std::make_pair(vs, fs);
-		}
-
 	} // end gl4::<anonymous namespace>
 
-
-	//=============================================================================
-	//=============================================================================
-	// Renderer::createEffect
-	//=============================================================================
-	//=============================================================================
-	
-	
-	Shader::Ptr Effect::compileShader(
-		util::array_ref<Effect::Keyword> additionalKeywords,
-		const RasterizerDesc &rasterizerState,
-		const DepthStencilDesc &depthStencilState,
-		const BlendDesc &blendState
-		)
+	GLuint compileShader(const char *shaderSource, GLenum type)
 	{
-		std::vector<Effect::Keyword> kw = keywords;
-		kw.insert(kw.end(), additionalKeywords.begin(), additionalKeywords.end());
-		std::pair<std::string, std::string> sources =
-			preprocessGLSLEffect(
-				vs_source.c_str(),
-				vs_source.c_str(),
-				"resources/shaders",
-				util::make_array_ref(kw));
-		return Shader::create(
-			sources.first.c_str(), 
-			sources.second.c_str(),
-			rasterizerState, 
-			depthStencilState, 
-			blendState);
+		GLuint obj = gl::CreateShader(type);
+		const char *shaderSources[1] = { shaderSource };
+		gl::ShaderSource(obj, 1, shaderSources, NULL);
+		gl::CompileShader(obj);
+
+		GLint status = gl::TRUE_;
+		GLint logsize = 0;
+
+		gl::GetShaderiv(obj, gl::COMPILE_STATUS, &status);
+		gl::GetShaderiv(obj, gl::INFO_LOG_LENGTH, &logsize);
+		if (status != gl::TRUE_) {
+			ERROR << "Compile error:";
+			if (logsize != 0) {
+				char *logbuf = new char[logsize];
+				gl::GetShaderInfoLog(obj, logsize, &logsize, logbuf);
+				ERROR << logbuf;
+				delete[] logbuf;
+				gl::DeleteShader(obj);
+			}
+			else {
+				ERROR << "<no log>";
+			}
+			throw std::runtime_error("shader compilation failed");
+		}
+
+		return obj;
 	}
-	
-	Effect::Ptr Effect::loadFromFile(
-		const char *combinedSourcePath,
-		util::array_ref<Effect::Keyword> keywords_)
+
+	// creates a shader program from vertex and fragment shader source files
+	/*GLuint createProgram(const char *vertexShaderSource, const char *fragmentShaderSource)
 	{
-		Effect::Ptr eff = std::make_unique<Effect>();
-		LOG << "Loading effect " << combinedSourcePath;
-		eff->keywords = keywords_.vec();
-		eff->vs_source = loadEffectSource(combinedSourcePath);
-		eff->combined_source = true;
-		eff->vs_path = boost::filesystem::path(combinedSourcePath);
-		return eff;
+		GLuint vs_obj = compileShader(vertexShaderSource, gl::VERTEX_SHADER);
+		GLuint fs_obj = compileShader(fragmentShaderSource, gl::FRAGMENT_SHADER);
+		GLuint program_obj = gl::CreateProgram();
+		gl::AttachShader(program_obj, vs_obj);
+		gl::AttachShader(program_obj, fs_obj);
+		linkProgram(program_obj);
+		// once the program is linked, no need to keep the shader objects
+		gl::DetachShader(program_obj, vs_obj);
+		gl::DetachShader(program_obj, fs_obj);
+		gl::DeleteShader(vs_obj);
+		gl::DeleteShader(fs_obj);
+		return program_obj;
+	}*/
+
+	Shader::Ptr compileShader(
+		const char *source,
+		const char *include_path,
+		ShaderStage stage,
+		util::array_ref<Keyword> keywords)
+	{
+		auto hash = hashKeywords(keywords);
+		namespace fs = boost::filesystem;
+		//std::ostringstream shader_name;
+		//shader_name << '/'
+		//	<< std::setw(16) << std::setfill('0') << std::hex << hash << std::dec << '/';
+		// log keywords
+		/*for (const auto &k : keywords) {
+		shader_name << k.define;
+		if (k.value.size()) {
+		shader_name << '=' << k.value;
+		}
+		shader_name << '/';
+		}
+		LOG << "Compiling " << shader_name.str();*/
+
+		// combined source file
+		std::istringstream sourceIn(source);
+		// preprocess source file as a vertex shader source
+		auto pp = glslPreprocess(
+			include_path,
+			sourceIn,
+			stage,
+			keywords
+			);
+
+		// create new shader 
+		// TODO error handling
+		auto sh = std::make_unique<Shader>();
+		sh->shader = compileShader(pp.c_str(), shaderStageToGLenum(stage));
+		sh->source = std::move(pp);
+		sh->stage = stage;
+		return std::move(sh);
 	}
-}
+
+	int shader_cache_index = 0;
+
+	//=============================================================================
+	// TODO where should this be?
+	std::string loadShaderSource(const char *fileName)
+	{
+		std::ifstream fileIn(fileName, std::ios::in);
+		if (!fileIn.is_open()) {
+			ERROR << "Could not open shader file " << fileName;
+			throw std::runtime_error("Could not open shader file");
+		}
+		std::string str;
+		str.assign(
+			(std::istreambuf_iterator<char>(fileIn)),
+			std::istreambuf_iterator<char>());
+		return str;
+	}
 
 
-//=============================================================================
-// TODO where should this be?
-std::string loadEffectSource(const char *fileName)
-{
-	std::ifstream fileIn(fileName, std::ios::in);
-	if (!fileIn.is_open()) {
-		ERROR << "Could not open shader file " << fileName;
-		throw std::runtime_error("Could not open shader file");
-	}
-	std::string str;
-	str.assign(
-		(std::istreambuf_iterator<char>(fileIn)),
-		std::istreambuf_iterator<char>());
-	return str;
 }

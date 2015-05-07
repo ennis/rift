@@ -1,7 +1,7 @@
 #include <nanovg/nanovg_backend.hpp>
 #include <nanovg/nanovg.h>
 #include <log.hpp>
-#include <gl4/effect.hpp>
+#include <gl4/shadercompiler.hpp>
 
 namespace nvg { namespace backend {
 
@@ -39,7 +39,9 @@ namespace nvg { namespace backend {
 	int Renderer::renderCreate()
 	{
 		LOG << "renderCreate";
-		auto effect = gl4::Effect::loadFromFile("resources/shaders/nanovg/nanovg.glsl");
+		auto src = gl4::loadShaderSource("resources/shaders/nanovg/nanovg.glsl");
+		auto vs = gl4::compileShader(src.c_str(), "", ShaderStage::VertexShader, {});
+		auto ps = gl4::compileShader(src.c_str(), "", ShaderStage::PixelShader, {});
 
 		StencilOpDesc frontOp = StencilOpDesc{ StencilOp::Keep, StencilOp::Keep, StencilOp::Increment, StencilFunc::Always };
 		StencilOpDesc backOp = StencilOpDesc{ StencilOp::Keep, StencilOp::Keep, StencilOp::Decrement, StencilFunc::Always };
@@ -54,21 +56,21 @@ namespace nvg { namespace backend {
 		ds.stencilMask = 0xFF;
 		ds.stencilOpFront = frontOp;
 		ds.stencilOpBack = backOp;
-		stencilPass = effect->compileShader({}, RasterizerDesc{}, ds);
+		stencilPassPS = PipelineState::create(vs.get(), nullptr, ps.get(), RasterizerDesc{}, ds, BlendDesc{});
 
 		// AA pass
 		ds.stencilOpFront = aaOp;
 		ds.stencilOpBack = aaOp;
-		aaPass = effect->compileShader({}, RasterizerDesc{}, ds);
+		aaPassPS = PipelineState::create(vs.get(), nullptr, ps.get(), RasterizerDesc{}, ds, BlendDesc{});
 
 		// Stencil Fill pass
 		ds.stencilOpFront = fillOp;
 		ds.stencilOpBack = fillOp;
-		fillPass = effect->compileShader({}, RasterizerDesc{}, ds);
+		fillPassPS = PipelineState::create(vs.get(), nullptr, ps.get(), RasterizerDesc{}, ds, BlendDesc{});
 
 		// default pass
 		ds.stencilTestEnable = false;
-		defaultPass = effect->compileShader({}, RasterizerDesc{}, ds);
+		defaultPassPS = PipelineState::create(vs.get(), nullptr, ps.get(), RasterizerDesc{}, ds, BlendDesc{});
 
 		layout = InputLayout::create(1, { Attribute{ ElementFormat::Float2 }, Attribute{ ElementFormat::Float2 } });
 		return 1;
@@ -126,44 +128,45 @@ namespace nvg { namespace backend {
 		int npaths)
 	{
 		//LOG << "renderFill";
-
 		// allocate space for the vertices
-		auto maxVerts = maxVertCount(paths, npaths);
-		auto &buf = ::Renderer::allocTransientBuffer(BufferUsage::VertexBuffer, sizeof(Vertex) * maxVerts, nullptr);
+		auto maxv = 0u;
+		for (auto i = 0u; i < npaths; ++i)
+		{
+			maxv += paths[i].nfill * 2 - 3;
+		}
+		auto &buf = ::Renderer::allocTransientBuffer(BufferUsage::VertexBuffer, sizeof(Vertex) * maxv, nullptr);
 		auto vptr = buf.map_as<Vertex>();
-		int voffset = 0;
+		unsigned voffset = 0;
+		auto &cb = ::Renderer::allocTransientBuffer(BufferUsage::ConstantBuffer, sizeof(FillShaderParams), nullptr);
+		auto cbPtr = cb.map_as<FillShaderParams>();
+		cbPtr->type = 2;
+		cbPtr->viewSize = glm::vec2(viewportWidth, viewportHeight);
+		cmdBuf.setScreenRenderTarget();
+		cmdBuf.setVertexBuffers({ &buf }, *layout);
+		cmdBuf.setConstantBuffers({ &cb });
+		cmdBuf.setPipelineState(stencilPassPS.get());
 		for (int i = 0; i < npaths; ++i)
 		{
 			auto p = paths[i];
-			//LOG << "p.closed " << p.closed << " p.count " << p.count << " p.nfill " << p.nfill << " p.nstroke " << p.nstroke;
-			// copy vertices
-			for (int v = 0; v < p.nstroke; ++v, ++voffset)
-			{
-				vptr[voffset].x = p.stroke[v].x;
-				vptr[voffset].y = p.stroke[v].y;
-				vptr[voffset].u = p.stroke[v].u;
-				vptr[voffset].v = p.stroke[v].v;
-			}
-			
-			for (int v = 0; v < p.nfill; ++v, ++voffset)
+			auto start = voffset;
+			// convert fan to triangle strip
+			for (int v = 1; v < p.nfill; ++v, ++voffset)
 			{
 				vptr[voffset].x = p.fill[v].x;
 				vptr[voffset].y = p.fill[v].y;
 				vptr[voffset].u = p.fill[v].u;
 				vptr[voffset].v = p.fill[v].v;
+				if (v != p.nfill) {
+					++voffset;
+					vptr[voffset].x = p.fill[0].x;
+					vptr[voffset].y = p.fill[0].y;
+					vptr[voffset].u = p.fill[0].u;
+					vptr[voffset].v = p.fill[0].v;
+				}
 			}
+			cmdBuf.draw(PrimitiveType::TriangleStrip, start, voffset - start, 0, 1);
 		}
 
-		auto &cb = ::Renderer::allocTransientBuffer(BufferUsage::ConstantBuffer, sizeof(FillShaderParams), nullptr);
-		auto cbPtr = cb.map_as<FillShaderParams>();
-		cbPtr->type = 2;
-		cbPtr->viewSize = glm::vec2(viewportWidth, viewportHeight);
-
-		cmdBuf.setScreenRenderTarget();
-		cmdBuf.setVertexBuffers({ &buf }, *layout);
-		cmdBuf.setConstantBuffers({ &cb });
-		cmdBuf.setShader(stencilPass.get());
-		cmdBuf.draw(PrimitiveType::TriangleStrip, 0, voffset, 0, 1);
 	}
 
 	void Renderer::renderStroke(

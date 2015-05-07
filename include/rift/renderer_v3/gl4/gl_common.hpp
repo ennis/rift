@@ -19,6 +19,17 @@ namespace gl4
 	};
 
 	const ElementFormatInfoGL &getElementFormatInfoGL(ElementFormat format);
+	GLint textureFilterToGL(TextureFilter filter);
+	GLint textureAddressModeToGL(TextureAddressMode addr);
+	GLenum bufferUsageToBindingPoint(BufferUsage bufferUsage);
+	GLenum blendOpToGL(BlendOp bo);
+	GLenum blendFactorToGL(BlendFactor bf);
+	GLenum cullModeToGLenum(CullMode mode);
+	GLenum fillModeToGLenum(PolygonFillMode fillMode);
+	GLenum primitiveTypeToGLenum(PrimitiveType type);
+	GLenum stencilOpToGLenum(StencilOp op);
+	GLenum stencilFuncToGLenum(StencilFunc func);
+	GLenum shaderStageToGLenum(ShaderStage stage);
 }
 
 #endif /* end of include guard: GL_COMMON_HPP */

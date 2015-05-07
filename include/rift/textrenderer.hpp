@@ -23,7 +23,7 @@ private:
 	static constexpr auto kMaxGlyphsPerCall = 32768u;
 
 	InputLayout::Ptr layout;
-	Shader::Ptr shader;
+	PipelineState::Ptr textPS;
 };
 
 #endif

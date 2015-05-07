@@ -1,5 +1,5 @@
 #include <sky.hpp>
-#include <gl4/effect.hpp>
+#include <gl4/shadercompiler.hpp>
 
 namespace
 {
@@ -56,8 +56,18 @@ Sky::Sky()
 		10.0f, -10.0f, 10.0f
 	};
 
-	auto effect = gl4::Effect::loadFromFile("resources/shaders/sky.glsl");
-	skyShader = effect->compileShader();
+	{
+		auto src = gl4::loadShaderSource("resources/shaders/sky.glsl");
+		auto vs = gl4::compileShader(src.c_str(), "", ShaderStage::VertexShader, {});
+		auto ps = gl4::compileShader(src.c_str(), "", ShaderStage::PixelShader, {});
+		skyPS = PipelineState::create(
+			vs.get(),
+			nullptr,
+			ps.get(),
+			RasterizerDesc{},
+			DepthStencilDesc{},
+			BlendDesc{});
+	}
 
 	skybox = Mesh::create(
 		{ Attribute{ ElementFormat::Float3 } },
@@ -88,7 +98,7 @@ void Sky::render(
 
 	auto cmdBuf = *context.opaqueList;
 	cmdBuf.setConstantBuffers({ context.sceneDataCB, &paramsCB });
-	cmdBuf.setShader(skyShader.get());
+	cmdBuf.setPipelineState(skyPS.get());
 	skybox->draw(cmdBuf, 0);
 }
 

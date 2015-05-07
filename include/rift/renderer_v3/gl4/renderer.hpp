@@ -8,10 +8,8 @@
 #include <glm/glm.hpp>
 #include <array_ref.hpp>
 #include <unordered_map>
-#include <serialization.hpp>
 #include <unique_resource.hpp>
 #include <small_vector.hpp>
-#include <boost/circular_buffer.hpp>
 #include <renderer_common.hpp>
 
 namespace std {
@@ -31,6 +29,7 @@ namespace std {
 
 namespace gl4
 {
+	class Texture;
 	class Texture2D;
 	class TextureCubeMap;
 	class RenderTarget;
@@ -38,17 +37,8 @@ namespace gl4
 	class Shader;
 	class InputLayout;
 	class CommandBuffer;
+	class PipelineState;
 
-	GLint textureFilterToGL(TextureFilter filter);
-	GLint textureAddressModeToGL(TextureAddressMode addr);
-	GLenum bufferUsageToBindingPoint(BufferUsage bufferUsage);
-	GLenum blendOpToGL(BlendOp bo);
-	GLenum blendFactorToGL(BlendFactor bf);
-	GLenum cullModeToGLenum(CullMode mode);
-	GLenum fillModeToGLenum(PolygonFillMode fillMode);
-	GLenum primitiveTypeToGLenum(PrimitiveType type);
-	GLenum stencilOpToGLenum(StencilOp op);
-	GLenum stencilFuncToGLenum(StencilFunc func);
 	GLuint createBuffer(
 		GLenum bindingPoint,
 		int size,
@@ -62,9 +52,6 @@ namespace gl4
 		int size,
 		const void *data
 		);
-	GLuint glslCompileShader(const char *shaderSource, GLenum type);
-	void glslLinkProgram(GLuint program);
-	GLuint glslCreateProgram(const char *vertexShaderSource, const char *fragmentShaderSource);
 
 	struct PoolBlockIndex
 	{
@@ -310,8 +297,8 @@ namespace gl4
 			util::array_ref<const Texture*> textures,
 			util::array_ref<const Sampler*> samplers);
 
-		void setShader(
-			const Shader *shader);	
+		void setPipelineState(
+			const PipelineState *pipelineState);	
 		
 		void setStencilRef(int8_t ref);
 
@@ -348,43 +335,62 @@ namespace gl4
 		unsigned writePtr;
 	};
 
+
 	class Shader
 	{
 	public:
-		using Ptr = std::unique_ptr < Shader >;
+		using Ptr = std::unique_ptr<Shader>;
+
+
+	// protected:
+		// shader object
+		GLuint shader;
+		std::string source;
+		ShaderStage stage;
+	};
+
+	class PipelineState
+	{
+	public:
+		using Ptr = std::unique_ptr < PipelineState >;
 		
-		Shader(
-			const char *vsSource,
-			const char *psSource,
+		PipelineState(
+			const Shader *vertexShader,
+			const Shader *geometryShader,
+			const Shader *pixelShader,
 			const RasterizerDesc &rasterizerState,
 			const DepthStencilDesc &depthStencilState,
 			const BlendDesc &blendState);
 
+		// the shader objects are not needed once the pipeline state is created
 		static Ptr create(
-			const char *vsSource,
-			const char *psSource,
+			const Shader *vertexShader,
+			const Shader *geometryShader,
+			const Shader *pixelShader,
 			const RasterizerDesc &rasterizerState,
 			const DepthStencilDesc &depthStencilState,
 			const BlendDesc &blendState)
 		{
-			return std::make_unique<Shader>(
-				vsSource,
-				psSource, 
+			return std::make_unique<PipelineState>(
+				vertexShader,
+				geometryShader,
+				pixelShader,
 				rasterizerState, 
 				depthStencilState, 
 				blendState);
 		}
 
 	//private:
-		Shader() = default;
-		~Shader()
+		PipelineState() = default;
+		~PipelineState()
 		{
-			gl::DeleteProgram(program);
+			if (program)
+				gl::DeleteProgram(program);
 		}
 
-		int cache_id;
+		unsigned cache_id;
 		// shader source code
-		std::string source;
+		//std::string source;
 		GLuint program = 0;
 		// XXX in source code?
 		RasterizerDesc rs_state;
@@ -457,6 +463,7 @@ using TextureCubeMap = gl4::TextureCubeMap;
 using CommandBuffer = gl4::CommandBuffer;
 using RenderTarget = gl4::RenderTarget;
 using Sampler = gl4::Sampler;
+using PipelineState = gl4::PipelineState;
 
 namespace Renderer
 {

@@ -11,7 +11,7 @@
 #include <image.hpp>
 #include <sky.hpp>
 #include <gl4/renderer.hpp>
-#include <gl4/effect.hpp>	// Effect
+#include <gl4/shadercompiler.hpp>
 #include <font.hpp>
 #include <colors.hpp>
 #include <small_vector.hpp>
@@ -120,14 +120,12 @@ private:
 	Mesh *mokou = nullptr;
 	//SkinnedMesh *mokou_skin = nullptr;
 
-	gl4::Effect::Ptr effect;
-	gl4::Effect::Ptr effectEnvCube;
-	gl4::Effect::Ptr effectPBR;
 
-	Shader::Ptr shader;
-	Shader::Ptr shaderWireframe;
-	Shader::Ptr shaderPBR;
-	Shader::Ptr shaderEnvCube;
+	PipelineState::Ptr defaultPS;
+	PipelineState::Ptr defaultWireframePS;
+	PipelineState::Ptr PBRPassPS;
+	PipelineState::Ptr envCubePassPS;
+	PipelineState::Ptr postProcPassPS;
 
 	Texture2D *tex;
 	TextureCubeMap *envmap;
@@ -220,20 +218,43 @@ void RiftGame::init()
 		1000.0,
 		0.01);
 
-	// Effect 
-	effect = gl4::Effect::loadFromFile("resources/shaders/default.glsl");
-	shader = effect->compileShader();
-	RasterizerDesc rs = {};
-	rs.fillMode = PolygonFillMode::Wireframe;
-	shaderWireframe = effect->compileShader({}, rs, DepthStencilDesc{});
+	// pipeline states
+	{
+		auto src = gl4::loadShaderSource("resources/shaders/default.glsl");
+		auto vs = gl4::compileShader(src.c_str(), "", ShaderStage::VertexShader, {});
+		auto ps = gl4::compileShader(src.c_str(), "", ShaderStage::PixelShader, {});
+		RasterizerDesc rs = {};
+		defaultPS = PipelineState::create(vs.get(), nullptr, ps.get(), rs, DepthStencilDesc{}, BlendDesc{});
+		rs.fillMode = PolygonFillMode::Wireframe;
+		defaultWireframePS = PipelineState::create(vs.get(), nullptr, ps.get(), rs, DepthStencilDesc{}, BlendDesc{});
+	}
 
-	effectPBR = gl4::Effect::loadFromFile("resources/shaders/pbr.glsl");
-	shaderPBR = effectPBR->compileShader();
-	effectEnvCube = gl4::Effect::loadFromFile("resources/shaders/envcube.glsl");
-	DepthStencilDesc envcube_ds;
-	envcube_ds.depthTestEnable = true;
-	envcube_ds.depthWriteEnable = false;
-	shaderEnvCube = effectEnvCube->compileShader({}, RasterizerDesc{}, envcube_ds, BlendDesc{});
+	{
+		auto src = gl4::loadShaderSource("resources/shaders/pbr.glsl");
+		auto vs = gl4::compileShader(src.c_str(), "", ShaderStage::VertexShader, {});
+		auto ps = gl4::compileShader(src.c_str(), "", ShaderStage::PixelShader, {});
+		PBRPassPS = PipelineState::create(vs.get(), nullptr, ps.get(), RasterizerDesc{}, DepthStencilDesc{}, BlendDesc{});
+	}
+
+	{
+		auto src = gl4::loadShaderSource("resources/shaders/envcube.glsl");
+		auto vs = gl4::compileShader(src.c_str(), "", ShaderStage::VertexShader, {});
+		auto ps = gl4::compileShader(src.c_str(), "", ShaderStage::PixelShader, {});
+		DepthStencilDesc envcube_ds;
+		envcube_ds.depthTestEnable = true;
+		envcube_ds.depthWriteEnable = false;
+		envCubePassPS = PipelineState::create(vs.get(), nullptr, ps.get(), RasterizerDesc{}, envcube_ds, BlendDesc{});
+	}
+
+	{
+		auto src = gl4::loadShaderSource("resources/shaders/fxaa.glsl");
+		auto vs = gl4::compileShader(src.c_str(), "", ShaderStage::VertexShader, {});
+		auto ps = gl4::compileShader(src.c_str(), "", ShaderStage::PixelShader, {});
+		DepthStencilDesc postproc_ds;
+		postproc_ds.depthTestEnable = false;
+		postproc_ds.depthWriteEnable = false;
+		postProcPassPS = PipelineState::create(vs.get(), nullptr, ps.get(), RasterizerDesc{}, postproc_ds, BlendDesc{});
+	}
 
 	// buffer contenant les données des vertex (c'est un cube, pour info)
 	// ici: position (x,y,z), normales (x,y,z), coordonnées de texture (x,y) 
@@ -287,10 +308,6 @@ void RiftGame::init()
 	font = Font::loadFromFile("resources/img/fonts/arno_pro.fnt");
 	hud = std::make_unique<TextRenderer>();
 
-	DepthStencilDesc ds_fx;
-	ds_fx.depthTestEnable = false;
-	ds_fx.depthWriteEnable = false;
-	passthrough = gl4::Effect::loadFromFile("resources/shaders/fxaa.glsl")->compileShader({}, RasterizerDesc{}, ds_fx, BlendDesc{});
 	screenRT2 = RenderTarget::create({ 1280, 720 }, { ElementFormat::Unorm8x4 }, ElementFormat::Depth24);
 
 	std::vector<BVHMapping> mappings;
@@ -365,7 +382,7 @@ void RiftGame::render(float dt)
 	opaqueList.clearColor(color);
 	opaqueList.clearDepth(1.0f);
 
-	opaqueList.setShader(shaderEnvCube.get());
+	opaqueList.setPipelineState(envCubePassPS.get());
 	opaqueList.setConstantBuffers({ context.sceneDataCB, &cbEnvmap });
 	opaqueList.setTextures({ envmap }, { Renderer::getSampler_LinearClamp() });
 	mesh->draw(opaqueList, 0);
@@ -377,7 +394,7 @@ void RiftGame::render(float dt)
 
 	for (auto submesh = 0u; submesh < mokou->submeshes.size(); ++submesh)
 	{
-		opaqueList.setShader(shaderPBR.get());
+		opaqueList.setPipelineState(PBRPassPS.get());
 		opaqueList.setConstantBuffers({ context.sceneDataCB, &cbPerObjPBR });
 		opaqueList.setTextures(
 			{ tex, envmap }, 
@@ -402,7 +419,7 @@ void RiftGame::render(float dt)
 	postProc.clearColor(screenColor);
 	postProc.clearDepth(1.0f);
 
-	postProc.setShader(passthrough.get());
+	postProc.setPipelineState(postProcPassPS.get());
 	postProc.setTextures(
 		{ &screenRT2->getColorTexture(0), &screenRT2->getDepthTexture() },
 		{ Renderer::getSampler_LinearClamp(), Renderer::getSampler_LinearClamp() });
@@ -446,15 +463,15 @@ void RiftGame::renderDebugHud()
 			glm::vec4(0.0, 0.0, 0.0, 0.0));
 		ypos += yinc;
 	}
-	Renderer::execute(cmdBuf);
 	nvgBeginFrame(nvg_context, sizeX, sizeY, 1.0f);
 	nvgBeginPath(nvg_context);
-	nvgRect(nvg_context, 100, 100, 120, 30);
-	nvgCircle(nvg_context, 120, 120, 5);
+	nvgRect(nvg_context, 0, 0, 300, 400);
+	nvgCircle(nvg_context, 300, 300, 20);
 	nvgPathWinding(nvg_context, NVG_HOLE);   // Mark circle as a hole.
 	nvgFillColor(nvg_context, nvgRGBA(255, 192, 0, 255));
 	nvgFill(nvg_context);
 	nvgEndFrame(nvg_context);
+	Renderer::execute(cmdBuf);
 }
 
 void RiftGame::update(float dt)

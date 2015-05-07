@@ -202,4 +202,16 @@ namespace gl4
 	{
 		return stencilFuncToGLenum_[(int)func];
 	}
+
+	GLenum shaderStageToGLenum_[(int)ShaderStage::Max]
+	{
+		/*VertexShader*/ gl::VERTEX_SHADER,
+		/*GeometryShader*/ gl::GEOMETRY_SHADER,
+		/*PixelShader*/ gl::FRAGMENT_SHADER
+	};
+
+	GLenum shaderStageToGLenum(ShaderStage stage)
+	{
+		return shaderStageToGLenum_[(int)stage];
+	}
 }

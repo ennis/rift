@@ -13,12 +13,12 @@ public:
 	// VS2013
 	Sky(Sky &&rhs) : 
 		timeOfDay(rhs.timeOfDay), 
-		skyShader(std::move(rhs.skyShader)),
+		skyPS(std::move(rhs.skyPS)),
 		skybox(std::move(rhs.skybox))
 	{}
 	Sky &operator=(Sky &&rhs) {
 		timeOfDay = rhs.timeOfDay;
-		skyShader = std::move(rhs.skyShader);
+		skyPS = std::move(rhs.skyPS);
 		skybox = std::move(rhs.skybox);
 		return *this;
 	}
@@ -29,7 +29,7 @@ public:
 
 private:
 	float timeOfDay;
-	Shader::Ptr skyShader;
+	PipelineState::Ptr skyPS;
 	Mesh::Ptr skybox;
 };
 
