@@ -24,7 +24,8 @@
 #include <camera.hpp>
 #include <textrenderer.hpp>
 #include <nanovg/nanovg.h>
-#include <nanovg/nanovg_backend.hpp>
+#define NANOVG_GL3_IMPLEMENTATION
+#include <nanovg/nanovg_gl.h>
 
 /*class SkeletonDebug
 {
@@ -155,7 +156,7 @@ private:
 	std::unique_ptr<SkeletonAnimationSampler> skel_anim_sampler;
 
 	util::ecs::world world;
-	NVGcontext *nvg_context;
+	NVGcontext *vg;
 };
 
 
@@ -224,16 +225,16 @@ void RiftGame::init()
 		auto vs = gl4::compileShader(src.c_str(), "", ShaderStage::VertexShader, {});
 		auto ps = gl4::compileShader(src.c_str(), "", ShaderStage::PixelShader, {});
 		RasterizerDesc rs = {};
-		defaultPS = PipelineState::create(vs.get(), nullptr, ps.get(), rs, DepthStencilDesc{}, BlendDesc{});
+		defaultPS = PipelineState::create(vs.get(), nullptr, ps.get(), rs, DepthStencilDesc{}, BlendStateRenderTargetDesc{});
 		rs.fillMode = PolygonFillMode::Wireframe;
-		defaultWireframePS = PipelineState::create(vs.get(), nullptr, ps.get(), rs, DepthStencilDesc{}, BlendDesc{});
+		defaultWireframePS = PipelineState::create(vs.get(), nullptr, ps.get(), rs, DepthStencilDesc{}, BlendStateRenderTargetDesc{});
 	}
 
 	{
 		auto src = gl4::loadShaderSource("resources/shaders/pbr.glsl");
 		auto vs = gl4::compileShader(src.c_str(), "", ShaderStage::VertexShader, {});
 		auto ps = gl4::compileShader(src.c_str(), "", ShaderStage::PixelShader, {});
-		PBRPassPS = PipelineState::create(vs.get(), nullptr, ps.get(), RasterizerDesc{}, DepthStencilDesc{}, BlendDesc{});
+		PBRPassPS = PipelineState::create(vs.get(), nullptr, ps.get(), RasterizerDesc{}, DepthStencilDesc{}, BlendStateRenderTargetDesc{});
 	}
 
 	{
@@ -243,7 +244,7 @@ void RiftGame::init()
 		DepthStencilDesc envcube_ds;
 		envcube_ds.depthTestEnable = true;
 		envcube_ds.depthWriteEnable = false;
-		envCubePassPS = PipelineState::create(vs.get(), nullptr, ps.get(), RasterizerDesc{}, envcube_ds, BlendDesc{});
+		envCubePassPS = PipelineState::create(vs.get(), nullptr, ps.get(), RasterizerDesc{}, envcube_ds, BlendStateRenderTargetDesc{});
 	}
 
 	{
@@ -253,7 +254,7 @@ void RiftGame::init()
 		DepthStencilDesc postproc_ds;
 		postproc_ds.depthTestEnable = false;
 		postproc_ds.depthWriteEnable = false;
-		postProcPassPS = PipelineState::create(vs.get(), nullptr, ps.get(), RasterizerDesc{}, postproc_ds, BlendDesc{});
+		postProcPassPS = PipelineState::create(vs.get(), nullptr, ps.get(), RasterizerDesc{}, postproc_ds, BlendStateRenderTargetDesc{});
 	}
 
 	// buffer contenant les données des vertex (c'est un cube, pour info)
@@ -327,7 +328,7 @@ void RiftGame::init()
 
 	// TEST 
 	//mokou_skin = resources->skinnedMeshes.load("resources/models/animated/mokou.mesh");
-	nvg_context = nvg::backend::createContext();
+	vg = nvgCreateGL3(NVG_ANTIALIAS);
 }
 
 
@@ -463,14 +464,42 @@ void RiftGame::renderDebugHud()
 			glm::vec4(0.0, 0.0, 0.0, 0.0));
 		ypos += yinc;
 	}
-	nvgBeginFrame(nvg_context, sizeX, sizeY, 1.0f);
-	nvgBeginPath(nvg_context);
-	nvgRect(nvg_context, 0, 0, 300, 400);
-	nvgCircle(nvg_context, 300, 300, 20);
-	nvgPathWinding(nvg_context, NVG_HOLE);   // Mark circle as a hole.
-	nvgFillColor(nvg_context, nvgRGBA(255, 192, 0, 255));
-	nvgFill(nvg_context);
-	nvgEndFrame(nvg_context);
+
+	nvgBeginFrame(vg, sizeX, sizeY, 1.0f);
+
+	{
+		int i;
+		int caps[3] = { NVG_BUTT, NVG_ROUND, NVG_SQUARE };
+		float lineWidth = 8.0f;
+		float x = 100, y = 500;
+		float width = 500;
+
+		nvgSave(vg);
+
+		nvgBeginPath(vg);
+		nvgRect(vg, x - lineWidth / 2, y, width + lineWidth, 40);
+		nvgFillColor(vg, nvgRGBA(255, 255, 255, 32));
+		nvgFill(vg);
+
+		nvgBeginPath(vg);
+		nvgRect(vg, x, y, width, 40);
+		nvgFillColor(vg, nvgRGBA(255, 255, 255, 32));
+		nvgFill(vg);
+
+		nvgStrokeWidth(vg, lineWidth);
+		for (i = 0; i < 3; i++) {
+			nvgLineCap(vg, caps[i]);
+			nvgStrokeColor(vg, nvgRGBA(0, 0, 0, 255));
+			nvgBeginPath(vg);
+			nvgMoveTo(vg, x, y + i * 10 + 5);
+			nvgLineTo(vg, x + width, y + i * 10 + 5);
+			nvgStroke(vg);
+		}
+
+		nvgRestore(vg);
+	}
+	nvgEndFrame(vg);
+
 	Renderer::execute(cmdBuf);
 }
 

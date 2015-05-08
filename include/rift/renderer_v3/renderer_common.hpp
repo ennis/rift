@@ -1,5 +1,7 @@
 #ifndef RENDERER_COMMON_HPP
 #define RENDERER_COMMON_HPP
+
+constexpr unsigned kMaxColorRenderTargets = 8;
  
 enum class PrimitiveType
 {
@@ -248,16 +250,22 @@ enum class BlendFactor : int
 	Max
 };
 
-struct BlendDesc
+struct BlendStateRenderTargetDesc
 {
-	BlendDesc() = default;
+	BlendStateRenderTargetDesc() = default;
 	BlendOp rgbOp = BlendOp::Add;
 	BlendFactor rgbSrcFactor = BlendFactor::SrcAlpha;
 	BlendFactor rgbDestFactor = BlendFactor::InvSrcAlpha;
 	BlendOp alphaOp = BlendOp::Add;
 	BlendFactor alphaSrcFactor = BlendFactor::SrcAlpha;
 	BlendFactor alphaDestFactor = BlendFactor::InvSrcAlpha;
+	uint8_t colorWriteMask;
 };
+
+/*struct BlendStateDesc
+{
+	std::array<BlendStateRenderTargetDesc, kMaxColorRenderTargets> renderTargets;
+};*/
 
 struct Submesh {
 	PrimitiveType primitiveType;

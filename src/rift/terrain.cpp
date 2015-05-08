@@ -95,9 +95,9 @@ void Terrain::initEffect()
 	auto vs = gl4::compileShader(src.c_str(), "", ShaderStage::VertexShader, {});
 	auto ps = gl4::compileShader(src.c_str(), "", ShaderStage::PixelShader, {});
 	RasterizerDesc rs = {};
-	terrainPS = PipelineState::create(vs.get(), nullptr, ps.get(), rs, DepthStencilDesc{}, BlendDesc{});
+	terrainPS = PipelineState::create(vs.get(), nullptr, ps.get(), rs, DepthStencilDesc{}, BlendStateRenderTargetDesc{});
 	rs.fillMode = PolygonFillMode::Wireframe;
-	terrainWireframePS = PipelineState::create(vs.get(), nullptr, ps.get(), rs, DepthStencilDesc{}, BlendDesc{});
+	terrainWireframePS = PipelineState::create(vs.get(), nullptr, ps.get(), rs, DepthStencilDesc{}, BlendStateRenderTargetDesc{});
 }
 
 //=============================================================================

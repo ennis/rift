@@ -33,7 +33,7 @@ TextRenderer::TextRenderer()
 		DepthStencilDesc ds;
 		ds.depthTestEnable = false;
 		ds.depthWriteEnable = false;
-		BlendDesc om{};
+		BlendStateRenderTargetDesc om{};
 		textPS = PipelineState::create(
 			vs.get(),
 			nullptr,

@@ -92,9 +92,8 @@ namespace gl4
 		}
 
 	// protected:
-		static constexpr auto kMaxVertexBuffers = 8u;
 		GLuint vao;
-		util::small_vector<int, kMaxVertexBuffers> strides;
+		util::small_vector<int, kMaxVertexBufferBindings> strides;
 	};
 
 	class Buffer
@@ -360,7 +359,7 @@ namespace gl4
 			const Shader *pixelShader,
 			const RasterizerDesc &rasterizerState,
 			const DepthStencilDesc &depthStencilState,
-			const BlendDesc &blendState);
+			const BlendStateRenderTargetDesc &blendState);
 
 		// the shader objects are not needed once the pipeline state is created
 		static Ptr create(
@@ -369,7 +368,7 @@ namespace gl4
 			const Shader *pixelShader,
 			const RasterizerDesc &rasterizerState,
 			const DepthStencilDesc &depthStencilState,
-			const BlendDesc &blendState)
+			const BlendStateRenderTargetDesc &blendState)
 		{
 			return std::make_unique<PipelineState>(
 				vertexShader,
@@ -395,7 +394,7 @@ namespace gl4
 		// XXX in source code?
 		RasterizerDesc rs_state;
 		DepthStencilDesc ds_state; 
-		BlendDesc om_state;
+		BlendStateRenderTargetDesc om_state;
 		// TODO list of passes
 		// TODO list of parameters / uniforms?
 	};
@@ -447,7 +446,7 @@ namespace gl4
 
 		GLuint fbo;
 		glm::ivec2 size;
-		util::small_vector<Texture2D::Ptr, 8> color_targets;
+		util::small_vector<Texture2D::Ptr, kMaxColorRenderTargets> color_targets;
 		Texture2D::Ptr depth_target;
 	};
 }

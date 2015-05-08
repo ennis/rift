@@ -35,7 +35,7 @@ namespace gl4
 		const Shader *pixelShader,
 		const RasterizerDesc &rasterizerState,
 		const DepthStencilDesc &depthStencilState,
-		const BlendDesc &blendState)
+		const BlendStateRenderTargetDesc &blendState)
 	{
 		//cache_id = shader_cache_index++;
 		ds_state = depthStencilState;

@@ -66,7 +66,7 @@ Sky::Sky()
 			ps.get(),
 			RasterizerDesc{},
 			DepthStencilDesc{},
-			BlendDesc{});
+			BlendStateRenderTargetDesc{});
 	}
 
 	skybox = Mesh::create(
