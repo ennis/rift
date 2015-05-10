@@ -3,7 +3,6 @@
 
 #include <window.hpp>
 #include <AntTweakBar.h>
-#include <gl4/renderer.hpp>
 
 class Game;
 

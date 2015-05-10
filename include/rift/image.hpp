@@ -6,7 +6,6 @@
 #include <vector>	// vector
 #include <small_vector.hpp>
 #include <log.hpp>
-#include <gl4/renderer.hpp>
 
 enum class ImageFileFormat
 {
@@ -95,8 +94,16 @@ public:
 			mip.size.x);
 	}
 	
-	Texture2D::Ptr convertToTexture2D();
-	TextureCubeMap::Ptr convertToTextureCubeMap();
+	const void *getData(
+		unsigned int mipLevel = 0,
+		unsigned int face = 0
+		) const
+	{
+		assert(mipLevel < numMipLevels);
+		assert(face < numFaces);
+		auto &mip = getSubimage(mipLevel, face);
+		return data.data() + mip.offset;
+	}
 
 	static Image loadFromFile(
 		const char *filePath, 

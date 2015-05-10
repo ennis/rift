@@ -5,6 +5,7 @@
 #include <ostream>
 #include <cstdint>
 #include <vector>
+#include <string>
 #include <cstring>
 #include <cassert>
 #include <type_traits>
@@ -96,7 +97,12 @@ class IArchive
 public:
 	IArchive(std::istream &streamIn) : stream_in(streamIn) 
 	{
-		stream_in.exceptions(std::ios::eofbit | std::ios::badbit);
+		stream_in.exceptions(std::ios::badbit);
+	}
+
+	operator bool()
+	{
+		return (bool)stream_in;
 	}
 
 	IArchive &operator>>(char &v) { read_i8(stream_in, v); return *this; }
@@ -107,6 +113,28 @@ public:
 	IArchive &operator>>(unsigned int &v) { read_u32le(stream_in, v); return *this; }
 	IArchive &operator>>(float &v)  { stream_in.read((char*)&v, sizeof(float)); return *this; }
 	IArchive &operator>>(double &v) { stream_in.read((char*)&v, sizeof(double)); return *this; }
+	IArchive &operator>>(std::string &v) {
+		int sz = 0;
+		int bit = 0;
+		while (bit != 35)
+		{
+			uint8_t b;
+			read_u8(stream_in, b);
+			sz |= (b & 127) << bit;
+			bit += 7;
+			if ((b & 128) == 0)
+				break;
+		}
+		if (sz)
+		{
+			std::vector<char> chars(sz);
+			stream_in.read(chars.data(), sz);
+			v.assign(chars.data(), sz);
+		}
+		else
+			v.assign("");
+		return *this;
+	}
 	
 	// TODO put these functions out of the class
 

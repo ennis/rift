@@ -1,10 +1,8 @@
-#include <map>
-
 #include <engine.hpp>
 #include <log.hpp>
 #include <clock.hpp>
 #include <game.hpp>
-#include <gl4/renderer.hpp>
+#include <gl_core_4_4.hpp>
 
 Engine *Engine::gEngine = nullptr;
 
@@ -72,8 +70,6 @@ void Engine::init()
 	LOG << "OpenGL version: " << gl::GetString(gl::VERSION);
 	LOG << "GLSL version: " << gl::GetString(gl::SHADING_LANGUAGE_VERSION);
 
-	Renderer::initialize();
-	
 	// init anttweakbar
 	TwInit(TW_OPENGL_CORE, NULL);
 	auto winSize = mWindow.size();
@@ -108,10 +104,8 @@ void Engine::mainLoop()
 			duration<float> frame = duration_cast<nanoseconds>(tf - tb);
 			tb = tf;
 			float dt = frame.count();
-			Renderer::beginFrame();
 			mGame->render(dt);
 			mGame->update(dt);
-			Renderer::endFrame();
 			mWindow.swapBuffers();
 			mWindow.pollEvents();
 		}

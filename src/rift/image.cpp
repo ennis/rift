@@ -90,35 +90,6 @@ Image::~Image()
 }
 
 //====================================
-Texture2D::Ptr Image::convertToTexture2D()
-{
-	auto tex = Texture2D::create(getSize(), numMipLevels, format, nullptr);
-	for (auto imip = 0u; imip < numMipLevels; imip++) {
-		tex->update(
-			imip,
-			glm::ivec2(0, 0), 
-			getSize(imip),
-			getImageView(imip).data());
-	}
-	return std::move(tex);
-}
-
-TextureCubeMap::Ptr Image::convertToTextureCubeMap()
-{
-	assert(numFaces == 6);
-	const void *faceBytes[6] = {
-		getImageView(0, 0).data(),
-		getImageView(0, 1).data(),
-		getImageView(0, 2).data(),
-		getImageView(0, 3).data(),
-		getImageView(0, 4).data(),
-		getImageView(0, 5).data()
-	};
-	auto tex = TextureCubeMap::create(getSize(), numMipLevels, format, faceBytes);
-	return tex;
-}
-
-//====================================
 namespace
 {
 	// fill 'data' with 'size' bytes.  return number of bytes actually read 

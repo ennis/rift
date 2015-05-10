@@ -10,11 +10,26 @@ layout(std140, binding = 0) uniform SceneData {
 	mat4 viewMatrix;
 	mat4 projMatrix;
 	mat4 viewProjMatrix;	// = projMatrix*viewMatrix
-	vec4 wEye;	// in world space
 	vec4 lightDir;
+	vec4 wEye;	// in world space
 	vec2 viewportSize;	// taille de la fenêtre
 };
 
+#ifdef DIRECTIONAL_LIGHT
+layout(std140, binding = 1) uniform Light
+{
+	vec4 intensity;
+	vec4 wLightDir;
+};
+#endif
+
+#ifdef POINT_LIGHT
+layout(std140, binding = 1) uniform Light
+{
+	vec4 intensity;
+	vec4 wLightPos;
+};
+#endif
 
 float fresnel(float eta, float cosTheta)
 {

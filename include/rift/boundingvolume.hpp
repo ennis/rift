@@ -2,10 +2,10 @@
 #define _BOUNDING_VOLUME_
 
 #include <glm/glm.hpp>
-#include <renderer.hpp>
-#include <renderable.hpp>
+//#include <renderer.hpp>
+//#include <renderable.hpp>
 #include <mesh.hpp>
-#include <effect.hpp>
+//#include <effect.hpp>
 #include "transform.hpp"
 
 enum BoundingVolumeType{

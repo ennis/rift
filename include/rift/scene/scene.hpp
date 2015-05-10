@@ -1,42 +1,71 @@
 #ifndef SCENE_HPP
 #define SCENE_HPP
 
-#include <gl4/renderer.hpp>
+#include <rendering/opengl4/graphics_context.hpp>
+#include <rendering/opengl4/mesh_renderer.hpp>
+#include <rendering/opengl4/material.hpp>
+#include <rendering/opengl4/light.hpp>
+#include <mesh_data.hpp>
+#include <scene/entity.hpp>
+#include <resource_loader.hpp>
 #include <font.hpp>
-#include <material.hpp>
-#include <mesh.hpp>
 #include <transform.hpp>
+#include <camera.hpp>
 
-
-// données partagées entre les shaders
-struct SceneData
+struct MeshNode
 {
-	glm::mat4 viewMatrix;
-	glm::mat4 projMatrix;
-	glm::mat4 viewProjMatrix;
-	glm::vec4 eyePos;	// in world space
-	// directional light
-	glm::vec4 lightDir;
-	glm::vec2 viewportSize;
+	Entity entity;
+	gl4::Mesh *mesh;
+	gl4::Material *material;
 };
 
-struct SceneRenderContext
+struct LightNode
 {
-	RenderTarget *renderTarget;
-	RenderTarget *overlayRenderTarget;
-	// drawn before postFX (opaque)
-	CommandBuffer *opaqueList;
-	Font *defaultFont;
-	SceneData sceneData;
-	Buffer *sceneDataCB;
+	gl4::Light light;
 };
 
-// un objet de la scène
-struct SceneObject
+class Scene
 {
-	Mesh *mesh;
-	Material material;
-	Transform modelToWorld;
+public:
+	Scene(gl4::GraphicsContext &graphicsContext_, ResourceLoader &resourceLoader);
+
+	Entity createLightPrefab(const Transform &transform, gl4::LightMode lightMode, const glm::vec3 &intensity);
+	Entity createMeshPrefab(const Transform &transform, gl4::Mesh &mesh, gl4::Material &material);
+
+	Entity createEntity();
+	LightNode *createPointLight(Entity id, const glm::vec3 &intensity);
+	LightNode *createDirectionalLight(Entity id, const glm::vec3 &intensity);
+	Transform *getTransform(Entity id);
+	MeshNode *createMeshNode(Entity id, gl4::Mesh &mesh, gl4::Material &material);
+	// LightNode *createLight(Entity id);
+	void deleteEntity(Entity id);
+
+	void render(Camera &camera, glm::ivec2 viewportSize, float dt);
+	util::array_ref<Entity> getEntities() const;
+
+	void loadFromFile(const char *path, ResourceLoader &resources);
+
+private:
+	gl4::GraphicsContext &graphicsContext;
+	// World (entity list)
+	Entity lastEntity;
+	std::vector<Entity> entities;
+	EntityMap<Transform> transforms;
+	EntityMap<MeshNode> meshNodes;
+	EntityMap<LightNode> lightNodes;
+
+	gl4::MeshRenderer meshRenderer;
+	gl4::Material::Ptr defaultMaterial;
+
+	// Lights:
+
+	// Feature renderers:
+	// StaticMeshRenderer::Ptr staticMeshRenderer;
+	// TerrainRenderer::Ptr terrainRenderer;
+	// SkinnedMeshRenderer::Ptr skinnedMeshRenderer;
+	// TextRenderer::Ptr textRenderer;
+
+	// Postproc chain:
 };
 
 #endif /* end of include guard: SCENE_HPP */

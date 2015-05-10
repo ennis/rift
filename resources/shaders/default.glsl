@@ -1,17 +1,14 @@
-// version GLSL 4.30 parce que pourquoi pas.
+// Default material shader, no lighting, diffuse texturing only
 #version 430
 
 // test include
 #pragma include <scene.glsl>
 
-// tous les paramètres doivent être placés dans des uniform buffers
-layout(std140, binding = 1) uniform PerObject {
+layout(std140, binding = 2) uniform PerObject {
 	mat4 modelMatrix;
-	vec4 color;
 };
 
-// sauf les paramètres de texture
-layout (binding = 0) uniform sampler2D diffuse;
+layout (binding = 0) uniform sampler2D diffuseMap;
 
 //=============================================================
 // La macro _VERTEX_ est définie par le code qui va charger le shader (classe Effect)
@@ -21,24 +18,30 @@ layout (binding = 0) uniform sampler2D diffuse;
 layout(location = 0) in vec3 position;
 // normals: 3 floats
 layout(location = 1) in vec3 normal;
+// tg: 3 floats
+layout(location = 2) in vec3 tangent;
 // texcoords: 2 floats
-layout(location = 2) in vec2 texcoord;
+layout(location = 3) in vec2 uv;
 
 
 //--- OUT ----------------------------
 // variables en sortie du vertex shader
-out vec3 fPosition;
-out vec3 fNormal;
-out vec2 fTexcoord;
+out vec3 wPos;
+out vec3 wN;
+out vec3 vPos;
+out vec2 tex;
 
 //--- CODE ---------------------------
 void main() 
 {
 	vec4 modelPos = modelMatrix * vec4(position, 1.f);
 	gl_Position = viewProjMatrix * modelPos;
-	fPosition = modelPos.xyz;
-	fNormal = normal;
-	fTexcoord = texcoord;
+	wPos = modelPos.xyz;
+	vPos = (viewMatrix * modelPos).xyz;
+	// TODO normalmatrix
+	wN = (modelMatrix * vec4(normal, 0.f)).xyz;
+	wN = (modelMatrix * vec4(tangent, 0.f)).xyz;
+	tex = uv;
 }
 
 #endif
@@ -48,9 +51,10 @@ void main()
 
 //--- IN -----------------------------
 // variables d'entrée
-in vec3 fPosition;
-in vec3 fNormal;
-in vec2 fTexcoord;
+in vec3 wPos;
+in vec3 wN;
+in vec3 vPos;
+in vec2 tex;
 
 //--- OUT ----------------------------
 // variables de sortie
@@ -60,7 +64,7 @@ const vec4 vertColor = vec4(0.9f, 0.9f, 0.1f, 1.0f);
 
 void main()
 {
-	oColor = texture(diffuse, fPosition.xy);
+	oColor = texture(diffuseMap, tex.xy);
 }
 
 #endif
