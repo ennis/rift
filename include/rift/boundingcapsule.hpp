@@ -10,20 +10,20 @@ class BoundingCapsule : public BoundingVolume
 public:
 	// The position is the center of the capsule
 	// The capsule is considered alligned with the z axis
-	BoundingCapsule(glm::vec3 position, float radius, float length);
+	BoundingCapsule(glm::vec3 position, float radius, float length, gl4::GraphicsContext &context);
 
 	float Radius() const;
 	float Length() const;
 
-	bool isColliding(BoundingVolume* target);
+	bool isColliding(BoundingVolume* target, float & penetration_distance);
 
-	void render(RenderContext const &renderContext, bool isColliding);
+	//void render(RenderContext const &renderContext, bool isColliding);
 
 private:
 	float _radius;
 	float _length;
 
-	Mesh _mesh;
+	//Mesh _mesh;
 };
 
 #endif

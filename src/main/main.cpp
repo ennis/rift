@@ -14,6 +14,7 @@
 #include <rendering/opengl4/shader_compiler.hpp>
 //#include <rendering/opengl4/text_renderer.hpp>
 #include <rendering/opengl4/nanovg/nanovg.h>
+#include <boundingsphere.hpp>
 
 //============================================================================
 // Classe de base du jeu
@@ -54,6 +55,9 @@ private:
 	gl4::Material::Ptr mat;
 
 	ResourceLoader loader;
+
+	Entity sphereId;
+	BoundingSphere *sphere_42;
 };
 
 //============================================================================
@@ -69,7 +73,7 @@ void RiftGame::init()
 		1000.0,
 		0.01);
 
-	mokou = loader.loadMesh("resources/models/mokou/mokou.mesh", *graphicsContext);
+	//mokou = loader.loadMesh("resources/models/mokou/mokou.mesh", *graphicsContext);
 	mat = std::make_unique<gl4::Material>();
 	mat->shader = loader.loadShader("resources/shaders/default.glsl", *graphicsContext);
 	mat->diffuseMap = loader.loadTexture("resources/img/brick_wall.jpg");
@@ -91,6 +95,10 @@ void RiftGame::init()
 	 
 	// load scene from file
 	scene->loadFromFile("resources/scenes/viking_village/scene.bin");
+
+	/*sphere_42 = new BoundingSphere(glm::vec3(35, 2, 35), 0.5, *graphicsContext);
+	sphere_42->Speed() = glm::vec3(2.5, 0, 2.5);
+	sphereId = scene->createMeshPrefab(Transform(), *sphere_42->getMesh(), *mat);*/
 }
 
 void RiftGame::render(float dt)
