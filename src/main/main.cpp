@@ -3,7 +3,6 @@
 #include <transform.hpp>
 #include <log.hpp>
 #include <AntTweakBar.h>
-#include <serialization.hpp>
 #include <scene.hpp>
 #include <image.hpp>
 #include <font.hpp>
@@ -14,9 +13,7 @@
 #include <rendering/opengl4/graphics_context.hpp>
 #include <rendering/opengl4/shader_compiler.hpp>
 //#include <rendering/opengl4/text_renderer.hpp>
-#define NANOVG_GL3_IMPLEMENTATION
 #include <rendering/opengl4/nanovg/nanovg.h>
-#include <rendering/opengl4/nanovg/nanovg_gl.h>
 
 //============================================================================
 // Classe de base du jeu
@@ -91,9 +88,9 @@ void RiftGame::init()
 			auto id = scene->createMeshPrefab(Transform().scale(0.01f).move({ i*5.f, 0.f, j*5.f }), *mokou, *mat);
 		}
 	}*/
-
+	 
 	// load scene from file
-	scene->loadFromFile("resources/scenes/sample_scene/scene.bin", loader);
+	scene->loadFromFile("resources/scenes/viking_village/scene.bin");
 }
 
 void RiftGame::render(float dt)
@@ -116,34 +113,7 @@ void RiftGame::render(float dt)
 
 void RiftGame::renderDebugHud()
 {
-	Logging::clearScreenMessages();
-	/*CommandBuffer cmdBuf;
-	auto lines = Logging::clearScreenMessages();
-	unsigned ypos = 5;
-	unsigned xpos = 5;
-	unsigned yinc = debugFont->getMetrics().height;
-	for (auto &&line : lines)
-	{
-		// drop shadow FTW
-		hud->render(
-			cmdBuf,
-			line,
-			*debugFont,
-			glm::vec2(xpos+2, ypos+2),
-			glm::vec2(sizeX, sizeY),
-			Color::Black,
-			glm::vec4(0.0, 0.0, 0.0, 0.0));
-		hud->render(
-			cmdBuf,
-			line,
-			*debugFont,
-			glm::vec2(xpos, ypos),
-			glm::vec2(sizeX, sizeY),
-			Color::White,
-			glm::vec4(0.0, 0.0, 0.0, 0.0));
-		ypos += yinc;
-	}
-	graphicsContext->execute(cmdBuf);*/
+	
 }
 
 void RiftGame::update(float dt)

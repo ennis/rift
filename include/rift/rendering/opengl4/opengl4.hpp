@@ -12,6 +12,7 @@
 #include <unique_resource.hpp>
 #include <small_vector.hpp>
 #include <image.hpp>
+#include <asset.hpp>
 
 namespace gl4
 {
@@ -151,7 +152,7 @@ namespace gl4
 		Buffer *buf;
 	};
 
-	class Texture
+	class Texture : public Asset
 	{
 	public:
 		enum Type

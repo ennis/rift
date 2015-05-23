@@ -8,10 +8,11 @@
 #include <transform.hpp>
 #include <mesh_data.hpp>
 #include <scene/entity.hpp>
+#include <asset.hpp>
 
 namespace gl4
 {
-	struct Mesh
+	struct Mesh : public Asset
 	{
 		using Ptr = std::unique_ptr<Mesh>;
 

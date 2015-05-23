@@ -64,7 +64,8 @@ const vec4 vertColor = vec4(0.9f, 0.9f, 0.1f, 1.0f);
 
 void main()
 {
-	oColor = texture(diffuseMap, tex.xy);
+	vec2 tex2 = vec2(tex.x, 1.0f-tex.y);
+	oColor = texture(diffuseMap, tex2.xy);
 }
 
 #endif

@@ -3,6 +3,37 @@
 #include <fstream>
 #define STBI_HEADER_FILE_ONLY
 #include "utils/stb_image.cpp"
+#include <cmath>
+
+namespace
+{
+	// https://code.google.com/p/imageresampler/
+	double sinc(double x)
+	{
+		x = (x * glm::pi<double>());
+		if ((x < 0.01) && (x > -0.01))
+			return 1.0 + x*x*(-1.0 / 6.0 + x*x*1.0 / 120.0);
+		return sin(x) / x;
+	}
+
+	double clean(double t)
+	{
+		constexpr double EPSILON = 0.0000125;
+		if (fabs(t) < EPSILON)
+			return 0.0;
+		return t;
+	}
+
+	static double lanczosFilter(double t, double size)
+	{
+		if (t < 0.0)
+			t = -t;
+		if (t < size)
+			return clean(sinc(t) * sinc(t / size));
+		else
+			return 0.0;
+	}
+}
 
 //====================================
 // Default constructor
@@ -113,6 +144,12 @@ namespace
 		std::istream *is = static_cast<std::istream*>(user);
 		return is->eof() ? 1 : 0;
 	}
+}
+
+//====================================
+void Image::generateMipMaps()
+{
+	// allocate space for the mipmaps
 }
 
 //====================================

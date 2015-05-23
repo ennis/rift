@@ -1,5 +1,6 @@
 #include <rendering/opengl4/material.hpp>
 #include <rendering/opengl4/shader_compiler.hpp>
+#include <utils/binary_io.hpp>
 #include <log.hpp>
 
 namespace gl4
@@ -71,7 +72,7 @@ namespace gl4
 			BlendStateRenderTargetDesc{});
 	}
 	
-	Shader::Ptr Shader::loadFromFile(const char *path)
+	Shader::Ptr Shader::loadFromFile(const char * path)
 	{
 		auto src = gl4::loadShaderSource(path);
 		auto ptr = std::make_unique<Shader>();
@@ -81,4 +82,5 @@ namespace gl4
 		ptr->variant_Forward_SpotLight = compileShaderVariant(src, src, { { "SPOT_LIGHT" } });
 		return std::move(ptr);
 	}
+
 }

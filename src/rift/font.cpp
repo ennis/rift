@@ -1,7 +1,7 @@
 #include <font.hpp>
 #include <cstring>	// 
 #include <string>	// string
-#include <serialization.hpp>
+#include <utils/binary_io.hpp>
 
 //=============================================================================
 Font::~Font()
@@ -12,7 +12,6 @@ Font::~Font()
 //=============================================================================
 Font::Ptr Font::loadFromFile(const char *fontFilePath)
 {
-	using namespace serialization;
 	auto ptr = std::make_unique<Font>();
 
 	// binary file produced by BMFont
@@ -49,15 +48,15 @@ Font::Ptr Font::loadFromFile(const char *fontFilePath)
 			{
 				// common
 				// lineHeight 2 uint
-				read_u16le(fileIn, ptr->metrics.height);
-				read_u16le(fileIn, ptr->metrics.baseline);
-				read_u16le(fileIn, ptr->metrics.scaleW);
-				read_u16le(fileIn, ptr->metrics.scaleH);
+				util::read_u16le(fileIn, ptr->metrics.height);
+				util::read_u16le(fileIn, ptr->metrics.baseline);
+				util::read_u16le(fileIn, ptr->metrics.scaleW);
+				util::read_u16le(fileIn, ptr->metrics.scaleH);
 				unsigned int num_pages;
-				read_u16le(fileIn, num_pages);
+				util::read_u16le(fileIn, num_pages);
 				assert(num_pages == 1);
 				uint8_t flags;
-				read_u8(fileIn, flags);
+				util::read_u8(fileIn, flags);
 				// channel bits
 				uint8_t ch[4];
 				fileIn.read((char*)ch, 4);
@@ -81,25 +80,23 @@ Font::Ptr Font::loadFromFile(const char *fontFilePath)
 					char32_t id;
 					unsigned int x, y, width, height, page;
 					int xOffset, yOffset, xAdvance;
-					read_u32le(fileIn, id);
-					read_u16le(fileIn, x);
-					read_u16le(fileIn, y);
-					read_u16le(fileIn, width);
-					read_u16le(fileIn, height);
-					read_i16le(fileIn, xOffset);
-					read_i16le(fileIn, yOffset);
-					read_i16le(fileIn, xAdvance);
-					read_u8(fileIn, page);
+					util::read_u32le(fileIn, id);
+					util::read_u16le(fileIn, x);
+					util::read_u16le(fileIn, y);
+					util::read_u16le(fileIn, width);
+					util::read_u16le(fileIn, height);
+					util::read_i16le(fileIn, xOffset);
+					util::read_i16le(fileIn, yOffset);
+					util::read_i16le(fileIn, xAdvance);
+					util::read_u8(fileIn, page);
 					// skip channel
 					fileIn.ignore(1);
 					assert(!(fileIn.fail() || fileIn.eof()));
 					ptr->glyphs.emplace(
-						std::make_pair(
-							id, 
-							Glyph(
-								x, y, width, height, 
-								xOffset, yOffset, xAdvance, 
-								page)));
+						std::make_pair(id, Glyph(
+							x, y, width, height, 
+							xOffset, yOffset, xAdvance, 
+							page)));
 				}
 			}
 		default:

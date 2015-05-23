@@ -5,6 +5,7 @@
 #include <rendering/opengl4/pass.hpp>
 #include <rendering/opengl4/light.hpp>
 #include <transform.hpp>
+#include <asset_database.hpp>
 
 namespace gl4
 {
@@ -16,7 +17,7 @@ namespace gl4
 	};
 
 	// A shader (collection of shader variants)
-	struct Shader
+	struct Shader : public Asset
 	{
 		using Ptr = std::unique_ptr<Shader>;
 
@@ -30,7 +31,7 @@ namespace gl4
 		static Ptr loadFromFile(const char *path);
 	};
 
-	struct Material
+	struct Material : public Asset
 	{
 		using Ptr = std::unique_ptr<Material>;
 

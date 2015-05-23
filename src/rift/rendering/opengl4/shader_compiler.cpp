@@ -125,12 +125,10 @@ namespace gl4
 				// look for include file in source path
 				auto path = sourcePath.parent_path();
 				path /= include;
-				LOG << "include " << path.string();
 				if (!exists(path)) {
 					// does not exist, look in system include dir
 					path = systemIncludePath;
 					path /= include;
-					LOG << "include (sys) " << path.string();
 					if (!exists(path)) {
 						//
 						ERROR << "Include file <" << include << "> not found.";

@@ -3,6 +3,7 @@
 
 #include <rendering/opengl4/graphics_context.hpp>
 #include <rendering/opengl4/mesh_renderer.hpp>
+#include <rendering/opengl4/text_renderer.hpp>
 #include <rendering/opengl4/material.hpp>
 #include <rendering/opengl4/light.hpp>
 #include <mesh_data.hpp>
@@ -24,6 +25,8 @@ struct LightNode
 	gl4::Light light;
 };
 
+struct NVGcontext;
+
 class Scene
 {
 public:
@@ -40,10 +43,10 @@ public:
 	// LightNode *createLight(Entity id);
 	void deleteEntity(Entity id);
 
+	// debug message
 	void render(Camera &camera, glm::ivec2 viewportSize, float dt);
 	util::array_ref<Entity> getEntities() const;
-
-	void loadFromFile(const char *path, ResourceLoader &resources);
+	void loadFromFile(const char *path);
 
 private:
 	gl4::GraphicsContext &graphicsContext;
@@ -55,7 +58,16 @@ private:
 	EntityMap<LightNode> lightNodes;
 
 	gl4::MeshRenderer meshRenderer;
+	gl4::TextRenderer textRenderer;
 	gl4::Material::Ptr defaultMaterial;
+	Font::Ptr debugFont;
+
+	NVGcontext *nvgContext;
+	std::vector<float> lastFrameTimes;
+	unsigned lastFrameIndex;
+
+	// container for resources loaded by loadFromFile
+	AssetDatabase assetDb;
 
 	// Lights:
 

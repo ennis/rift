@@ -1,16 +1,32 @@
 #include <scene.hpp>
 #include <rendering/opengl4/pass.hpp>
+#include <colors.hpp>
+#define NANOVG_GL3_IMPLEMENTATION
+#include <rendering/opengl4/nanovg/nanovg.h>
+#include <rendering/opengl4/nanovg/nanovg_gl.h>
+#include <scene/frame_time_graph.hpp>
 
-Scene::Scene(gl4::GraphicsContext &graphicsContext_, ResourceLoader &resourceLoader) : 
+namespace
+{
+	constexpr unsigned NumLastFrameTimes = 200;
+}
+
+Scene::Scene(gl4::GraphicsContext &graphicsContext_, ResourceLoader &resourceLoader) :
 graphicsContext(graphicsContext_),
 meshRenderer(graphicsContext_),
-lastEntity(0)
+textRenderer(graphicsContext_),
+lastEntity(0),
+lastFrameTimes(NumLastFrameTimes),
+lastFrameIndex(0)
 {
 	defaultMaterial = std::make_unique<gl4::Material>();
 	defaultMaterial->shader = resourceLoader.loadShader("resources/shaders/default.glsl", graphicsContext);
 	defaultMaterial->diffuseMap = resourceLoader.loadTexture("resources/img/default.tga");
 	defaultMaterial->normalMap = nullptr;
 	defaultMaterial->userParams = nullptr;
+	debugFont = Font::loadFromFile("resources/img/fonts/debug.fnt");
+	std::fill(lastFrameTimes.begin(), lastFrameTimes.end(), 0.0f);
+	nvgContext = nvgCreateGL3(NVG_ANTIALIAS);
 }
 
 Entity Scene::createEntity()
@@ -100,8 +116,9 @@ namespace
 
 void Scene::render(Camera &camera, glm::ivec2 viewportSize, float dt)
 {
-	using namespace gl4;
+	lastFrameTimes[lastFrameIndex] = dt;
 
+	using namespace gl4;
 	gl4::SceneView sceneView;
 	gl4::ForwardPassContext pass;
 
@@ -173,6 +190,38 @@ void Scene::render(Camera &camera, glm::ivec2 viewportSize, float dt)
 		}
 	}
 
+	// TODO move this in its own file (scene/debug_view.cpp)
+	auto lines = Logging::clearScreenMessages();
+	unsigned ypos = 5;
+	unsigned xpos = 5;
+	unsigned yinc = debugFont->getMetrics().height;
+	for (auto &&line : lines)
+	{
+		// drop shadow FTW
+		textRenderer.render(
+			cmdBuf,
+			line,
+			*debugFont,
+			glm::vec2(xpos+2, ypos+2),
+			glm::vec2(viewportSize.x, viewportSize.y),
+			Color::Black,
+			glm::vec4(0.0, 0.0, 0.0, 0.0));
+		textRenderer.render(
+			cmdBuf,
+			line,
+			*debugFont,
+			glm::vec2(xpos, ypos),
+			glm::vec2(viewportSize.x, viewportSize.y),
+			Color::White,
+			glm::vec4(0.0, 0.0, 0.0, 0.0));
+		ypos += yinc;
+	}
+
 	graphicsContext.execute(cmdBuf);
 
+	nvgBeginFrame(nvgContext, viewportSize.x, viewportSize.y, 1.0f);
+	RenderFrameTimeGraph(nvgContext, 0.f, viewportSize.y, util::make_array_ref(lastFrameTimes), lastFrameIndex);
+	nvgEndFrame(nvgContext);
+
+	lastFrameIndex = (lastFrameIndex + 1) % NumLastFrameTimes;
 }

@@ -117,6 +117,8 @@ public:
 
 	void loadDDS(std::istream &streamIn);
 
+	void generateMipMaps();
+
 private:
 	Subimage &getSubimage(
 		unsigned int mipLevel,
@@ -142,8 +144,8 @@ private:
 	ElementFormat format;
 	unsigned int numMipLevels;
 	unsigned int numFaces;
-	// TODO smallvector
 	std::vector<util::small_vector<Subimage, 6> > subimages;
+	// replace with separate buffers
 	std::vector<unsigned char> data;
 };
 
