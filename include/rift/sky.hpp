@@ -1,7 +1,7 @@
 #ifndef SKY_HPP
 #define SKY_HPP
 
-#include <gl4/renderer.hpp>
+//#include <gl4/renderer.hpp>
 #include <scene.hpp>
 #include <mesh.hpp>
 

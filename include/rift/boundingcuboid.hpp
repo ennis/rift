@@ -8,13 +8,13 @@ class BoundingCuboid: public BoundingVolume
 public:
 	// The position is the center of the cube
 	// The cube is alligned with the axis of the frame
-	BoundingCuboid(glm::vec3 position, glm::vec3 dimensions);
+	BoundingCuboid(glm::vec3 position, glm::vec3 dimensions, gl4::GraphicsContext &context);
 
 	glm::vec3 Dimensions() const;
 
-	bool isColliding(BoundingVolume* target);
+	bool isColliding(BoundingVolume* target, float & penetration_distance);
 
-	void render(RenderContext const &renderContext, bool isColliding);
+	//void render(RenderContext const &renderContext, bool isColliding);
 
 	//Return the closest point of the cube to the point origin
 	glm::vec3 closestPoint(glm::vec3 origin);
@@ -22,7 +22,7 @@ public:
 private:
 	glm::vec3 _dimensions;
 
-	Mesh _mesh;
+	//Mesh _mesh;
 };
 
 #endif
