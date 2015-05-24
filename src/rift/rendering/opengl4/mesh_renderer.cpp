@@ -60,7 +60,7 @@ namespace gl4
 		ForwardPassContext &pass,
 		Mesh &mesh, 
 		Material &material,
-		const Transform &modelToWorld)
+		const glm::mat4 &modelToWorld)
 	{
 		// bind material
 		material.prepareForwardPass(context, pass, modelToWorld);

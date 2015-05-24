@@ -13,7 +13,7 @@ namespace gl4
 	void Material::prepareForwardPass(
 		GraphicsContext &gc,
 		ForwardPassContext &passContext,
-		const Transform &modelToWorld)
+		const glm::mat4 &modelToWorld)
 	{
 		auto &cmd = *passContext.cmdBuf;
 
@@ -40,7 +40,7 @@ namespace gl4
 		}
 
 		auto perObjBuf = gc.allocTransientBuffer<PerObject>();
-		perObjBuf.map()->modelToWorld = modelToWorld.toMatrix();
+		perObjBuf.map()->modelToWorld = modelToWorld;
 
 		if (!userParams)
 			cmd.setConstantBuffers({ passContext.sceneViewUBO, passContext.lightParamsUBO, perObjBuf.buf });
@@ -77,7 +77,7 @@ namespace gl4
 		auto src = gl4::loadShaderSource(path);
 		auto ptr = std::make_unique<Shader>();
 		// load variants
-		ptr->variant_Forward_PointLight = compileShaderVariant(src, src, {{"POINT_LIGHT"}});
+		ptr->variant_Forward_PointLight = compileShaderVariant(src, src, { { "POINT_LIGHT" } });
 		ptr->variant_Forward_DirectionalLight = compileShaderVariant(src, src, { { "DIRECTIONAL_LIGHT" } });
 		ptr->variant_Forward_SpotLight = compileShaderVariant(src, src, { { "SPOT_LIGHT" } });
 		return std::move(ptr);

@@ -34,7 +34,7 @@ namespace gl4
 			ForwardPassContext &pass,
 			Mesh &mesh, 
 			Material &material,
-			const Transform &modelToWorld);
+			const glm::mat4 &modelToWorld);
 
 	private:
 		GraphicsContext& context;

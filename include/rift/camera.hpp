@@ -47,6 +47,10 @@ struct Camera
 	glm::vec3 wEye;
 };
 
+const glm::vec3 CamFront = glm::vec3(0, 0, 1);
+const glm::vec3 CamRight = glm::vec3(1, 0, 0);
+const glm::vec3 CamUp = glm::vec3(0, 1, 0);
+
 class TrackballCameraControl
 {
 public:
@@ -69,11 +73,16 @@ public:
 		curMode(Mode::Idle),
 		lastMousePosX(0.0),
 		lastMousePosY(0.0)
-		{}
+	{
 
-	Camera updateCamera();
+	}
 
-private:
+	Camera getCamera();
+	glm::vec3 getRotationCenter() const;
+
+
+protected:
+	
 	enum class Mode
 	{
 		Idle,

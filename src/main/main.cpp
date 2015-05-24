@@ -79,7 +79,7 @@ void RiftGame::init()
 	auto lightId = scene->createLightPrefab(
 		Transform().move({ 0.f, 2.0f, 0.f }), 
 		gl4::LightMode::Directional, 
-		{ 0.0f, 1.0f, 0.8f });
+		{ 1.0f, 1.0f, 1.0f });
 
 	/*for (int i = 0; i < 10; ++i)
 	{
@@ -99,7 +99,7 @@ void RiftGame::render(float dt)
 	// rendu de la scene
 	auto win_size = glm::ivec2(sizeX, sizeY);
 	auto win_size_f = glm::vec2(sizeX, sizeY);
-	auto cam = trackball->updateCamera();
+	auto cam = trackball->getCamera();
 
 	scene->render(cam, win_size, dt);
 

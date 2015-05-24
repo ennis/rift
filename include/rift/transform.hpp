@@ -73,6 +73,7 @@ struct Transform
 		glm::mat3 mat = glm::inverseTranspose(glm::mat3(toMatrix()));
 		return mat * n;
 	}
+
 };
 
 #endif

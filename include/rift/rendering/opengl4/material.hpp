@@ -41,14 +41,14 @@ namespace gl4
 		void prepareForwardPass(
 			GraphicsContext &gc,
 			ForwardPassContext &passContext, 
-			const Transform &modelToWorld
+			const glm::mat4 &modelToWorld
 			);
 
 		// TODO
 		void prepareShadowPass(
 			GraphicsContext &gc,
 			ShadowPassContext &passContext,
-			const Transform &modelToWorld
+			const glm::mat4 &modelToWorld
 			);
 
 		Shader *shader = nullptr;

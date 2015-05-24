@@ -39,14 +39,13 @@ const glm::vec3 Camera::Right = glm::vec3(1, 0, 0);
 const glm::vec3 Camera::Up = glm::vec3(0, 1, 0);
 */
 
-namespace
+
+glm::vec3 TrackballCameraControl::getRotationCenter() const
 {
-	const glm::vec3 CamFront = glm::vec3(0, 0, 1);
-	const glm::vec3 CamRight = glm::vec3(1, 0, 0);
-	const glm::vec3 CamUp = glm::vec3(0, 1, 0);
+	return glm::vec3();
 }
 
-Camera TrackballCameraControl::updateCamera()
+Camera TrackballCameraControl::getCamera()
 {
 	auto w = window.getHandle();
 	int w_width, w_height;
@@ -79,28 +78,43 @@ Camera TrackballCameraControl::updateCamera()
 		lastMousePosY = posy;
 	}
 
+	const double dx = (posx - lastMousePosX) * sensitivity;
+	const double dy = (posy - lastMousePosY) * sensitivity;
+
+	// Update scene rotation
 	if (curMode != Mode::Idle)
 	{
-		const double dx = (posx - lastMousePosX) * sensitivity;
-		const double dy = (posy - lastMousePosY) * sensitivity;
-
 		if (curMode == Mode::Rotate)
 		{
 			const double rot_speed = 1.0;
 			sceneRotX = std::fmod(sceneRotX + rot_speed*dy, 2.0 * glm::pi<double>());
 			sceneRotY = std::fmod(sceneRotY + rot_speed*dx, 2.0 * glm::pi<double>());
 		}
-		else
-		{
-			// pan
-			const double pan_speed = 3.0;
-			vEye += (float)(dx * pan_speed) * CamRight + (float)(dy * pan_speed) * CamUp;
-		}
 	}
 
-	const double scroll = (window.scrollOffsetY - lastWheelOffset) * sensitivity;
-	const double scroll_speed = 10.0;
-	vEye += (float)(scroll * scroll_speed) * CamFront;
+	auto lookAt = glm::lookAt(glm::vec3(0, 0, -2), glm::vec3(0, 0, 0), CamUp)
+		* glm::rotate(glm::rotate((float)sceneRotX, CamRight), (float)sceneRotY, CamUp);
+
+	// no rotation: move view center
+	if (curMode != Mode::Rotate)
+	{
+		auto invLookAt = glm::inverse(lookAt);
+		auto wCamRight = glm::vec3(invLookAt * glm::vec4(CamRight, 0.0f));
+		auto wCamUp = glm::vec3(invLookAt * glm::vec4(-CamUp, 0.0f));
+		auto wCamFront = glm::vec3(invLookAt * glm::vec4(CamFront, 0.0f));
+
+		if (curMode == Mode::Pan)
+		{
+			const double pan_speed = 3.0;
+			vEye += (float)(dx * pan_speed) * wCamRight + (float)(dy * pan_speed) * wCamUp;
+		}
+		else 
+		{
+			const double scroll = (window.scrollOffsetY - lastWheelOffset) * sensitivity;
+			const double scroll_speed = 10.0;
+			vEye += (float)(scroll * scroll_speed) * wCamFront;
+		}
+	}
 
 	lastWheelOffset = window.scrollOffsetY;
 	lastMousePosX = posx;
@@ -108,9 +122,8 @@ Camera TrackballCameraControl::updateCamera()
 
 	Camera cam;
 	cam.mode = Camera::Mode::Perspective;
-	cam.viewMat =
-		glm::lookAt(vEye, vEye + CamFront, CamUp) * 
-		glm::rotate(glm::rotate((float)sceneRotX, CamRight), (float)sceneRotY, CamUp);
+	cam.viewMat = lookAt * glm::translate(vEye);
+
 	cam.projMat = glm::perspective(fieldOfView, (float)aspect_ratio, nearPlane, farPlane);
 	cam.wEye = glm::vec3(glm::inverse(cam.viewMat) * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 	return cam;

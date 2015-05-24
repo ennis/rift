@@ -25,6 +25,12 @@ struct LightNode
 	gl4::Light light;
 };
 
+struct TransformNode
+{
+	Entity parent = -1;
+	Transform transform;
+};
+
 struct NVGcontext;
 
 class Scene
@@ -38,7 +44,7 @@ public:
 	Entity createEntity();
 	LightNode *createPointLight(Entity id, const glm::vec3 &intensity);
 	LightNode *createDirectionalLight(Entity id, const glm::vec3 &intensity);
-	Transform *getTransform(Entity id);
+	TransformNode *getTransformNode(Entity id);
 	MeshNode *createMeshNode(Entity id, gl4::Mesh &mesh, gl4::Material &material);
 	// LightNode *createLight(Entity id);
 	void deleteEntity(Entity id);
@@ -53,7 +59,8 @@ private:
 	// World (entity list)
 	Entity lastEntity;
 	std::vector<Entity> entities;
-	EntityMap<Transform> transforms;
+	EntityMap<TransformNode> transforms;
+	EntityMap<glm::mat4> flattenedTransforms;
 	EntityMap<MeshNode> meshNodes;
 	EntityMap<LightNode> lightNodes;
 

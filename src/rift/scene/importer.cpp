@@ -94,6 +94,9 @@ void Scene::loadFromFile(const char *path)
 		}
 	}
 
+	std::unordered_map<unsigned, Entity> fileIdToEntity;
+	std::unordered_map<Entity, unsigned> entityToParentFileId;
+
 	std::ifstream fileIn(path, std::ios::binary);
 	util::BinaryReader bin(fileIn);
 
@@ -112,25 +115,27 @@ void Scene::loadFromFile(const char *path)
 			bin >> objname;
 			bin >> obj_id;
 			bin >> util::read16(c);
+			fileIdToEntity[obj_id] = id;
 			while (c != CC_End)
 			{
 				// game object
 				if (c == CC_Transform)
 				{
 					// parent entity
-					int parent_id;
+					unsigned parent_id;
 					bin >> parent_id;
-					auto t = getTransform(id);
-					bin >> t->position.x;
-					bin >> t->position.y;
-					bin >> t->position.z;
-					bin >> t->rotation.x;
-					bin >> t->rotation.y;
-					bin >> t->rotation.z;
-					bin >> t->rotation.w;
-					bin >> t->scaling.x;
-					bin >> t->scaling.y;
-					bin >> t->scaling.z;
+					entityToParentFileId[id] = parent_id;
+					auto t = getTransformNode(id);
+					bin >> t->transform.position.x;
+					bin >> t->transform.position.y;
+					bin >> t->transform.position.z;
+					bin >> t->transform.rotation.x;
+					bin >> t->transform.rotation.y;
+					bin >> t->transform.rotation.z;
+					bin >> t->transform.rotation.w;
+					bin >> t->transform.scaling.x;
+					bin >> t->transform.scaling.y;
+					bin >> t->transform.scaling.z;
 				}
 				else if (c == CC_Mesh)
 				{
@@ -164,5 +169,15 @@ void Scene::loadFromFile(const char *path)
 				bin >> util::read16(c);
 			}
 		}
+	}
+
+	// fix parent relations
+	for (auto &ent : entityToParentFileId)
+	{
+		auto &t = transforms[ent.first];
+		if (ent.second != -1)
+			t.parent = fileIdToEntity[ent.second];
+		else
+			t.parent = -1;
 	}
 }

@@ -33,15 +33,15 @@ Entity Scene::createEntity()
 {
 	auto id = lastEntity++;
 	entities.push_back(id);
-	transforms.insert(std::make_pair(id, Transform()));
+	transforms.insert(std::make_pair(id, TransformNode()));
 	return id;
 }
 
 Entity Scene::createLightPrefab(const Transform &transform, gl4::LightMode lightMode, const glm::vec3 &intensity)
 {
 	auto id = createEntity();
-	auto t = getTransform(id);
-	*t = transform;
+	auto t = getTransformNode(id);
+	t->transform = transform;
 	auto light = CreateComponent(lightNodes, id);
 	light->light.intensity = intensity;
 	light->light.mode = lightMode;
@@ -51,8 +51,8 @@ Entity Scene::createLightPrefab(const Transform &transform, gl4::LightMode light
 Entity Scene::createMeshPrefab(const Transform &transform, gl4::Mesh &mesh, gl4::Material &material)
 {
 	auto id = createEntity();
-	auto t = getTransform(id);
-	*t = transform;
+	auto t = getTransformNode(id);
+	t->transform = transform;
 	auto meshNode = CreateComponent(meshNodes, id);
 	meshNode->entity = id;
 	meshNode->material = &material;
@@ -60,7 +60,7 @@ Entity Scene::createMeshPrefab(const Transform &transform, gl4::Mesh &mesh, gl4:
 	return id;
 }
 
-Transform *Scene::getTransform(Entity id)
+TransformNode *Scene::getTransformNode(Entity id)
 {
 	return &transforms[id];
 }
@@ -104,12 +104,12 @@ namespace
 {
 	struct LightParams
 	{
+		glm::vec4 intensity;
 		union
 		{
 			float center[4]; 
 			float direction[4];
 		} u;
-		glm::vec4 intensity;
 	};
 
 }
@@ -146,10 +146,23 @@ void Scene::render(Camera &camera, glm::ivec2 viewportSize, float dt)
 		WARNING << "no lights!";
 	}
 
+	// flatten entity hierarchy
+	for (auto &t : transforms)
+	{
+		Entity ent = t.second.parent;
+		glm::mat4 flatTransform = t.second.transform.toMatrix();
+		while (ent != -1)
+		{
+			flatTransform = transforms[ent].transform.toMatrix() * flatTransform;
+			ent = transforms[ent].parent;
+		}
+		flattenedTransforms[t.first] = flatTransform;
+	}
+
 	for (auto &l : lightNodes)
 	{
 		auto &lightNode = l.second;
-		auto &lightTransform = transforms[l.first];
+		auto &lightTransform = transforms[l.first].transform;
 		auto tbuf = graphicsContext.allocTransientBuffer<LightParams>();
 		auto plight = tbuf.map();
 		plight->intensity = glm::vec4(lightNode.light.intensity, 1.0f);
@@ -181,7 +194,7 @@ void Scene::render(Camera &camera, glm::ivec2 viewportSize, float dt)
 		for (auto &meshEntity : meshNodes)
 		{
 			auto &meshNode = meshEntity.second;
-			auto &transform = transforms[meshEntity.first];
+			auto &transform = flattenedTransforms[meshEntity.first];
 			meshRenderer.renderForwardPass(
 				pass,
 				*meshNode.mesh,

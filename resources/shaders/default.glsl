@@ -28,6 +28,7 @@ layout(location = 3) in vec2 uv;
 // variables en sortie du vertex shader
 out vec3 wPos;
 out vec3 wN;
+out vec3 wT;
 out vec3 vPos;
 out vec2 tex;
 
@@ -40,7 +41,7 @@ void main()
 	vPos = (viewMatrix * modelPos).xyz;
 	// TODO normalmatrix
 	wN = (modelMatrix * vec4(normal, 0.f)).xyz;
-	wN = (modelMatrix * vec4(tangent, 0.f)).xyz;
+	wT = (modelMatrix * vec4(tangent, 0.f)).xyz;
 	tex = uv;
 }
 
@@ -53,6 +54,7 @@ void main()
 // variables d'entrée
 in vec3 wPos;
 in vec3 wN;
+in vec3 wT;
 in vec3 vPos;
 in vec2 tex;
 
@@ -65,7 +67,23 @@ const vec4 vertColor = vec4(0.9f, 0.9f, 0.1f, 1.0f);
 void main()
 {
 	vec2 tex2 = vec2(tex.x, 1.0f-tex.y);
-	oColor = texture(diffuseMap, tex2.xy);
+	oColor = PhongIllum(
+		texture(diffuseMap, tex2.xy),
+		wN,
+#ifdef DIRECTIONAL_LIGHT
+		wLightDir.xyz,
+#endif
+#ifdef POINT_LIGHT
+		wPos - wLightPos.xyz,
+#endif
+#ifdef SPOT_LIGHT
+		wLightPos.xyz,
+#endif
+		wPos,
+		0.1, 0.8, 0.87,
+		intensity.xyz,
+		1.0,
+		4.0);
 }
 
 #endif
