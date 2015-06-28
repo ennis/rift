@@ -8,7 +8,7 @@ class BoundingCuboid: public BoundingVolume
 public:
 	// The position is the center of the cube
 	// The cube is alligned with the axis of the frame
-	BoundingCuboid(glm::vec3 position, glm::vec3 dimensions, gl4::GraphicsContext &context);
+	BoundingCuboid(glm::vec3 position, glm::vec3 dimensions, GraphicsContext &context);
 
 	glm::vec3 Dimensions() const;
 

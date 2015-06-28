@@ -23,7 +23,8 @@ public:
 	}
 
 private:
-	std::unordered_map<std::string, AssetPtr> assetMap; 
+	std::unordered_map<std::string, std::string> assetIdToPath;
+	std::unordered_map<std::string, AssetPtr> assetMap;
 };
  
 #endif /* end of include guard: ASSET_DATABASE_HPP */

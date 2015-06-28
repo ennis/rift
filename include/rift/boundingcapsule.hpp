@@ -10,7 +10,7 @@ class BoundingCapsule : public BoundingVolume
 public:
 	// The position is the center of the capsule
 	// The capsule is considered alligned with the z axis
-	BoundingCapsule(glm::vec3 position, float radius, float length, gl4::GraphicsContext &context);
+	BoundingCapsule(glm::vec3 position, float radius, float length, GraphicsContext &context);
 
 	float Radius() const;
 	float Length() const;

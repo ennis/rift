@@ -47,7 +47,7 @@ glm::vec3 TrackballCameraControl::getRotationCenter() const
 
 Camera TrackballCameraControl::getCamera()
 {
-	auto w = window.getHandle();
+	auto w = app.getWindow();
 	int w_width, w_height;
 	glfwGetWindowSize(w, &w_width, &w_height);
 	const double aspect_ratio = (double)w_width / (double)w_height;
@@ -96,6 +96,8 @@ Camera TrackballCameraControl::getCamera()
 		* glm::rotate(glm::rotate((float)sceneRotX, CamRight), (float)sceneRotY, CamUp);
 
 	// no rotation: move view center
+	double scrollOffsetX, scrollOffsetY;
+	app.getLastScrollOffset(scrollOffsetX, scrollOffsetY);
 	if (curMode != Mode::Rotate)
 	{
 		auto invLookAt = glm::inverse(lookAt);
@@ -110,13 +112,13 @@ Camera TrackballCameraControl::getCamera()
 		}
 		else 
 		{
-			const double scroll = (window.scrollOffsetY - lastWheelOffset) * sensitivity;
+			const double scroll = (scrollOffsetY - lastWheelOffset) * sensitivity;
 			const double scroll_speed = 10.0;
 			vEye += (float)(scroll * scroll_speed) * wCamFront;
 		}
 	}
 
-	lastWheelOffset = window.scrollOffsetY;
+	lastWheelOffset = scrollOffsetY;
 	lastMousePosX = posx;
 	lastMousePosY = posy;
 

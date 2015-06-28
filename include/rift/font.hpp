@@ -1,7 +1,7 @@
 #ifndef FONT_HPP
 #define FONT_HPP
 
-#include <rendering/opengl4/opengl4.hpp>
+#include <rendering/opengl4.hpp>
 #include <image.hpp>
 #include <unordered_map>
 #include <memory>
@@ -75,7 +75,7 @@ public:
 		return data;
 	}
 
-	const gl4::Texture2D &getTexture() const
+	const Texture2D &getTexture() const
 	{
 		return *tex;
 	}
@@ -85,7 +85,7 @@ public:
 private:
 	Metrics metrics;
 	Image data;
-	gl4::Texture2D::Ptr tex;
+	Texture2D::Ptr tex;
 	std::unordered_map<char32_t, Glyph> glyphs;
 	// TODO kerning map
 };

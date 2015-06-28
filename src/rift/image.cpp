@@ -71,7 +71,7 @@ void Image::allocate(
 	std::size_t len = size_.x * size_.y * size_.z * elemsize * numFaces * numMipLevels;
 	std::size_t offset = 0;
 	glm::ivec2 mipsize = glm::ivec2(size_.x, size_.y);
-	data.reserve(len);
+	data.resize(len);
 
 	for (auto imip = 0u; 
 		(imip < numMipLevels) && (mipsize.x != 1) && (mipsize.y != 1); 

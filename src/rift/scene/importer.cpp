@@ -1,7 +1,7 @@
 #include <scene/scene.hpp>
 #include <boost/filesystem.hpp>
 #include <utils/binary_io.hpp>
-#include <rendering/opengl4/material.hpp>
+#include <rendering/opengl4.hpp>
 #include <asset_database.hpp>
 
 namespace
@@ -26,19 +26,17 @@ namespace
 
 	using AssetMap = std::unordered_map<std::string, std::string>;
 
-	gl4::Material *loadMaterialAsset(AssetMap& assetMap, const std::string &id, AssetDatabase& assetDb, gl4::GraphicsContext& gc)
+	Material *loadMaterialAsset(AssetMap& assetMap, const std::string &id, AssetDatabase& assetDb, GraphicsContext& gc)
 	{
 		auto path = assetMap.at(id);
-		return assetDb.loadAsset<gl4::Material>(path, [&](){
+		return assetDb.loadAsset<Material>(path, [&](){
 			auto fileIn = std::ifstream(path, std::ios::binary);
 			auto bin = util::BinaryReader(fileIn);
 			std::string shaderid;
 			bin >> shaderid;
 			auto shaderPath = "resources/shaders/default.glsl";
-			auto shader = assetDb.loadAsset<gl4::Shader>(shaderPath, [&]() {
-				return gl4::Shader::loadFromFile(shaderPath);
-			});
-			auto ptr = std::make_unique<gl4::Material>();
+			auto shader = loadShaderAsset(assetDb, gc, shaderPath);
+			auto ptr = std::make_unique<Material>();
 			ptr->shader = shader;
 			std::string texname;
 			std::string texid;
@@ -46,10 +44,10 @@ namespace
 			{
 				bin >> texid;
 				texid = assetMap.at(texid);
-				auto tex = assetDb.loadAsset<gl4::Texture2D>(texid, [&]() {
+				auto tex = assetDb.loadAsset<Texture2D>(texid, [&]() {
 					LOG << "Material: loading " << texid << "...";
 					Image img = Image::loadFromFile(texid.c_str());
-					return gl4::Texture2D::createFromImage(img);
+					return Texture2D::createFromImage(img);
 				});
 				if (texname == "mainTexture")
 				{
@@ -61,7 +59,7 @@ namespace
 	}
 }
 
-void Scene::loadFromFile(const char *path)
+void Scene::loadFromFile(GraphicsContext &gc, const char *path)
 {
 	namespace fs = boost::filesystem;
 	auto dir = fs::path(path).parent_path();
@@ -94,17 +92,17 @@ void Scene::loadFromFile(const char *path)
 		}
 	}
 
-	std::unordered_map<unsigned, Entity> fileIdToEntity;
-	std::unordered_map<Entity, unsigned> entityToParentFileId;
+	std::unordered_map<unsigned, EntityID> fileIdToEntity;
+	std::unordered_map<EntityID, unsigned> entityToParentFileId;
 
 	std::ifstream fileIn(path, std::ios::binary);
 	util::BinaryReader bin(fileIn);
 
-	uint8_t version;
+	::uint8_t version;
 	bin >> util::read8(version);
 	assert(version == 1);
 
-	uint16_t c;
+	::uint16_t c;
 	while (bin >> util::read16(c))
 	{
 		if (c == OT_GameObject)
@@ -142,28 +140,18 @@ void Scene::loadFromFile(const char *path)
 					std::string relpath;
 					bin >> relpath;
 
-					auto mesh = assetDb.loadAsset<gl4::Mesh>(asset_map[relpath], [&](){
-						LOG << "Scene: loading mesh: " << relpath << "...";
-						std::ifstream fileIn(asset_map[relpath], std::ios::binary);
-						MeshData data;
-						data.loadFromStream(fileIn);
-						return gl4::Mesh::create(graphicsContext, data);
-					});
-
+					auto mesh =  loadMeshAsset(assetDb, gc, asset_map[relpath]);
 					// load materials
 					unsigned nmat;
 					bin >> nmat;
-					std::vector<gl4::Material*> mats(nmat);
-					for (auto i = 0u; i < nmat; ++i)
-					{
+					std::vector<Material*> mats(nmat);
+					for (auto i = 0u; i < nmat; ++i) {
 						std::string matid;
 						bin >> matid;
-						mats[i] = loadMaterialAsset(asset_map, matid, assetDb, graphicsContext);
+						mats[i] = loadMaterialAsset(asset_map, matid, assetDb, gc);
 					}
 					if (mats[0]->diffuseMap == nullptr)
-					{
-						mats[0] = defaultMaterial.get();
-					}
+						mats[0] = nullptr;
 					createMeshNode(id, *mesh, *mats[0]);
 				}
 				bin >> util::read16(c);

@@ -115,7 +115,7 @@ Font::Ptr Font::loadFromFile(const char *fontFilePath)
 	sp += textureFileName;
 	LOG << "Loading " << sp.c_str();
 	ptr->data = Image::loadFromFile(sp.c_str());
-	ptr->tex = gl4::Texture2D::createFromImage(ptr->data);
+	ptr->tex = Texture2D::createFromImage(ptr->data);
 	return ptr;
 }
 

@@ -1,0 +1,42 @@
+Scene file format:
+
+version: byte
+
+objects: sequence of 'object'
+
+object:
+	type: int (Prefab | GameObject | Material)
+	id: int
+	parent_id: int
+	num_components: int
+	components: sequence of Components
+
+Components:
+	type: int
+	size: size
+	...
+
+Transform: Component
+	pos: vec3
+	rot: vec3
+	scale: vec3
+
+Mesh: Component
+	file: string
+
+MeshRenderer: Component
+	-- material reference
+	mat_file: string
+	mat_id: int
+
+PrefabRef: Component
+	pf_file: string 
+	pf_id: int
+
+Material:
+	shader: (Phong | Glass)
+	if shader == Phong:
+		diffuse: string
+		color: vec4
+	else if shader == Glass:
+		ior: float
