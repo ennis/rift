@@ -1,9 +1,9 @@
 #include "boundingcuboid.hpp"
 #include "boundingsphere.hpp"
 #include "boundingcapsule.hpp"
-#include <game.hpp>
+#include <mesh_data.hpp>
 
-BoundingCuboid::BoundingCuboid(glm::vec3 position, glm::vec3 dimensions, gl4::GraphicsContext &context)
+BoundingCuboid::BoundingCuboid(glm::vec3 position, glm::vec3 dimensions, GraphicsContext &context)
 	: BoundingVolume(context)
 {
 	VolumeType() = CUBOID_TYPE;

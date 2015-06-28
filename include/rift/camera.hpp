@@ -3,7 +3,7 @@
 
 #include <common.hpp>
 #include <transform.hpp>
-#include <window.hpp>
+#include <application.hpp>
 
 struct Frustum
 {
@@ -30,7 +30,6 @@ struct Camera
 
 	// Camera mode 
 	Mode mode;
-	
 	// Projection parameters
 	// frustum (for culling)
 	Frustum frustum;	
@@ -55,13 +54,13 @@ class TrackballCameraControl
 {
 public:
 	TrackballCameraControl(
-		Window &window_, 
+		Application &app_, 
 		glm::vec3 wEye_,
 		float fieldOfView_,
 		float nearPlane_,
 		float farPlane_,
 		double sensitivity_) : 
-		window(window_),
+		app(app_),
 		vEye(wEye_),
 		fieldOfView(fieldOfView_),
 		nearPlane(nearPlane_),
@@ -74,15 +73,12 @@ public:
 		lastMousePosX(0.0),
 		lastMousePosY(0.0)
 	{
-
 	}
 
 	Camera getCamera();
 	glm::vec3 getRotationCenter() const;
 
-
 protected:
-	
 	enum class Mode
 	{
 		Idle,
@@ -90,7 +86,7 @@ protected:
 		Pan
 	};
 
-	Window &window;
+	Application &app;
 	// world coordinates after scene rotation
 	glm::vec3 vEye;
 	float fieldOfView;

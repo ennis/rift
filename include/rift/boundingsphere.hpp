@@ -2,14 +2,14 @@
 #define _BOUNDING_SPHERE_
 
 #include "boundingvolume.hpp"
-#include <rendering/opengl4/mesh_renderer.hpp>
+#include <rendering/opengl4.hpp>
 
 
 class BoundingSphere : public BoundingVolume
 {
 public:
 	// The position is the center of the sphere
-	BoundingSphere(glm::vec3 position, float radius, gl4::GraphicsContext &context);
+	BoundingSphere(glm::vec3 position, float radius, GraphicsContext &context);
 
 	float Radius() const;
 

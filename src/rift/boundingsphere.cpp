@@ -1,8 +1,8 @@
 #include "boundingsphere.hpp"
 #include "boundingcapsule.hpp"
-#include <game.hpp>
+#include <mesh_data.hpp>
 
-BoundingSphere::BoundingSphere(glm::vec3 position, float radius, gl4::GraphicsContext &context)
+BoundingSphere::BoundingSphere(glm::vec3 position, float radius, GraphicsContext &context)
 	: BoundingVolume(context)
 {
 	VolumeType() = SPHERE_TYPE;
@@ -81,7 +81,7 @@ BoundingSphere::BoundingSphere(glm::vec3 position, float radius, gl4::GraphicsCo
 	meshData.submeshes.push_back(sub);
 
 	//Mesh Creation
-	_mesh = gl4::Mesh::create(_graph_context, meshData);
+	//_mesh = gl4::Mesh::create(_graph_context, meshData);
 
 	//Mesh Allocation
 	//Renderer &rd = Engine::instance().getRenderer();

@@ -2,8 +2,7 @@
 #define _BOUNDING_VOLUME_
 
 #include <glm/glm.hpp>
-#include <rendering/opengl4/mesh_renderer.hpp>
-#include <rendering/opengl4/graphics_context.hpp>
+#include <rendering/opengl4.hpp>
 #include "transform.hpp"
 
 enum BoundingVolumeType{
@@ -17,7 +16,7 @@ class BoundingVolume
 {
 
 protected:
-	BoundingVolume(gl4::GraphicsContext &context): _graph_context(context){
+	BoundingVolume(GraphicsContext &context): _graph_context(context){
 		_speed = glm::vec3(0, 0, 0);
 		_isFixed = false;
 		_mass = 1.f;
@@ -69,7 +68,7 @@ public:
 		return _last_position;
 	}
 	
-	gl4::Mesh::Ptr getMesh(){
+	Mesh::Ptr getMesh(){
 		return std::move(_mesh);
 	}
 
@@ -81,8 +80,8 @@ public:
 
 protected:
 	//Shader *_shader;
-	gl4::GraphicsContext &_graph_context;
-	gl4::Mesh::Ptr _mesh;
+	GraphicsContext &_graph_context;
+	Mesh::Ptr _mesh;
 
 	// for testing purposes...
 	const glm::vec4 color_not_colliding = glm::vec4(0.0f, 1.0f, 0.0f, 0.3f);

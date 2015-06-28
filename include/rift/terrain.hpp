@@ -1,7 +1,6 @@
 #ifndef TERRAIN_HPP
 #define TERRAIN_HPP
 
-#include <gl4/renderer.hpp>	
 #include <image.hpp>
 #include <array>
 #include <scene.hpp>

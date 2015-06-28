@@ -4,7 +4,7 @@
 #include <common.hpp>
 
 namespace Color {
-	constexpr glm::vec4 Black   (0.0, 0.0, 0.0, 1.0); 
+	constexpr glm::vec4 Black(0.0, 0.0, 0.0, 1.0); 
 	constexpr glm::vec4 White(1.0, 1.0, 1.0, 1.0);
 	constexpr glm::vec4 Red(1.0, 0.0, 0.0, 1.0);
 	constexpr glm::vec4 Green(0.0, 1.0, 0.0, 1.0);

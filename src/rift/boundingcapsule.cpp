@@ -1,7 +1,7 @@
 #include "boundingcapsule.hpp"
-#include <game.hpp>
+#include <mesh_data.hpp>
 
-BoundingCapsule::BoundingCapsule(glm::vec3 position, float radius, float length, gl4::GraphicsContext &context)
+BoundingCapsule::BoundingCapsule(glm::vec3 position, float radius, float length, GraphicsContext &context)
 	:BoundingVolume(context)
 {
 	VolumeType() = CAPSULE_TYPE;
