@@ -6,7 +6,6 @@
 #include <image.hpp>
 #include <log.hpp>
 
-using namespace glm;
 
 namespace
 {
@@ -17,9 +16,7 @@ namespace
 
 	Buffer *createSceneViewUBO(GraphicsContext &gc, const SceneView &sv)
 	{
-		auto tbuf = gc.createTransientBuffer<SceneView>();
-		*(tbuf.map()) = sv;
-		return tbuf.buf;
+		return gc.createTransientBuffer<SceneView>(gl::UNIFORM_BUFFER, sv);
 	}
 
 	struct LightParams
@@ -31,6 +28,28 @@ namespace
 			float direction[4];
 		} u;
 	};
+
+	struct ImmediateModeParams
+	{
+		glm::mat4 viewMatrix;
+		glm::mat4 projMatrix;
+		glm::mat4 viewProjMatrix;
+		glm::mat4 modelMatrix;
+		glm::vec4 wEye;	// in world space
+		glm::vec4 lineColor;
+		glm::vec2 viewportSize;
+	};
+
+	GLuint loadProgram(const char *combinedSourcePath)
+	{
+		auto src = loadShaderSource(combinedSourcePath);
+		auto vs = compileShader(src.c_str(), "", gl::VERTEX_SHADER, {});
+		auto ps = compileShader(src.c_str(), "", gl::FRAGMENT_SHADER, {});
+		auto prog = compileProgram(vs, 0, ps);
+		gl::DeleteShader(vs);
+		gl::DeleteShader(ps);
+		return prog;
+	}
 }
 
 
@@ -38,25 +57,22 @@ SceneRenderer::SceneRenderer(glm::ivec2 viewportSize_, GraphicsContext &gc, Asse
 	viewportSize(viewportSize_),
 	graphicsContext(gc)
 {
+	// default material
 	defaultMaterial = std::make_unique<Material>();
 	defaultMaterial->shader = loadShaderAsset(assetDb, gc, "resources/shaders/default.glsl");
 	defaultMaterial->diffuseMap = loadTexture2DAsset(assetDb, gc, "resources/img/default.tga");
 	defaultMaterial->normalMap = nullptr;
 	defaultMaterial->userParams = nullptr;
+
+	// default font
 	defaultFont = Font::loadFromFile("resources/img/fonts/debug.fnt");
+
+	// init nanovg context
 	nvgContext = nvgCreateGL3(NVG_ANTIALIAS);
 
-	// text VAO
+	// text 
 	textVao.create(1, { Attribute{ ElementFormat::Float4 } });
-	// text shader
-	{
-		auto src = loadShaderSource("resources/shaders/text.glsl");
-		auto vs = compileShader(src.c_str(), "", gl::VERTEX_SHADER, {});
-		auto ps = compileShader(src.c_str(), "", gl::FRAGMENT_SHADER, {});
-		textProgram = compileProgram(vs, 0, ps);
-		gl::DeleteShader(vs);
-		gl::DeleteShader(ps);
-	}
+	textProgram = loadProgram("resources/shaders/text.glsl");
 
 	// Meshes
 	meshVao.create(1, { 
@@ -66,10 +82,88 @@ SceneRenderer::SceneRenderer(glm::ivec2 viewportSize_, GraphicsContext &gc, Asse
 		{ ElementFormat::Unorm16x2, 0 },
 	});
 
+	// immediate mode rendering
+	immediateProgram = loadProgram("resources/shaders/immediate.glsl");
+	immediateVao.create(1, { Attribute{ ElementFormat::Float3 } });	// pos only
+
+	// setup opengl debug extension
 	setDebugCallback();
 }
 
-void SceneRenderer::renderScene(Scene &scene, const Camera &camera, float dt)
+void SceneRenderer::setSceneCamera(const Camera &camera_)
+{
+	camera = camera_;
+}
+
+void SceneRenderer::drawWireMesh(
+	const Transform &transform,
+	GLenum mode,
+	Buffer *vertices,
+	unsigned nbvertices,
+	Buffer *indices,
+	unsigned nbindices,
+	const glm::vec4 lineColor,
+	bool noDepthTest)
+{
+	// wireframe mode
+	gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+	// setup depth testing
+	if (noDepthTest)
+		gl::Disable(gl::DEPTH_TEST);
+	else
+		gl::Enable(gl::DEPTH_TEST);
+
+	// allocate buffer for uniforms
+	ImmediateModeParams params;
+	params.wEye = glm::vec4(camera.wEye, 1.0f);
+	params.projMatrix = camera.projMat;
+	params.viewMatrix = camera.viewMat;
+	params.viewProjMatrix = camera.projMat * camera.viewMat;
+	params.viewportSize = viewportSize;
+	params.lineColor = lineColor;
+	params.modelMatrix = transform.toMatrix();
+	auto params_buf = graphicsContext.createTransientBuffer(gl::UNIFORM_BUFFER, params);
+
+	// setup shader
+	gl::UseProgram(immediateProgram);
+	// setup buffers
+	bindVertexBuffers({ vertices }, immediateVao);
+	bindBuffersRangeHelper(0, { params_buf });
+	if (indices) {
+		gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, indices->obj);
+		gl::DrawElements(
+			mode,
+			nbindices,
+			gl::UNSIGNED_SHORT,
+			reinterpret_cast<void*>(indices->offset));
+	}
+	else
+		gl::DrawArrays(mode, 0, nbvertices);
+
+	// reset fill mode & depth test
+	gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+	gl::Enable(gl::DEPTH_TEST);
+}
+
+void SceneRenderer::drawWireMesh(
+	const Transform &transform, 
+	GLenum mode,
+	const util::array_ref<glm::vec3> vertices,
+	const util::array_ref<uint16_t> indices,
+	const glm::vec4 lineColor, 
+	bool noDepthTest)
+{
+	// allocate buffer for geometry
+	auto geom_buf = graphicsContext.createTransientBuffer(gl::ARRAY_BUFFER, vertices.size() * 3 * sizeof(float), vertices.data());
+	// allocate buffer for indices if needed
+	Buffer *index_buf = nullptr;
+	auto nbindex = indices.size();
+	if (nbindex)
+		index_buf = graphicsContext.createTransientBuffer(gl::ELEMENT_ARRAY_BUFFER, nbindex * 2, indices.data());
+	drawWireMesh(transform, mode, geom_buf, vertices.size(), index_buf, indices.size(), lineColor, noDepthTest);
+}
+
+void SceneRenderer::renderScene(Scene &scene, float dt)
 {
 	if (scene.lightNodes.empty())
 		WARNING << "no lights!";
@@ -77,8 +171,8 @@ void SceneRenderer::renderScene(Scene &scene, const Camera &camera, float dt)
 
 	// update scene data buffer
 	SceneView sceneView;
-	sceneView.wEye = vec4(camera.wEye, 1.0f);
-	sceneView.lightDir = vec4(0.0, 1.0f, 1.0f, 0.0f);
+	sceneView.wEye = glm::vec4(camera.wEye, 1.0f);
+	sceneView.lightDir = glm::vec4(0.0, 1.0f, 1.0f, 0.0f);
 	sceneView.projMatrix = camera.projMat;
 	sceneView.viewMatrix = camera.viewMat;
 	sceneView.viewProjMatrix = camera.projMat * camera.viewMat;
@@ -125,7 +219,7 @@ void SceneRenderer::renderScene(Scene &scene, const Camera &camera, float dt)
 		auto &lightTransform = scene.transforms[l.first].transform;
 		auto lightbuf = graphicsContext.createTransientBuffer<LightParams>();
 		auto plight = lightbuf.map();
-		plight->intensity = vec4(lightNode.light.intensity, 1.0f);
+		plight->intensity = glm::vec4(lightNode.light.intensity, 1.0f);
 
 		pass.light = &lightNode.light;
 		pass.lightParamsUBO = lightbuf.buf;
@@ -240,7 +334,7 @@ void SceneRenderer::drawScreenMessages()
 	unsigned yinc = defaultFont->getMetrics().height;
 	for (auto &&line : lines) {
 		drawTextShadow(
-			vec2(xpos, ypos),
+			glm::vec2(xpos, ypos),
 			line.c_str());
 		ypos += yinc;
 	}

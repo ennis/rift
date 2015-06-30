@@ -344,6 +344,14 @@ public:
 		return TTransientBuffer<T> { createTransientBuffer(gl::UNIFORM_BUFFER, sizeof(T)) };
 	}
 
+	// helper
+	template <typename T>
+	Buffer *createTransientBuffer(GLenum target, const T &data)
+	{
+		auto buf = createTransientBuffer(target, sizeof(T), &data);
+		return buf;
+	}
+
 	unsigned getFrameCounter() const {
 		return frame_counter;
 	}

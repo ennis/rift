@@ -39,13 +39,37 @@ class SceneRenderer
 public:
 	SceneRenderer(glm::ivec2 viewportSize_, GraphicsContext &gc, AssetDatabase &assetDb);
 
+	void setSceneCamera(const Camera &camera);
+
 	//===========================================================
-	void renderScene(Scene &scene, const Camera &camera, float dt);
+	void renderScene(Scene &scene, float dt);
+	// add a mesh to render list (render this frame only)
+	void drawMesh(const Transform &transform, Mesh &mesh, Material &material);
 
 	//===========================================================
 	// immediate mode
-	// add a mesh to render list (render this frame only)
-	void drawMesh(const Transform &transform, Mesh &mesh, Material &material);
+
+	// draw a mesh in wireframe from data on the CPU
+	// A camera must be set before
+	void drawWireMesh(
+		const Transform &transform,
+		GLenum mode,
+		const util::array_ref<glm::vec3> vertices,
+		const util::array_ref<uint16_t> indices,
+		const glm::vec4 lineColor,
+		bool noDepthTest = false);
+	void drawWireMesh(
+		const Transform &transform,
+		GLenum mode,
+		Buffer *vertices,
+		unsigned nbvertices,
+		Buffer *indices,
+		unsigned nbindices,
+		const glm::vec4 lineColor,
+		bool noDepthTest = false);
+
+	// draw a line 
+	void drawLine();
 	// draw text on top
 	void drawText(glm::ivec2 pos, const char *str);
 	// draw text with custom font
@@ -77,13 +101,16 @@ private:
 	void drawScreenMessages();
 	void drawFrameTimeGraph(Scene &scene);
 
+	Camera camera;
 	glm::ivec2 viewportSize;
 	GraphicsContext &graphicsContext;
 	NVGcontext *nvgContext;
 	Material::Ptr defaultMaterial;
 	VAO meshVao;
 	VAO textVao;
+	VAO immediateVao;
 	GLuint textProgram;
+	GLuint immediateProgram;
 	Font::Ptr defaultFont;
 };
 

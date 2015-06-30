@@ -15,26 +15,23 @@ BoundingCapsule::BoundingCapsule(glm::vec3 position, float radius, float length,
 	const int nb_lines_hemisphere = (nb_lines_sphere / 2) + 1;
 	const int nb_vertices_per_line = nb_lines_sphere + 1;
 	const int nb_vertices = 2 + nb_lines_hemisphere * 2 * nb_vertices_per_line;
-	static float boundingCapsuleMeshData[nb_vertices * 3];
+	boundingCapsuleMeshData.resize(nb_vertices);
 
 	const float cylinder_length = _length - 2 * _radius;
 	// Creating south pole
-	boundingCapsuleMeshData[0] = 0.0f;
-	boundingCapsuleMeshData[1] = -_length / 2;
-	boundingCapsuleMeshData[2] = 0.0f;
+	boundingCapsuleMeshData[0] = glm::vec3(0.0f, -(_length) / 2 - radius, 0.0f);
 	// Creating north pole
-	boundingCapsuleMeshData[3] = 0.0f;
-	boundingCapsuleMeshData[4] = +_length / 2;
-	boundingCapsuleMeshData[5] = 0.0f;
+	boundingCapsuleMeshData[1] = glm::vec3(0.0f, (_length) / 2 + radius, 0.0f);
 	// Vertices: South hemisphere
 	for (int j = 1; j <= nb_lines_hemisphere; j++){
 		float phi = glm::pi<float>() * ((-(float)1 / 2) + ((float)j / (nb_lines_sphere + 1)));
 		for (int i = 0; i < nb_vertices_per_line; i++){
 			float theta = 2 * glm::pi<float>() * (float)i / nb_vertices_per_line;
-			int vertex_start = 6 + (j - 1)*nb_vertices_per_line * 3 + i * 3;
-			boundingCapsuleMeshData[vertex_start] = _radius * glm::cos<float>(theta) * glm::cos<float>(phi);
-			boundingCapsuleMeshData[vertex_start + 1] = -cylinder_length / 2 + glm::sin<float>(phi);
-			boundingCapsuleMeshData[vertex_start + 2] = _radius * glm::sin<float>(theta) * glm::cos<float>(phi);
+			int vertex_start = 2 + (j - 1)*nb_vertices_per_line + i;
+			boundingCapsuleMeshData[vertex_start] = glm::vec3(
+				_radius * glm::cos<float>(theta) * glm::cos<float>(phi),
+				-_length / 2 + radius * glm::sin<float>(phi),
+				_radius * glm::sin<float>(theta) * glm::cos<float>(phi));
 		}
 	}
 	// Vertices: North hemisphere
@@ -42,17 +39,18 @@ BoundingCapsule::BoundingCapsule(glm::vec3 position, float radius, float length,
 		float phi = glm::pi<float>() * ((-(float)1 / 2) + ((float)j / (nb_lines_sphere + 1)));
 		for (int i = 0; i < nb_vertices_per_line; i++){
 			float theta = 2 * glm::pi<float>() * (float)i / nb_vertices_per_line;
-			int vertex_start = 6 + j*nb_vertices_per_line * 3 + i * 3;
-			boundingCapsuleMeshData[vertex_start] = _radius * glm::cos<float>(theta) * glm::cos<float>(phi);
-			boundingCapsuleMeshData[vertex_start + 1] = +cylinder_length / 2 + glm::sin<float>(phi);
-			boundingCapsuleMeshData[vertex_start + 2] = _radius * glm::sin<float>(theta) * glm::cos<float>(phi);
+			int vertex_start = 2 + j*nb_vertices_per_line + i;
+			boundingCapsuleMeshData[vertex_start] = glm::vec3(
+				_radius * glm::cos<float>(theta) * glm::cos<float>(phi),
+				+_length / 2 + radius * glm::sin<float>(phi),
+				_radius * glm::sin<float>(theta) * glm::cos<float>(phi));
 		}
 	}
 
 	const int nb_triangles = 2 * nb_vertices_per_line //coupoles (autour des poles)
 		+ 4 * (nb_lines_hemisphere - 1)*nb_vertices_per_line //hemispheres
 		+ 2 * nb_vertices_per_line; //cylindre
-	static uint16_t capsuleIndices[3 * nb_triangles];
+	capsuleIndices.resize(3 * nb_triangles);
 	//indices de la coupole sud
 	for (int k = 0; k < nb_vertices_per_line; k++){
 		capsuleIndices[k * 3] = 2 + k;
@@ -101,30 +99,6 @@ BoundingCapsule::BoundingCapsule(glm::vec3 position, float radius, float length,
 			capsuleIndices[(base_indice + nb_vertices_per_line * 2 * l + 2 * k) * 3 + 5] = 2 + nb_vertices_per_line* (l + nb_lines_hemisphere) + k;
 		}
 	}
-	
-	////Mesh Allocation
-	//Renderer &rd = Engine::instance().getRenderer();
-	//Mesh::Attribute attribs[] = { { 0, ElementFormat::Float3 } };
-	//Mesh::Buffer buffers[] = { { ResourceUsage::Static } };
-	//const void *init[] = { boundingCapsuleMeshData };
-	//_mesh.allocate(
-	//	rd,
-	//	PrimitiveType::Triangle,
-	//	1,  // nb d'attribut par vertex
-	//	attribs,
-	//	1, // nb de vertex buffer
-	//	buffers,
-	//	nb_vertices, // nb de vertex
-	//	init,
-	//	3 * nb_triangles, // nb d'indices
-	//	ElementFormat::Uint16,
-	//	ResourceUsage::Static,
-	//	capsuleIndices);
-
-	////Initialization: shader
-	//std::string vertexShaderSource = loadShaderSource("resources/shaders/bounding_volume/vert.glsl");
-	//std::string fragmentShaderSource = loadShaderSource("resources/shaders/bounding_volume/frag.glsl");
-	//_shader = rd.createShader(vertexShaderSource.c_str(), fragmentShaderSource.c_str());
 }
 
 float BoundingCapsule::Radius() const
@@ -151,6 +125,18 @@ bool BoundingCapsule::isColliding(BoundingVolume* target, float & penetration_di
 		// error
 		return false; // pour ne pas avoir de warning
 	}
+}
+
+void BoundingCapsule::render(SceneRenderer &sceneRenderer)
+{
+	// is that simple enough?
+	sceneRenderer.drawWireMesh(
+		getTransform(),
+		gl::TRIANGLES,
+		boundingCapsuleMeshData,
+		capsuleIndices,
+		glm::vec4(0.4, 1.0, 0.4, 1.0),
+		false);
 }
 
 //void BoundingCapsule::render(RenderContext const &renderContext, bool isColliding)

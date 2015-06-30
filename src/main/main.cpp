@@ -12,6 +12,8 @@
 #include <rendering/scene_renderer.hpp>
 #include <rendering/nanovg/nanovg.h>
 #include <boundingsphere.hpp>
+#include <boundingcapsule.hpp>
+
 
 using namespace glm;
 
@@ -47,7 +49,7 @@ private:
 	Shader *shader;
 	Material::Ptr mat;
 	EntityID sphereId;
-	BoundingSphere *sphere_42;
+	std::unique_ptr<BoundingCapsule> capsule_42;
 };
 
 //============================================================================
@@ -63,6 +65,8 @@ void RiftGame::initialize(Application &app)
 	// load scene from file
 	scene->loadFromFile(graphicsContext, "resources/scenes/sample_scene/scene.bin");
 	scene->createLightPrefab(Transform().move({ 0.0f, -50.0f, 0.0f }), LightMode::Directional, { 1.0f, 1.0f, 1.0f });
+	// test bounding volumes
+	capsule_42 = std::make_unique<BoundingCapsule>(glm::vec3{ 0, 0, 0 }, 2.0f, 8.0f, graphicsContext);
 }
 
 //============================================================================
@@ -72,7 +76,9 @@ void RiftGame::render(float dt)
 	auto win_size = glm::ivec2(sizeX, sizeY);
 	auto win_size_f = glm::vec2(sizeX, sizeY);
 	auto cam = trackball->getCamera();
-	sceneRenderer->renderScene(*scene, cam, dt);
+	sceneRenderer->setSceneCamera(cam);
+	sceneRenderer->renderScene(*scene, dt);
+	capsule_42->render(*sceneRenderer);
 	Logging::screenMessage("F       : " + std::to_string(numFrames));
 	Logging::screenMessage("DT      : " + std::to_string(dt));
 	Logging::screenMessage("E       : " + std::to_string(scene->getEntities().size()));
