@@ -14,7 +14,14 @@ layout(std140, binding = 0) uniform ImmediateParams
 
 //=============================================================
 #ifdef _VERTEX_
+#ifdef FULL_MESH_ATTRIBS
 layout(location = 0) in vec3 position;
+layout(location = 1) in vec3 normal;
+layout(location = 2) in vec3 tangent;
+layout(location = 3) in vec2 uv;
+#else
+layout(location = 0) in vec3 position;
+#endif
 out vec3 wPos;
 void main() 
 {

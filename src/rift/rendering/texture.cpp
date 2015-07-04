@@ -1,5 +1,18 @@
 #include <rendering/opengl4.hpp>
 
+GLuint createTexture2D(ElementFormat pixelFormat, unsigned numMipLevels, unsigned width, unsigned height, const void *initialData)
+{
+	GLuint tex;
+	const auto &pf = getElementFormatInfoGL(pixelFormat);
+	gl::GenTextures(1, &tex);
+	gl::BindTexture(gl::TEXTURE_2D, tex);
+	gl::TexStorage2D(gl::TEXTURE_2D, numMipLevels, pf.internalFormat, width, height);
+	gl::BindTexture(gl::TEXTURE_2D, 0);
+	if (initialData)
+		gl::TexSubImage2D(gl::TEXTURE_2D, 0, 0, 0, width, height, pf.externalFormat, pf.type, initialData);
+	return tex;
+}
+
 TextureCubeMap::TextureCubeMap(
 	glm::ivec2 size_,
 	int numMipLevels_,

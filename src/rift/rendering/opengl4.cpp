@@ -74,7 +74,14 @@ void drawIndexed(
 		reinterpret_cast<void*>(ib.offset + firstIndex * 2),
 		instanceCount, firstVertex, firstInstance);
 }
+
+void doFullScreenPass(
+	GLenum mode,
+	unsigned numVertices)
+{
 	
+}
+
 void checkForUnusualColorFormats(ElementFormat f)
 {
 	if (f == ElementFormat::Uint8x4 ||

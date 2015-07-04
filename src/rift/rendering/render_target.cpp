@@ -91,3 +91,20 @@ void RenderTarget::init()
 	err = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
 	assert(err == gl::FRAMEBUFFER_COMPLETE);
 }
+
+// create two textures (color + depth), create a new FBO and bind the textures as attachements to the FBO
+void createRenderTarget(ElementFormat colorFormat, ElementFormat depthFormat, unsigned width, unsigned height, GLuint &colorTex, GLuint &depthTex, GLuint &fbo)
+{
+	gl::GenFramebuffers(1, &fbo);
+	gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
+	checkForUnusualColorFormats(colorFormat);
+	colorTex = createTexture2D(colorFormat, 1, width, height, nullptr);
+	depthTex = createTexture2D(depthFormat, 1, width, height, nullptr);
+	gl::FramebufferTexture(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, colorTex, 0);
+	gl::FramebufferTexture(gl::FRAMEBUFFER, gl::DEPTH_ATTACHMENT, colorTex, 0);
+	GLenum drawbuf[] = { gl::COLOR_ATTACHMENT0 };
+	gl::DrawBuffers(1, drawbuf);
+	GLenum err;
+	err = gl::CheckFramebufferStatus(gl::FRAMEBUFFER);
+	assert(err == gl::FRAMEBUFFER_COMPLETE);
+}

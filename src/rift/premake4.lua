@@ -8,7 +8,7 @@ project "librift"
 	}
 	-- PCH fix for windows
 	configuration { "windows" }
-		buildoptions { "/FI".."\"stdafx.h\"" }
+		buildoptions { "/FI".."\"stdafx.h\"", "/Zm400" }
 		pchheader "stdafx.h"
 		pchsource "stdafx.cpp"
 	configuration {}

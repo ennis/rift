@@ -109,9 +109,19 @@ private:
 	VAO meshVao;
 	VAO textVao;
 	VAO immediateVao;
+	GLuint dummy_vao;
 	GLuint textProgram;
 	GLuint immediateProgram;
+	GLuint postprocProgram;
 	Font::Ptr defaultFont;
+
+	// PostProc render targets (ping-pong FBOs)
+	// framebuffer
+	GLuint rt0_fb;
+	// color texture
+	GLuint rt0_color;
+	// depth texture
+	GLuint rt0_depth;
 };
 
  

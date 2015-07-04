@@ -13,9 +13,12 @@
 #include <rendering/nanovg/nanovg.h>
 #include <boundingsphere.hpp>
 #include <boundingcapsule.hpp>
-
+#include <thread>
+#include <utils/coroutine.hpp>
+#include <screen.hpp>
 
 using namespace glm;
+
 
 //============================================================================
 // Classe de base du jeu
@@ -32,8 +35,6 @@ private:
 	float mLastTime = 0.f;
 	float mTotalTime = 0.f;
 	float mFPS = 0;
-	unsigned long numFrames = 0;
-	unsigned sizeX, sizeY;
 	struct PerObject
 	{
 		glm::mat4 modelMatrix;
@@ -50,15 +51,28 @@ private:
 	Material::Ptr mat;
 	EntityID sphereId;
 	std::unique_ptr<BoundingCapsule> capsule_42;
+	Coroutine cc;
 };
+
+void FiberTest2(float t)
+{
+	using namespace std::chrono;
+	for (int sec = 0;;)
+	{
+		qpc_clock::time_point tstart = qpc_clock::now();
+		yield(WaitForSeconds(1.0));
+		qpc_clock::time_point tstop = qpc_clock::now();
+		LOG << "Seconds: " << duration_cast<duration<double>>(tstop-tstart).count();
+	}
+}
 
 //============================================================================
 void RiftGame::initialize(Application &app)
 {	
 	application = &app;
 	auto &graphicsContext = app.getGraphicsContext();
-	unsigned width, height;
-	application->getSize(width, height);
+	int width = app.getWidth();
+	int height = app.getHeight();
 	scene = std::make_unique<Scene>();
 	sceneRenderer = std::make_unique<SceneRenderer>(glm::ivec2(width, height), graphicsContext, assetDb);
 	trackball = std::make_unique<TrackballCameraControl>(app, glm::vec3{ 0.0f, 0.0f, -5.0f }, 45.0f, 0.1, 1000.0, 0.01);
@@ -67,19 +81,24 @@ void RiftGame::initialize(Application &app)
 	scene->createLightPrefab(Transform().move({ 0.0f, -50.0f, 0.0f }), LightMode::Directional, { 1.0f, 1.0f, 1.0f });
 	// test bounding volumes
 	capsule_42 = std::make_unique<BoundingCapsule>(glm::vec3{ 0, 0, 0 }, 2.0f, 8.0f, graphicsContext);
+
+	// fiber test
+	cc = Coroutine::start(FiberTest2, 0.52);
 }
 
 //============================================================================
 void RiftGame::render(float dt)
 {
+	int width = application->getWidth();
+	int height = application->getHeight();
 	// rendu de la scene
-	auto win_size = glm::ivec2(sizeX, sizeY);
-	auto win_size_f = glm::vec2(sizeX, sizeY);
+	auto win_size = glm::ivec2(width, height);
+	auto win_size_f = glm::vec2(width, height);
 	auto cam = trackball->getCamera();
 	sceneRenderer->setSceneCamera(cam);
 	sceneRenderer->renderScene(*scene, dt);
 	capsule_42->render(*sceneRenderer);
-	Logging::screenMessage("F       : " + std::to_string(numFrames));
+	Logging::screenMessage("F       : " + std::to_string(application->getFrameCount()));
 	Logging::screenMessage("DT      : " + std::to_string(dt));
 	Logging::screenMessage("E       : " + std::to_string(scene->getEntities().size()));
 }
@@ -87,7 +106,7 @@ void RiftGame::render(float dt)
 //============================================================================
 void RiftGame::update(float dt)
 {
-	application->getSize(sizeX, sizeY);
+	cc.resume();
 
 	mLastTime += dt;
 	mTotalTime += dt;
@@ -98,8 +117,6 @@ void RiftGame::update(float dt)
 		mFPS = 1.f / dt;
 		application->setTitle(("Rift (" + std::to_string(mFPS) + " FPS)").c_str());
 	}
-
-	++numFrames;
 }
 
 RiftGame::~RiftGame()

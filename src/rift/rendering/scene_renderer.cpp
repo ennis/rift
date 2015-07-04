@@ -40,6 +40,11 @@ namespace
 		glm::vec2 viewportSize;
 	};
 
+	struct PostprocParams
+	{
+		glm::vec2 viewportSize;
+	};
+
 	GLuint loadProgram(const char *combinedSourcePath)
 	{
 		auto src = loadShaderSource(combinedSourcePath);
@@ -57,6 +62,9 @@ SceneRenderer::SceneRenderer(glm::ivec2 viewportSize_, GraphicsContext &gc, Asse
 	viewportSize(viewportSize_),
 	graphicsContext(gc)
 {
+	// dummy VAO (need it for things)
+	gl::GenVertexArrays(1, &dummy_vao);
+
 	// default material
 	defaultMaterial = std::make_unique<Material>();
 	defaultMaterial->shader = loadShaderAsset(assetDb, gc, "resources/shaders/default.glsl");
@@ -88,10 +96,18 @@ SceneRenderer::SceneRenderer(glm::ivec2 viewportSize_, GraphicsContext &gc, Asse
 
 	// setup opengl debug extension
 	setDebugCallback();
+
+	// create a render target 
+	createRenderTarget(ElementFormat::Float16x4, ElementFormat::Depth32, viewportSize.x, viewportSize.y, rt0_color, rt0_depth, rt0_fb);
+
+	// load postproc shader
+	postprocProgram = loadProgram("resources/shaders/postproc_passthrough.glsl");
+
 }
 
 void SceneRenderer::setSceneCamera(const Camera &camera_)
 {
+	// meh
 	camera = camera_;
 }
 
@@ -255,6 +271,14 @@ void SceneRenderer::renderScene(Scene &scene, float dt)
 				transform);
 		}
 	}
+
+	// do postproc pass
+	PostprocParams pp_params{ viewportSize };
+	auto pp_param_buf = graphicsContext.createTransientBuffer(gl::UNIFORM_BUFFER, pp_params);
+	bindBuffersRangeHelper(0, { pp_param_buf });
+	// HACK: draw a screen-covering triangle without binding a buffer 
+	gl::BindVertexArray(dummy_vao);
+	gl::DrawArrays(gl::TRIANGLES, 0, 3);
 
 	// EXTRAS/DEBUG
 	//nvgBeginFrame(nvgContext, viewportSize.x, viewportSize.y, 1.0f);

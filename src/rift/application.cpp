@@ -1,6 +1,5 @@
 #include <application.hpp>
 #include <log.hpp>
-#include <clock.hpp>
 #include <gl_core_4_4.hpp>
 #include <AntTweakBar.h>
 
@@ -62,6 +61,7 @@ void Application::setLastScrollOffset(double xoffset, double yoffset)
 }
 
 Application::Application(const char *title, unsigned width, unsigned height, const ContextOptions &options) :
+frameCount(0),
 scrollOffsetX(0.0),
 scrollOffsetY(0.0)
 {
@@ -100,14 +100,6 @@ scrollOffsetY(0.0)
 	graphicsContext = std::make_unique<GraphicsContext>();
 }
 
-void Application::getSize(unsigned &width, unsigned &height) const
-{
-	int iwidth, iheight;
-	glfwGetWindowSize(window, &iwidth, &iheight);
-	width = iwidth;
-	height = iheight;
-}
-
 GraphicsContext &Application::getGraphicsContext()
 {
 	return *graphicsContext;
@@ -140,13 +132,14 @@ void Application::runMainLoop()
 			tf = qpc_clock::now();
 			duration<float> frame = duration_cast<nanoseconds>(tf - tb);
 			tb = tf;
-			float dt = frame.count();
+			lastDeltaTime = frame.count();
 			graphicsContext->beginFrame();
-			mainLoop->render(dt);
+			mainLoop->render(lastDeltaTime);
 			graphicsContext->endFrame();
-			mainLoop->update(dt);
+			mainLoop->update(lastDeltaTime);
 			glfwSwapBuffers(window);
 			glfwPollEvents();
+			++frameCount;
 		}
 	}
 	catch (std::exception &e) {
@@ -158,4 +151,11 @@ void Application::runMainLoop()
 	graphicsContext.reset();
 	glfwDestroyWindow(window);
 }
+
+
+Application *GetApplication()
+{
+	return gApplication;
+}
+
 

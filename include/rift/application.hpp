@@ -3,6 +3,7 @@
 
 #include <rendering/opengl4.hpp>
 #include <GLFW/glfw3.h>
+#include <clock.hpp>
 
 struct ContextOptions
 {
@@ -39,20 +40,56 @@ public:
 	}
 
 	void setTitle(const char *title);
-	void getSize(unsigned &width, unsigned &height) const;
+
+	int getWidth() const
+	{
+		int width, height;
+		glfwGetWindowSize(window, &width, &height);
+		return width;
+	}
+
+	int getHeight() const
+	{
+		int width, height;
+		glfwGetWindowSize(window, &width, &height);
+		return height;
+	}
+
 	GraphicsContext &getGraphicsContext();
-	GLFWwindow *getWindow() const;
 	void getLastScrollOffset(double &xoffset, double &yoffset);
 
 	// internal
 	void setLastScrollOffset(double xoffset, double yoffset);
+	GLFWwindow *getWindow() const;
+
+	double getTime() const
+	{
+		using namespace std::chrono;
+		auto now = qpc_clock::now();
+		return duration_cast<duration<double>>(now - startTime).count();
+	}
+
+	double getDeltaTime() const
+	{
+		return lastDeltaTime;
+	}
+
+	unsigned long getFrameCount() const 
+	{
+		return frameCount;
+	}
 
 private:
+	qpc_clock::time_point startTime;
+	double lastDeltaTime;
+	unsigned long frameCount;
 	void runMainLoop();
 	double scrollOffsetX, scrollOffsetY;
 	GLFWwindow *window;
 	std::unique_ptr<GraphicsContext> graphicsContext;
 	std::unique_ptr<MainLoop> mainLoop;
 };
+
+Application *GetApplication();
 
 #endif

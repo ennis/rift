@@ -82,6 +82,17 @@ GLuint compileProgram(GLuint vs, GLuint gs, GLuint ps);
 std::string loadShaderSource(const char *path);
 
 //---------------------------
+// Render targets
+
+// create two textures (color + depth), create a new FBO and bind the textures as attachements to the FBO
+void createRenderTarget(ElementFormat colorFormat, ElementFormat depthFormat, unsigned width, unsigned height, GLuint &colorTex, GLuint &depthTex, GLuint &fbo);
+// create an FBO and attach the specified textures
+GLuint createFBO(util::array_ref<GLuint> colorTargets, GLuint depthTarget);
+// create a texture
+GLuint createTexture2D(ElementFormat colorFormat, unsigned numMipLevels, unsigned width, unsigned height, const void *initialData);
+
+
+//---------------------------
 // debug
 void setDebugCallback();
 
@@ -89,8 +100,6 @@ void setDebugCallback();
 // binding helpers
 void bindVertexBuffers(util::array_ref<const Buffer*> vbs, const VAO &vao);	
 void bindBuffersRangeHelper(unsigned first, util::array_ref<const Buffer*> buffers);
-void bindRenderTarget(RenderTarget *render_target);
-void bindScreenRenderTarget();
 
 //---------------------------
 // draw helpers
@@ -102,6 +111,9 @@ void drawIndexed(
 	unsigned indexCount,
 	unsigned firstInstance,
 	unsigned instanceCount);
+void drawProcedural(
+	GLenum mode,
+	unsigned numVertices);
 
 //---------------------------
 // VAO helper class
