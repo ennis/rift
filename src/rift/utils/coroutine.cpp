@@ -22,9 +22,18 @@ public:
 	}
 };
 
+Coroutine::Impl::~Impl()
+{
+	if (pFiber)
+		DeleteFiber(pFiber);
+}
+
 void Coroutine::init()
 {
-	pImpl->pReturnFiber = ConvertThreadToFiber(NULL);
+	if (!IsThreadAFiber())
+		pImpl->pReturnFiber = ConvertThreadToFiber(NULL);
+	else 
+		pImpl->pReturnFiber = GetCurrentFiber();
 	pImpl->pFiber = CreateFiber(0, (LPFIBER_START_ROUTINE)Coroutine::Anonymous::coroutineEntry, pImpl.get());
 }
 

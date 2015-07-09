@@ -1,8 +1,10 @@
 #include <scene/scene.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <utils/binary_io.hpp>
 #include <rendering/opengl4.hpp>
 #include <asset_database.hpp>
+
+namespace fs = std::experimental::filesystem;
 
 namespace
 {
@@ -18,7 +20,7 @@ namespace
 		CC_End = 0xFFFF
 	};
 
-	std::string getAssetPath(boost::filesystem::path sceneDir, std::string relpath)
+	std::string getAssetPath(fs::path sceneDir, std::string relpath)
 	{
 		auto fullpath = sceneDir / relpath;
 		return fullpath.string();
@@ -61,7 +63,6 @@ namespace
 
 void Scene::loadFromFile(GraphicsContext &gc, const char *path)
 {
-	namespace fs = boost::filesystem;
 	auto dir = fs::path(path).parent_path();
 
 	AssetMap asset_map;

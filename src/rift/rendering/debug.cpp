@@ -46,7 +46,7 @@ void APIENTRY debugCallback(
 	std::string sev_str = "Unknown";
 	if (gl_debug_severity_names.count(severity)) sev_str = gl_debug_severity_names.at(severity);
 
-	//if (severity != gl::DEBUG_SEVERITY_LOW && severity != gl::DEBUG_SEVERITY_NOTIFICATION)
+	if (severity != gl::DEBUG_SEVERITY_LOW && severity != gl::DEBUG_SEVERITY_NOTIFICATION)
 	LOG << "(GL debug: " << id << ", " << src_str << ", " << type_str << ", " << sev_str << ") " << msg;
 }
 

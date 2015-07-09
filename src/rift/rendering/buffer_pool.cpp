@@ -106,7 +106,10 @@ void GraphicsContext::createPool(unsigned pool_index)
 	auto page_index = pools[pool_index].size() - 1;
 	for (auto i = 0u; i < pool.num_blocks; ++i)
 	{
-		free_list[pool_index].push_back(PoolBlockIndex{ page_index, i });
+		PoolBlockIndex pbi;
+		pbi.page_index = page_index;
+		pbi.block_index = i;
+		free_list[pool_index].push_back(pbi);
 	}
 	//LOG << "newPool size=" << pool.block_size << " page_index=" << page_index;
 }

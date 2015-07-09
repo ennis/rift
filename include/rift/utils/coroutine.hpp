@@ -24,6 +24,16 @@ public:
 		pImpl = std::make_unique<Coroutine::Impl>();
 	}
 
+	template <typename Fn>
+	Coroutine(Fn &&fn)
+	{
+		// magic
+		pImpl = std::make_unique<Coroutine::Impl>();
+		pImpl->entry = std::forward<Fn>(fn);
+		pImpl->status = Status::Suspended;
+		init();
+	}
+
 	template <typename Fn, typename... Args>
 	Coroutine(Fn &&fn, Args&&... args) 
 	{
@@ -32,6 +42,14 @@ public:
 		pImpl->entry = std::bind(std::forward<Fn>(fn), std::forward<Args...>(args...)); 
 		pImpl->status = Status::Suspended;
 		init();
+	}
+
+	template <typename Fn>
+	static Coroutine start(Fn &&fn)
+	{
+		Coroutine c(std::forward<Fn>(fn));
+		c.resume();
+		return std::move(c);
 	}
 
 	template <typename Fn, typename... Args>
@@ -52,6 +70,7 @@ public:
 private:
 	struct Impl
 	{
+		~Impl();
 		std::function<void()> entry;
 		YieldOperation *yieldOperation = nullptr;
 		Status status = Status::Terminated;

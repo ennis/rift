@@ -16,6 +16,8 @@
 #include <thread>
 #include <utils/coroutine.hpp>
 #include <screen.hpp>
+#include <input.hpp>
+#include <time.hpp>
 
 using namespace glm;
 
@@ -54,15 +56,22 @@ private:
 	Coroutine cc;
 };
 
-void FiberTest2(float t)
+void coroutineTest()
 {
 	using namespace std::chrono;
+	double x_axis = 0.0;
+	double y_axis = 0.0;
 	for (int sec = 0;;)
 	{
-		qpc_clock::time_point tstart = qpc_clock::now();
-		yield(WaitForSeconds(1.0));
-		qpc_clock::time_point tstop = qpc_clock::now();
-		LOG << "Seconds: " << duration_cast<duration<double>>(tstop-tstart).count();
+		// execute every second
+		yield();
+		double x_axis_new = input::getAxis(input::Axis_X);
+		double y_axis_new = input::getAxis(input::Axis_Y);
+		if (x_axis != x_axis_new || y_axis != y_axis_new) {
+			LOG << "X:" << x_axis_new << " Y:" << y_axis_new;
+			x_axis = x_axis_new;
+			y_axis = y_axis_new;
+		}
 	}
 }
 
@@ -79,11 +88,11 @@ void RiftGame::initialize(Application &app)
 	// load scene from file
 	scene->loadFromFile(graphicsContext, "resources/scenes/sample_scene/scene.bin");
 	scene->createLightPrefab(Transform().move({ 0.0f, -50.0f, 0.0f }), LightMode::Directional, { 1.0f, 1.0f, 1.0f });
+
 	// test bounding volumes
 	capsule_42 = std::make_unique<BoundingCapsule>(glm::vec3{ 0, 0, 0 }, 2.0f, 8.0f, graphicsContext);
 
-	// fiber test
-	cc = Coroutine::start(FiberTest2, 0.52);
+	cc = Coroutine::start(coroutineTest);
 }
 
 //============================================================================

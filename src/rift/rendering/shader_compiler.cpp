@@ -7,7 +7,7 @@
 #include <fstream>
 #include <iomanip>
 #include <array_ref.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
 namespace {
 
@@ -75,13 +75,13 @@ namespace {
 	}
 
 	void glslPreprocessRec(
-		const boost::filesystem::path &sourcePath,
+		const std::experimental::filesystem::path &sourcePath,
 		std::istream &sourceIn,
 		std::ostream &sourceOut,
 		int includeDepth,
 		int &glslVersion)
 	{
-		using namespace boost::filesystem;
+		using namespace std::experimental::filesystem;
 
 		const path systemIncludePath("resources/shaders/include");
 		const int kMaxIncludeDepth = 20;
@@ -142,7 +142,7 @@ namespace {
 	}
 
 	std::string glslPreprocess(
-		const boost::filesystem::path &sourcePath,
+		const std::experimental::filesystem::path &sourcePath,
 		std::istream &sourceIn,
 		GLenum stage,
 		util::array_ref<ShaderKeyword> keywords)
@@ -241,7 +241,6 @@ GLuint compileShader(
 	util::array_ref<ShaderKeyword> keywords)
 {
 	auto hash = hashKeywords(keywords);
-	namespace fs = boost::filesystem;
 	std::istringstream sourceIn(source);
 	auto pp = glslPreprocess(
 		include_path,

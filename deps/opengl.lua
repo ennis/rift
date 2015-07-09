@@ -22,7 +22,7 @@ configuration {"macosx"}
 configuration {"linux"}
 		links {"GL", "glut", "GLEW", "GLU"}
 configuration {"windows", "x32"}
-		links {"opengl32", "glew32", "gdi32"}
+		links {"opengl32","gdi32"}
 configuration {"windows", "x64"}
-		links {"opengl32","glew32","gdi32"}
+		links {"opengl32","gdi32"}
 configuration {}

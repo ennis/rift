@@ -14,5 +14,4 @@ project "librift"
 	configuration {}
 	includedirs { "../../include/**" }
 	use_gl()
-	use_assimp()
 	use_anttweakbar()

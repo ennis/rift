@@ -638,7 +638,11 @@ void Image::loadDDS(std::istream &streamIn)
 		for (auto imip = 0u; imip < numMipLevels; imip++) {
 			int nBytes = DDSMipSize(format, cw, ch);
 			LOG << "DDS: face " << iface << " mip " << imip << " " << cw << 'x' << ch << " nBytes = " << nBytes;
-			subimages[imip].push_back(Subimage{ dataSize, nBytes, glm::ivec2(cw, ch) });
+			Subimage si;
+			si.size = glm::ivec2(cw, ch);
+			si.numBytes = nBytes;
+			si.offset = dataSize;
+			subimages[imip].push_back(si);
 			dataSize += nBytes;
 			cw /= 2;
 			ch /= 2;

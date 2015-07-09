@@ -15,7 +15,7 @@ os.execute("lua "..
 
 function use_gl()
 	dofile (thisDir.."opengl.lua")
-	links {"glfw3", "glew32"}
+	links {"glfw3"}
 	includedirs {thisDir.."include/GL"}
 	files {thisDir.."include/gl_core_4_4.cpp"}
 end
