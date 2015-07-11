@@ -101,6 +101,8 @@ private:
 	void drawScreenMessages();
 	void drawFrameTimeGraph(Scene &scene);
 
+	void drawTerrain(ForwardPass &pass, Terrain &terrain);
+
 	Camera camera;
 	glm::ivec2 viewportSize;
 	GraphicsContext &graphicsContext;
@@ -114,6 +116,10 @@ private:
 	GLuint immediateProgram;
 	GLuint postprocProgram;
 	Font::Ptr defaultFont;
+
+	// Terrain rendering
+	VAO terrainVao;
+	GLuint terrainProgram;
 
 	// PostProc render targets (ping-pong FBOs)
 	// framebuffer

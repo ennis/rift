@@ -1,0 +1,447 @@
+Idea:
+	- Closures
+		instead of mixins / overrides
+	- Orthogonal shading features into modules
+		(ex: module 'Texturing', module 'TerrainTexturing', module 'ShadowMapping', etc.)
+	- Spark: automatic 'plumbing' of attributes between shader stages using implicit (or explicit) functions 
+
+
+Classes and interfaces:
+
+Interfaces:
+
+interface ComputeBase(params...)
+{
+	float4 compute(vec3 param);
+}
+
+class ComputeA : ComputeBase
+{
+	....
+}
+
+=> Multiple output languages
+	shaders: GLSL / HLSL / Metal / GLES / bytecode? / CPU shaders? / SPIR-V
+	interfaces: C++ / C# / Rust / Java
+
+=> Mixin system
+	+ no restrictions compared to raw GLSL shaders 
+	+ can use shortcuts
+
+=> Mixin parameters
+	can be values OR functions (closures)
+	can be mixins?
+	stream monad???
+
+=> Mixin lists that derive from an abstract type
+	List<...> effects;
+	iteration:
+	foreach (var x in effects) {
+	}
+
+Example: 
+
+class Example(
+	sampler2D colorTex1, 
+	sampler2D colorTex2, 
+	sampler2D normalTex,
+	sampler2D heightmap)
+{
+	vec3 blend(vec2 texcoord)
+	{
+		return 0.5 * (colorTex1.sample(texcoord) + colorTex2.sample(texcoord));
+	}
+
+	mixin TextureCoordinates;
+	// can pass a stream closure as a mixin parameter
+	mixin SurfaceShader(color = blend(texcoord), normals = normalTex.sample(texcoord));
+}
+
+class SurfaceShader(stream vec3 color, stream vec3 normals) : AbstractScene
+{
+	void PS_main()
+	{
+		...
+	}
+}
+
+===============================
+static functions?
+=> functions defined outside of a class
+
+===============================
+Shader entry point: a method called VS/GS/PS_main in a class
+
+
+using "path/to/sl/source";
+
+
+===============================
+Shader parameters?
+
+Effect:
+	contains all shaders necessary for rendering
+
+Difference between
+	* material parameters:
+		properties of the effect, set by the user
+	* scene parameters
+		global parameters, managed by the scene manager
+		common between all materials: store in one shared buffer?
+		=> need a fixed layout for all buffers
+
+Idea 1:
+	one generated C++ class per mixin
+	with setXX parameters
+
+	generated PipelineState has a list of mixins
+	=> fast query by ID
+	each mixin has at most one parameter buffer
+	example: lights:
+	ps->getMixin<DirectionalLightSources>.setLightSource(index, position, radius, etc...)
+
+
+=============================
+TODO
+Terrain texturing
+Phong/Blinn-phong
+
+shader inputs/outputs
+linking of streams between VS and PS
+
+stream usage analysis
+=> at each stage, make a list of all the used streams
+	if in PS the stream is not used, then do not interpolate from VS to PS
+
+
+
+
+
+
+
+@vertex in float3 position;
+@vertex in float3 color;
+@fragment out var fPosition = position;		// implicit interpolation
+@fragment out var fColor = color;			// implicit interpolation
+
+shader Main(@uniform MVP: float4x4,
+			@vertex position: float3, 
+	   		@vertex color: float3,
+	   		_
+	   		->
+	   		@rasterizer RS_Position: float4,
+	   		@fragment fColor: float3)
+{
+	// can bring outputs into current context
+	mixin HeightmapDisplace(position: position, _)
+	
+	// match parameters by type & name in current context; otherwise, bubble up
+	dispPos = HeightmapDisplace(position: position, _)
+
+
+	RS_Position = MVP * position.xyz1;
+	fColor = color;	// implicit interpolation	
+}
+
+// issue: the parameters of all the sub-shaders will bubble up
+// need some kind of practical partial application
+
+
+shader UniformColor
+{
+	@vertex in position: float3
+	@vertex in color: float3
+	@vertex in normal: float3
+	@fragment out fPosition = position
+	@fragment out fColor = phongIllum(position, normal, color)
+}
+
+shader TerrainTexturing
+{
+	@vertex in position: float3
+	@vertex transformedPosition = terrainTransform(position)
+}
+
+shader UniformColor(@uniform color: vec4) -> @fragment vec4 = color
+// implicit plumbing @uniform -> @fragment
+shader TerrainTransform(@vertex in position)
+
+
+shader Terrain = with t: TerrainTransform
+	 SceneDeferred (t )
+
+=> combine the two shaders?
+	two solutions: 
+		class inheritance: inherit stream declarations
+	closure parameters
+
+=> deferred shading:
+	closure to get the fragment color
+	base shader is partially applied
+
+shader SceneDeferred(
+	@uniform 
+	@vertex position
+	@fragment normal
+	@fragment diffuse
+)
+{
+	
+}
+
+shader Main(
+	@uniform heightmap: sampler,
+	@vertex position: float3,
+	@vertex normal: float3,
+	@vertex offset: float2,
+	_)
+{
+	// @vertex, @vertex -> @vertex
+	t = TerrainTransform(position, offset, normal)
+	// problem: how to bind @fragment normal:vec3 ???
+	SceneDeferred(position: t, _)
+}
+
+abstract shader Position
+{
+	abstract @vertex in float3 vertPosition;
+}
+
+abstract shader ModelMatrix
+{
+	abstract @uniform float4x4 modelMatrix;
+}
+
+shader ShadowMap : Position, ModelMatrix
+{	
+	@pass(shadow) @fragment float depth = modelMatrix * position.xyz1;
+}
+
+// what if I want to use ShadowMapGen with another modelMatrix??
+shader MainDeferred
+{
+	// substitution syntax
+	var shmap = ShadowMap {
+		override modelMatrix = ...; 
+		// will try to find an implementation in current context
+		// else:
+		// Error: cannot instantiate abstract shader ShadowMap:
+		//			no implementation(s) for 'Position' is/are given in initializer block
+		//          and no definition(s) could be found in the current context
+	}
+}
+
+shader :: IA Vertex -> OM Float3 
+shader v = interpolate (vertexOut (modelMatrix <*> v.pos)) v.pos
+
+texturing :: IA Vertex -> OM Float3
+texturing v = sample tex (interpolate v.texcoord)
+
+
+
+liftStream :: Stage s, Stage s' => (a -> a) -> s a -> s' a  
+
+color = interpolate (\x -> x) position
+
+========================
+It all comes down to
+
+	*** -> streams defined as class members (kind of implicit)
+		-> can use virtual / default values
+		-> override values
+	VS
+	-> streams defined as function parameters (explicit)
+		-> basically GLSL with closures and implicit plumbing
+		-> can use partial application
+		-> can use named parameters!
+		-> undefined parameters can be pushed into the enclosing shader type signature (?)
+
+
+========================
+Reuse/shader inheritance in a functional paradigm:
+- override = ?
+- abstract shader = partially applied function
+- shader = function
+
+=> replace inheritance with composition
+
+UNRESOLVED PROBLEM: What are the advantages of class-based reuse over the functional style?
+	- verbosity
+	- point-free form
+	- ease of composition
+	- separation of concerns
+	- conceptual complexity
+	- case study: a pipeline of effects
+
+Issue with class-based architecture: referential cycles in inheritance graph
+SOLVED with paper
+
+=============================
+Examples of modules:
+- TerrainDisplace
+	require heightmap, etc.
+	assign vertices
+	assign normals
+	assign RS_Position
+
+- Texturing
+	require texcoords
+	assign base color from texture
+
+- PhongLighting
+	require normals, fragment position
+	require light
+	outputs color for fragment
+
+- Fog
+	require color
+	require fogColor
+	require fragment position (depth)
+	outputs color for fragment
+
+- SSAO
+	postFX pass
+
+- Scene module
+
+=> Goal: be able to do TerrainDisplace+Texturing+PhongLighting+Fog+SSAO+Blur without plumbing
+	- automatic generation of passes
+	- automatic generation of code for stages 
+
+Inheritance for reuse
+Composition for composition
+
+Issue: PhongLighting + Fog
+	both require an input color
+	both outputs the same color
+	-> they should combine (pipeline)
+
+Issue: multitexturing?
+	blend between both textures according to some alpha parameter
+	-> favor composition
+
+Inheritance + Composition
+
+with Inheritance: automatic binding of streams (through interfaces, not by name)
+
+
+shader Terrain : Base, PhongLighting
+{
+	// _ means autobind from streams visible in current context
+	(position, normal, fragmentNormal) = TerrainTexturing(_)
+
+	// this is equivalent to adding TerrainTexturing to the inheritance list
+	// shader Terrain : Base, TerrainTexturing
+	// will add @Terrain terrainPosition, @Terrain terrainNormal
+
+	// override base binding of fragmentNormal
+	override fragmentNormal = terrainNormal;
+
+	// compose texturing
+	// autobind from current context
+	T1 = Texturing {}
+	T2 = Texturing {}
+
+	override diffuseColor = T1.color + T2.color;
+
+	// compose fog
+	override diffuseColor = Fog { override input = diffuseColor }.color
+
+	// phonglighting : diffuse 
+	// final color
+	@fragment float3 outputColor = 
+}
+===============================
+Other idea:
+Shaders as composable functions
+Named parameters and semantics -> intelligent composition based on semantics
+override -> partial application
+abstract -> function parameter
+
+===============================
+Shader/effect parameters:
+- goal: make them as simple and as fast to use (set) than a regular variable
+- example: at each frame, set a uniform only by assigning a value
+=> uniform objects
+	- typed (as template parameter)
+	- linked to a specific compiled effect.
+
+Example: creating a uniform variable
+	Uniform<float3> u(&effect, "my_uniform_name_in_the_shader");
+setting the value of an uniform variable:
+	u = <value>;
+
+Issue: Uniforms can be shared
+- if the material instance owns the uniform objects 
+ (and each uniform object owns a copy of the data 
+ to pass), we cannot share data
+
+Uniform objects: contain either a copy of the value, or a reference to some buffer
+
+	// target: uniform location (var or buffer binding)
+	// base class: contains common code for binding and type checking?
+	Uniform
+
+	// target: uniform var; contains: copy of value
+	UniformValue: public Uniform
+
+	// target: uniform buffer binding; contains: copy of buffer
+	UniformBuffer: public Uniform
+		get(): T&
+
+	// target: uniform var; contains: reference to value (do not use?)
+	UniformRef: public Uniform
+
+	// target: buffer binding; contains: reference to constant buffer 
+	UniformBufferRef: public Uniform
+
+	// target: texture binding; contains: ref to texture object (+ sampler state)
+	UniformTextureRef
+
+-> material parameter classes must bind each parameter separately
+	-> the uniform classes may be able to do it automatically on assignment?
+
+- material instances store references to parameters
+	-- holding onto a reference every time can be cumbersome
+
+-> constant buffers/state in effect system?
+
+-> control flow for material setup:
+	call to material::setup (base)
+		call to effect::setup
+		virtual call to material::setupimpl (derived impl)
+			for each uniform call (or uniform buffer):
+				call uniform->setup
+					glUniformXX
+					glBindBufferRange...
+
+Graphics pipeline abstraction:
+	* Resource (Buffers, SSBOs, Textures, RenderTargets)
+	* Data in (input assembler -> in effect)
+	* Effect (shaders / compute)
+	* Data out (set render target)
+
+Issue: do we need to expose the interface to constant buffers, etc?
+-> do we need a low-level renderer interface?
+-> not for a game...
+
+Effect/Effect instance
+-> Includes list of input elements
+
+UniformValueImpl interface:
+-> set(ptr, size, type)
+
+====================================
+Issue: where to abstract
+
+*** state-machine level (individual states)
+	- interface used 
+	- complexity
+	+ can do direct rendering if needed
+	- the API may be itself a submission-based API
+
+VS
+
+submission level 
+	- render queue managed by the backend
+		-> +++ NO: the render queue can be only __processed__ by the backend

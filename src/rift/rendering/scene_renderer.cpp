@@ -44,7 +44,7 @@ namespace
 	{
 		glm::vec2 viewportSize;
 	};
-
+	
 	GLuint loadProgram(const char *combinedSourcePath)
 	{
 		auto src = loadShaderSource(combinedSourcePath);
@@ -89,6 +89,10 @@ SceneRenderer::SceneRenderer(glm::ivec2 viewportSize_, GraphicsContext &gc, Asse
 		{ ElementFormat::Snorm10x3_1x2, 0 },
 		{ ElementFormat::Unorm16x2, 0 },
 	});
+
+	// terrain setup
+	terrainVao.create(1, { { ElementFormat::Float2, 0 } });
+	terrainProgram = loadProgram("resources/shaders/terrain.glsl");
 
 	// immediate mode rendering
 	immediateProgram = loadProgram("resources/shaders/immediate.glsl");
@@ -384,4 +388,12 @@ void SceneRenderer::drawFrameTimeGraph(Scene &scene)
 			nvgFillColor(nvgContext, nvgRGBA(70, 70, 255, 255));
 		nvgFill(nvgContext);
 	}
+}
+
+void SceneRenderer::drawTerrain(ForwardPass &pass, Terrain &terrain)
+{
+	bindVertexBuffers({ terrain.gridVb.get() }, terrainVao);
+	bindBuffersRangeHelper(0, { pass.sceneViewUBO, terrain.terrainParams.get() });
+	gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, terrain.gridIb->obj);
+	gl::DrawElements(gl::TRIANGLES, terrain.patchNumIndices, gl::UNSIGNED_SHORT, (void*)terrain.gridIb->offset);
 }

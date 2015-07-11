@@ -7,6 +7,7 @@
 #include <font.hpp>
 #include <transform.hpp>
 #include <camera.hpp>
+#include <terrain.hpp>
 
 struct MeshNode
 {
@@ -55,6 +56,7 @@ public:
 	std::vector<float> lastFrameTimes;
 	unsigned lastFrameIndex;
 	AssetDatabase assetDb;
+	Terrain *terrain;
 };
 
 #endif /* end of include guard: SCENE_HPP */
