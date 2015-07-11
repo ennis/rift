@@ -232,6 +232,10 @@ void SceneRenderer::renderScene(Scene &scene, float dt)
 	gl::BlendEquationSeparatei(0,gl::FUNC_ADD, gl::FUNC_ADD);
 	gl::BlendFuncSeparatei(0, gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA, gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
 
+	// render terrain
+	if (scene.terrain)
+		drawTerrain(pass, *scene.terrain);
+
 	// Fwd pass for each light
 	for (auto &l : scene.lightNodes)
 	{
@@ -393,7 +397,16 @@ void SceneRenderer::drawFrameTimeGraph(Scene &scene)
 void SceneRenderer::drawTerrain(ForwardPass &pass, Terrain &terrain)
 {
 	bindVertexBuffers({ terrain.gridVb.get() }, terrainVao);
+	TerrainPatchParams patchParams;
+	patchParams.lodLevel = 0;
+	patchParams.patchOffset = glm::vec2();
+	patchParams.patchScale = 1.0f;
 	bindBuffersRangeHelper(0, { pass.sceneViewUBO, terrain.terrainParams.get() });
 	gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, terrain.gridIb->obj);
+	GLuint textures[3];
+	textures[0] = terrain.heightTexture->id;
+	textures[1] = terrain.flatTexture->id;
+	textures[2] = terrain.slopeTexture->id;
+	gl::BindTextures(0, 3, textures);
 	gl::DrawElements(gl::TRIANGLES, terrain.patchNumIndices, gl::UNSIGNED_SHORT, (void*)terrain.gridIb->offset);
 }

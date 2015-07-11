@@ -20,7 +20,7 @@ std::unique_ptr<Terrain> createTerrain(GraphicsContext &gc, const TerrainInit &i
 	ptr->slopeTextureScale = init.slopeTextureScale;
 	ptr->heightmap = init.heightmap;
 	ptr->verticalScale = init.verticalScale;
-	ptr->heightTexture = Texture2D::create(init.heightmap->getSize(), 1, ElementFormat::Unorm16x2, init.heightmap->getData());
+	ptr->heightTexture = Texture2D::create(init.heightmap->getSize(), 1, ElementFormat::Unorm16, init.heightmap->getData());
 	// patch creation
 	{
 		// patch grid size
@@ -61,10 +61,10 @@ std::unique_ptr<Terrain> createTerrain(GraphicsContext &gc, const TerrainInit &i
 	ptr->log2Size = std::max(1, int(std::log2(std::max(heightmapSize.x / ptr->patchGridSize, 1))) + 1);
 	// calculate LOD ranges
 	float lodRange = 2.5;
-	auto num_lod_levels = std::min(
+	auto numLodLevels = std::min(
 			int((1.f / log2(lodRange)) * log2(std::max(heightmapSize.x / ptr->patchGridSize, 1))) + 1,
 			kMaxTerrainLodLevel);
-	for (auto i = 0u; i < num_lod_levels; ++i) {
+	for (auto i = 0; i < numLodLevels; ++i) {
 		ptr->LodRanges.push_back(float(ptr->patchGridSize) * powf(lodRange, float(i)));
 	}
 	// setup uniform buffer
@@ -76,4 +76,5 @@ std::unique_ptr<Terrain> createTerrain(GraphicsContext &gc, const TerrainInit &i
 	terrainParams.heightmapSize.x = float(heightmapSize.x);
 	terrainParams.heightmapSize.y = float(heightmapSize.y);
 	ptr->terrainParams = gc.createBuffer(gl::UNIFORM_BUFFER, sizeof(TerrainParams), &terrainParams);
+	return std::move(ptr);
 }

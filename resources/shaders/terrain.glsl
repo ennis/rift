@@ -154,11 +154,12 @@ void main()
 
 	oColor = PhongIllum(final, 
 				fNormal, // normal
+				lightDir.xyz,
 				fPosition,	// position
 				0.0,	// ka
 				0.4,	// ks
 				0.8, 	// kd
-				1, 
+				vec3(1.0, 1.0, 1.0), 
 				1, 
 				1);
 	//oColor = vec4(slope, slope, slope, 1.0f);

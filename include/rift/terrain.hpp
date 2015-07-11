@@ -3,7 +3,7 @@
 
 #include <image.hpp>
 #include <array>
-#include <scene_renderer.hpp>
+#include <rendering/opengl4.hpp>
 #include <utils/small_vector.hpp>
 
 static const int kMaxTerrainLodLevel = 16;

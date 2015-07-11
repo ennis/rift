@@ -46,6 +46,7 @@ private:
 	std::unique_ptr<TrackballCameraControl> trackball;
 	std::unique_ptr<Scene> scene;
 	std::unique_ptr<SceneRenderer> sceneRenderer;
+	std::unique_ptr<Terrain> terrain;
 	AssetDatabase assetDb;
 	Mesh *mokou;
 	EntityID cubeId;
@@ -54,6 +55,10 @@ private:
 	EntityID sphereId;
 	std::unique_ptr<BoundingCapsule> capsule_42;
 	Coroutine cc;
+
+	Image heightmap;
+	Texture2D *terrainGrassTex;
+	Texture2D *terrainRockTex;
 };
 
 void coroutineTest()
@@ -91,6 +96,18 @@ void RiftGame::initialize(Application &app)
 
 	// test bounding volumes
 	capsule_42 = std::make_unique<BoundingCapsule>(glm::vec3{ 0, 0, 0 }, 2.0f, 8.0f, graphicsContext);
+
+	// test terrain
+	heightmap = Image::loadFromFile("resources/img/terrain/height.dds");
+	TerrainInit init;
+	init.heightmap = &heightmap;
+	init.verticalScale = 50.f;
+	init.flatTexture = loadTexture2DAsset(assetDb, graphicsContext, "resources/img/grasstile_c.jpg");
+	init.slopeTexture = loadTexture2DAsset(assetDb, graphicsContext, "resources/img/rock.jpg");
+	init.flatTextureScale = 1.0f;
+	init.slopeTextureScale = 1.0f;
+	terrain = createTerrain(graphicsContext, init);
+	scene->terrain = terrain.get();
 
 	cc = Coroutine::start(coroutineTest);
 }
@@ -141,7 +158,7 @@ int main()
 	options.glMajor = 4;
 	options.glMinor = 4;
 	options.numSamples = 0;
-	Application app("Rift", 800, 480, options);
+	Application app("Rift", 1280, 720, options);
 	app.run<RiftGame>();
 	return 0;
 }
