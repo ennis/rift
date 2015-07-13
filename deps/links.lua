@@ -25,13 +25,17 @@ function use_assimp()
 	links {"assimp"}
 end
 
+function use_glslang()
+	includedirs {thisDir.."glslang/glslang", thisDir.."glslang/glslang/OSDependent/Windows"}
+	links "glslang"
+end
+
 function use_librift()
 	links "librift"
 	--no need for that, boost already adds itself to the linker. sneaky
 	--use_boost_module("filesystem")
 	--use_boost_module("system")
 end
-
 
 function use_anttweakbar()
 	includedirs {thisDir.."include/anttweakbar"}

@@ -12,5 +12,7 @@ solution "rift"
 		flags { "Optimize" }
 	configuration {}
 	dofile "deps/links.lua"
+	include "deps/glslang"
 	include "src/rift"
 	include "src/main"
+	include "src/shader_validator"

@@ -3,7 +3,6 @@
 #include <sstream>
 #include <algorithm>
 #include <vector>
-#include <log.hpp>
 #include <fstream>
 #include <iomanip>
 #include <array_ref.hpp>
@@ -93,7 +92,6 @@ namespace {
 
 		std::string line;
 		while (std::getline(sourceIn, line)) {
-			// if the first character of the line is a '#', then it is a preprocessing directive
 			if (line[0] != '#') {
 				sourceOut << line << '\n';
 				continue;
